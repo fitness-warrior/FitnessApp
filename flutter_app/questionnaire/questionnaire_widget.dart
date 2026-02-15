@@ -290,13 +290,19 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         );
 
       case QuestionType.singleChoice:
-        return Column(
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: q.options.map((opt) {
-            return RadioListTile<String>(
-              title: Text(opt),
-              value: opt,
-              groupValue: _responses[q.id] as String?,
-              onChanged: (v) => setState(() => _responses[q.id] = v),
+            final selected = _responses[q.id] == opt;
+            return ChoiceChip(
+              label: Text(opt),
+              selected: selected,
+              onSelected: (v) {
+                if (v) {
+                  setState(() => _responses[q.id] = opt);
+                }
+              },
             );
           }).toList(),
         );
@@ -372,10 +378,10 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
             const SizedBox(height: 12),
             Text(
               'Question ${_index + 1} of ${_questions.length}',
-              style: Theme.of(context).textTheme.caption,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
-            Text(q.prompt, style: Theme.of(context).textTheme.subtitle1),
+            Text(q.prompt, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             Expanded(child: SingleChildScrollView(child: _buildCurrent())),
             Row(

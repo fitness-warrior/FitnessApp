@@ -1,0 +1,13 @@
+name: fitness_app_flutter
+description: Flutter questionnaire module for FitnessApp
+publish_to: none
+
+environment:
+  sdk: '>=2.17.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
