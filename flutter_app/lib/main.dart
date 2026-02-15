@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../questionnaire/questionnaire_widget.dart';
+import 'questionnaire/questionnaire_widget.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
