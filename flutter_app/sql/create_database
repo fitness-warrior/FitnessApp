@@ -26,3 +26,18 @@ CREATE TABLE IF NOT EXISTS plan_exersise (
     plan_exer_amount INT NOT NULL,
     plan_exer_PB INT, --Personal best
     );
+
+CREATE TABLE IF NOT EXISTS custom_items (
+    item_id SERIAL PRIMARY KEY,
+    item_name VARCHAR(20),
+    item_effect INT,
+    item_level INT,
+    item_type VARCHAR(20)
+);
+
+-- NOTE: game_char table needs to be created before this table
+CREATE TABLE IF NOT EXISTS game_items (
+    item_id INT NOT NULL REFERENCES custom_items(item_id),
+    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
+    PRIMARY KEY (item_id, game_char_id)
+);
