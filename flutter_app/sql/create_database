@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS exersise (
 
 CREATE TABLE IF NOT EXISTS work_plan (
     work_id SERIAL PRIMARY KEY,
-    body_id INT FOREIGN KEY,
+    body_id INT NOT NULL REFERENCES body_metrics(body_id),
     work_name VARCHAR (20) Not NULL,
     work_descrip TEXT,
     work_created_at DATETIME,  
