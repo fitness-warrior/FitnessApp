@@ -19,3 +19,10 @@ CREATE TABLE IF NOT EXISTS work_plan (
     work_day DATE,
     );
 
+CREATE TABLE IF NOT EXISTS plan_exersise (
+    plan_exer_id SERIAL PRIMARY KEY,
+    work_id INT NOT NULL REFERENCES work_plan(work_id),
+    exer_id INT NOT NULL REFERENCES exersise(exer_id),
+    plan_exer_amount INT NOT NULL,
+    plan_exer_PB INT, --Personal best
+    );
