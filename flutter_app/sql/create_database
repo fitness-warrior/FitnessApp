@@ -2,9 +2,20 @@ CREATE TYPE focuse AS ENUM ('strength','cardio');
 
 CREATE TABLE IF NOT EXISTS exersise (
     exer_id SERIAL PRIMARY KEY,
-    exer_name VARCHAR 20 Not NULL,
-    exer_body_area VARCHAR 20 Not Null,
+    exer_name VARCHAR (20) Not NULL,
+    exer_body_area VARCHAR (20) Not Null,
     exer_type focuse Not Null,
-    exer_descrip TeXT,
-    exer_vid Text,  
+    exer_descrip TEXT,
+    exer_vid TEXT,  
     );
+
+CREATE TABLE IF NOT EXISTS work_plan (
+    work_id SERIAL PRIMARY KEY,
+    body_id INT FOREIGN KEY,
+    work_name VARCHAR (20) Not NULL,
+    work_descrip TEXT,
+    work_created_at DATETIME,  
+    work_updated_at DATETIME,
+    work_day DATE,
+    );
+
