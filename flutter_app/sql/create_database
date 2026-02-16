@@ -1,0 +1,10 @@
+CREATE TYPE focuse AS ENUM ('strength','cardio');
+
+CREATE TABLE IF NOT EXISTS exersise (
+    exer_id SERIAL PRIMARY KEY,
+    exer_name VARCHAR 20 Not NULL,
+    exer_body_area VARCHAR 20 Not Null,
+    exer_type focuse Not Null,
+    exer_descrip TeXT,
+    exer_vid Text,  
+    );
