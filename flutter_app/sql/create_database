@@ -56,8 +56,18 @@ CREATE TABLE IF NOT EXISTS food_plan (
     meal_id INT NOT NULL REFERENCES meal_plan(meal_id)
 );
 
+--note game_char need to be made 
+CREATE TABLE IF NOT EXISTS enemy (
+    enemy_id SERIAL PRIMARY KEY,
+    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
+    enemy_name VARCHAR (10) Not NULL,
+    enemy_health FLOAT Not NULL,
+    enemy_attack FLOAT Not NULL,
+    enemy_level INT Not NULL,
+    );
+
+
 CREATE TYPE reward_type AS ENUM ('item', 'currency', 'experience');
--- NOTE: enemy table must be created first before running rewards table
 CREATE TABLE IF NOT EXISTS rewards (
     reward_id SERIAL PRIMARY KEY,
     enemy_id INT NOT NULL REFERENCES enemy(enemy_id),
@@ -67,11 +77,9 @@ CREATE TABLE IF NOT EXISTS rewards (
     description TEXT,
     );
 
-CREATE TABLE IF NOT EXISTS enemy (
-    enemy_id SERIAL PRIMARY KEY,
-    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
-    enemy_name VARCHAR (10) Not NULL,
-    enemy_health FLOAT Not NULL,
-    enemy_attack FLOAT Not NULL,
-    enemy_level INT Not NULL,
-    );
+
+--current order of making needed:
+--game_char is top
+--user / enemy
+--body metrics
+--both of the plans 
