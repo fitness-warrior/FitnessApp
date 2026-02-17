@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS food (
 
 CREATE TABLE IF NOT EXISTS food_plan (
     food_plan_id SERIAL PRIMARY KEY,
-    meal_plan_id INT NOT NULL REFERENCES meal_plan(meal_id)
+    food_id INT NOT NULL REFERENCES food(food_id),
+    meal_id INT NOT NULL REFERENCES meal_plan(meal_id)
 );
 
 CREATE TYPE reward_type AS ENUM ('item', 'currency', 'experience');
