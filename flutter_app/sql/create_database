@@ -2,7 +2,7 @@ CREATE TYPE type AS ENUM ('a','b','c');
 CREATE TABLE IF NOT EXISTS game_char (
     game_char_id SERIAL PRIMARY KEY,
     game_char_level INT Not Null,
-    game_char_colour Varchar 20 NOT NULL,
+    game_char_colour Varchar (20) NOT NULL,
     game_char_type type Not Null,
     game_char_hp INT NOt Null,
     game_char_attack INT NOT NULL,
@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS game_char (
 CREATE TABLE IF NOT EXISTS user (
     user_id SERIAL PRIMARY KEY,
     game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
-    user_name Varchar 40 NOT NULL,
-    user_surname Varchar 40 NOT NULL,
-    user_email Varchar 40 NOT NULL,
+    user_name Varchar (40) NOT NULL,
+    user_surname Varchar (40) NOT NULL,
+    user_email Varchar (40) NOT NULL,
     );
 
 CREATE TYPE gender AS ENUM ('male','female');
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS meal_plan (
     meal_plan SERIAL PRIMARY KEY,
     body_id INT NOT NULL REFERENCES body_metrics(body_id),
     meal_day DATETIME,
-    meal_name Varchar 20 NOT NULL,
+    meal_name Varchar (20) NOT NULL,
     ); 
 
 CREATE TABLE IF NOT EXISTS food (
