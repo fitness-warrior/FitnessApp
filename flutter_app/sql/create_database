@@ -54,3 +54,23 @@ CREATE TABLE IF NOT EXISTS food (
     food_type VARCHAR(10),
     food_calories FLOAT
 );
+
+CREATE TYPE reward_type AS ENUM ('item', 'currency', 'experience');
+-- NOTE: enemy table must be created first before running rewards table
+CREATE TABLE IF NOT EXISTS rewards (
+    reward_id SERIAL PRIMARY KEY,
+    enemy_id INT NOT NULL REFERENCES enemy(enemy_id),
+    reward_level INT NOT NULL,
+    reward_name VARCHAR (20) Not NULL,
+    reward_type reward_type Not NULL,
+    description TEXT,
+    );
+
+CREATE TABLE IF NOT EXISTS enemy (
+    enemy_id SERIAL PRIMARY KEY,
+    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
+    enemy_name VARCHAR (10) Not NULL,
+    enemy_health FLOAT Not NULL,
+    enemy_attack FLOAT Not NULL,
+    enemy_level INT Not NULL,
+    );
