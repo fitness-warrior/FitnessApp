@@ -42,17 +42,17 @@ CREATE TABLE IF NOT EXISTS game_items (
     PRIMARY KEY (item_id, game_char_id)
 );
 
-CREATE TABLE IF NOT EXISTS food_plan (
-    food_plan_id SERIAL PRIMARY KEY,
-    meal_plan_id INT NOT NULL REFERENCES meal_plan(meal_id)
-);
-
 CREATE TABLE IF NOT EXISTS food (
     food_id SERIAL PRIMARY KEY,
     food_plan_id INT NOT NULL REFERENCES food_plan(food_plan_id),
     food_name VARCHAR(10),
     food_type VARCHAR(10),
     food_calories FLOAT
+);
+
+CREATE TABLE IF NOT EXISTS food_plan (
+    food_plan_id SERIAL PRIMARY KEY,
+    meal_plan_id INT NOT NULL REFERENCES meal_plan(meal_id)
 );
 
 CREATE TYPE reward_type AS ENUM ('item', 'currency', 'experience');
