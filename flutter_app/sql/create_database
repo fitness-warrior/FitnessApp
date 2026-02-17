@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS plan_exersise (
     exer_id INT NOT NULL REFERENCES exersise(exer_id),
     plan_exer_amount INT NOT NULL,
     plan_exer_PB INT, --Personal best
+    plan_exer_PB_first INT,
     );
 
 --meal_plan 
