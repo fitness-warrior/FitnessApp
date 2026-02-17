@@ -1,4 +1,10 @@
 CREATE TYPE focuse AS ENUM ('strength','cardio');
+--game char
+
+--user
+
+--body metrics
+
 
 CREATE TABLE IF NOT EXISTS exersise (
     exer_id SERIAL PRIMARY KEY,
@@ -27,6 +33,21 @@ CREATE TABLE IF NOT EXISTS plan_exersise (
     plan_exer_PB INT, --Personal best
     );
 
+--meal_plan 
+
+CREATE TABLE IF NOT EXISTS food (
+    food_id SERIAL PRIMARY KEY,
+    food_name VARCHAR(10),
+    food_type VARCHAR(10),
+    food_calories FLOAT
+);
+
+CREATE TABLE IF NOT EXISTS food_plan (
+    food_plan_id SERIAL PRIMARY KEY,
+    food_id INT NOT NULL REFERENCES food(food_id),
+    meal_id INT NOT NULL REFERENCES meal_plan(meal_id)
+);
+
 CREATE TABLE IF NOT EXISTS custom_items (
     item_id SERIAL PRIMARY KEY,
     item_name VARCHAR(20),
@@ -40,20 +61,6 @@ CREATE TABLE IF NOT EXISTS game_items (
     item_id INT NOT NULL REFERENCES custom_items(item_id),
     game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
     PRIMARY KEY (item_id, game_char_id)
-);
-
-CREATE TABLE IF NOT EXISTS food (
-    food_id SERIAL PRIMARY KEY,
-    food_plan_id INT NOT NULL REFERENCES food_plan(food_plan_id),
-    food_name VARCHAR(10),
-    food_type VARCHAR(10),
-    food_calories FLOAT
-);
-
-CREATE TABLE IF NOT EXISTS food_plan (
-    food_plan_id SERIAL PRIMARY KEY,
-    food_id INT NOT NULL REFERENCES food(food_id),
-    meal_id INT NOT NULL REFERENCES meal_plan(meal_id)
 );
 
 --note game_char need to be made 
