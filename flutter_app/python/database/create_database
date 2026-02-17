@@ -12,9 +12,33 @@ class databaseSQL():
             user= "postgres",    #just login stuff that is default 
             password= os.getenv("DB_PASS")) #your password you made in a .env file
         self.cur = self.conn.cursor()
+        
+    def create_type(self):
+        self.cur.execute("""
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'type') THEN
+        CREATE TYPE "type" AS ENUM ('a','b','c');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'gender') THEN
+        CREATE TYPE gender AS ENUM ('male','female');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'focuse') THEN
+        CREATE TYPE focuse AS ENUM ('strength','cardio');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'reward_type') THEN
+        CREATE TYPE reward_type AS ENUM ('item','currency','experience');
+        END IF;
+    END$$;
+    """)
+        self.conn.commit()
 
     def create(self):
-        self.cur.execute("""CREATE TYPE type AS ENUM ('a','b','c');
+        try:
+            self.create_type()
+        except:
+            print("already made types")
+        self.cur.execute("""
 CREATE TABLE IF NOT EXISTS game_char (
     game_char_id SERIAL PRIMARY KEY,
     game_char_level INT Not Null,
@@ -22,7 +46,7 @@ CREATE TABLE IF NOT EXISTS game_char (
     game_char_type type Not Null,
     game_char_hp INT NOt Null,
     game_char_attack INT NOT NULL,
-    game_char_spped INT NOT NULL
+    game_char_speed INT NOT NULL
     );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -33,7 +57,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_email Varchar (40) NOT NULL
     );
 
-CREATE TYPE gender AS ENUM ('male','female');
+
 CREATE TABLE IF NOT EXISTS body_metrics (
     body_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id),
@@ -44,7 +68,7 @@ CREATE TABLE IF NOT EXISTS body_metrics (
     body_gender gender NOT NULL
     );
 
-CREATE TYPE focuse AS ENUM ('strength','cardio');
+
 CREATE TABLE IF NOT EXISTS exersise (
     exer_id SERIAL PRIMARY KEY,
     exer_name VARCHAR (20) Not NULL,
@@ -59,8 +83,8 @@ CREATE TABLE IF NOT EXISTS work_plan (
     body_id INT NOT NULL REFERENCES body_metrics(body_id),
     work_name VARCHAR (20) Not NULL,
     work_descrip TEXT,
-    work_created_at TIMESTAMP,  
-    work_updated_at TIMESTAMP,
+    work_created_at timestamp,  
+    work_updated_at timestamp,
     work_day DATE
     );
 
@@ -76,7 +100,7 @@ CREATE TABLE IF NOT EXISTS plan_exersise (
 CREATE TABLE IF NOT EXISTS meal_plan (
     meal_id SERIAL PRIMARY KEY,
     body_id INT NOT NULL REFERENCES body_metrics(body_id),
-    meal_day TIMESTAMP,
+    meal_day timestamp,
     meal_name Varchar (20) NOT NULL
     ); 
 
@@ -119,7 +143,7 @@ CREATE TABLE IF NOT EXISTS enemy (
     );
 
 
-CREATE TYPE reward_type AS ENUM ('item', 'currency', 'experience');
+
 CREATE TABLE IF NOT EXISTS rewards (
     reward_id SERIAL PRIMARY KEY,
     enemy_id INT NOT NULL REFERENCES enemy(enemy_id),
