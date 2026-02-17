@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS work_plan (
     body_id INT NOT NULL REFERENCES body_metrics(body_id),
     work_name VARCHAR (20) Not NULL,
     work_descrip TEXT,
-    work_created_at DATETIME,  
-    work_updated_at DATETIME,
+    work_created_at timestamp,  
+    work_updated_at timestamp,
     work_day DATE
     );
 
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS plan_exersise (
 CREATE TABLE IF NOT EXISTS meal_plan (
     meal_id SERIAL PRIMARY KEY,
     body_id INT NOT NULL REFERENCES body_metrics(body_id),
-    meal_day DATETIME,
+    meal_day timestamp,
     meal_name Varchar (20) NOT NULL
     ); 
 
