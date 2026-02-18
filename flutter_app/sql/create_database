@@ -216,3 +216,13 @@ INSERT INTO food_plan (food_id, meal_id) VALUES
 (6, 3),
 (7, 4),
 (8, 4);
+
+INSERT INTO custom_items (item_name, item_effect, item_level, item_type) VALUES
+('Health Potion', 50, 1, 'consumable'),
+('Mana Potion', 30, 1, 'consumable'),
+('Iron Sword', 15, 3, 'weapon'),
+('Steel Shield', 20, 4, 'armor'),
+('Magic Ring', 10, 5, 'accessory'),
+('Leather Boots', 8, 2, 'armor'),
+('Fire Staff', 25, 6, 'weapon'),
+('Elixir', 100, 7, 'consumable');
