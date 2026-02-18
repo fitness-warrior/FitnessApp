@@ -146,3 +146,13 @@ INSERT INTO enemy (game_char_id, enemy_name, enemy_health, enemy_attack, enemy_l
 (3, 'Zombie', 100.0, 20.0, 3),
 (1, 'Vampire', 300.0, 50.0, 7),
 (2, 'Demon', 400.0, 65.0, 9);
+
+INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, body_age, body_gender) VALUES
+(1, 75.5, 78.0, 175.0, 25, 'male'),
+(2, 62.0, 65.0, 165.0, 28, 'female'),
+(3, 82.3, 80.0, 180.0, 32, 'male'),
+(4, 58.5, 60.0, 160.0, 24, 'female'),
+(5, 90.0, 92.0, 185.0, 35, 'male'),
+(6, 65.0, 67.0, 168.0, 30, 'female'),
+(7, 78.0, 75.0, 178.0, 27, 'male'),
+(8, 55.0, 57.0, 162.0, 26, 'female');
