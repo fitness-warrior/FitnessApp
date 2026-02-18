@@ -126,3 +126,13 @@ INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, game_c
 (1, 'red', 'a', 200, 10, 5),
 (1, 'blue', 'b', 100, 25, 10),
 (1, 'green', 'c', 80, 15, 20);
+
+INSERT INTO users (game_char_id, user_name, user_surname, user_email) VALUES
+(1, 'John', 'Smith', 'john.smith@email.com'),
+(2, 'Sarah', 'Johnson', 'sarah.j@email.com'),
+(3, 'Mike', 'Williams', 'mike.w@email.com'),
+(1, 'Emma', 'Brown', 'emma.brown@email.com'),
+(2, 'David', 'Jones', 'david.jones@email.com'),
+(3, 'Lisa', 'Garcia', 'lisa.garcia@email.com'),
+(1, 'James', 'Miller', 'james.miller@email.com'),
+(2, 'Anna', 'Davis', 'anna.davis@email.com');
