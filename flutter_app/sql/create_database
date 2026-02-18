@@ -236,3 +236,13 @@ INSERT INTO game_items (item_id, game_char_id) VALUES
 (6, 2),
 (7, 3),
 (8, 3);
+
+INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, description) VALUES
+(1, 1, 'Goblin Gold', 'currency', 'Small amount of gold from goblin'),
+(2, 3, 'Orc Axe', 'item', 'A crude but effective axe'),
+(3, 5, 'Troll Hide', 'item', 'Tough leather for crafting armor'),
+(4, 10, 'Dragon Scale', 'item', 'Legendary crafting material'),
+(5, 2, 'Bone Dust', 'item', 'Useful for alchemy'),
+(6, 3, 'Zombie Brain', 'item', 'Disgusting but valuable'),
+(7, 7, 'Vampire Fang', 'item', 'Rare alchemical ingredient'),
+(8, 9, 'Demon Soul', 'experience', 'Grants massive experience');
