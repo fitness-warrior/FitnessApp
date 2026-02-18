@@ -186,3 +186,13 @@ INSERT INTO meal_plan (body_id, meal_day, meal_name) VALUES
 (6, '2026-02-19 18:00:00', 'Evening Meal'),
 (7, '2026-02-20 08:00:00', 'Protein Breakfast'),
 (8, '2026-02-20 12:00:00', 'Healthy Lunch');
+
+INSERT INTO plan_exersise (work_id, exer_id, plan_exer_amount, plan_exer_PB, plan_exer_PB_first) VALUES
+(1, 1, 20, 25, 15),
+(1, 4, 10, 12, 8),
+(2, 2, 15, 20, 10),
+(3, 3, 30, 35, 20),
+(4, 5, 8, 10, 5),
+(5, 7, 12, 15, 8),
+(6, 8, 100, 120, 80),
+(7, 4, 12, 15, 10);
