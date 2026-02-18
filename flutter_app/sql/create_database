@@ -196,3 +196,13 @@ INSERT INTO plan_exersise (work_id, exer_id, plan_exer_amount, plan_exer_PB, pla
 (5, 7, 12, 15, 8),
 (6, 8, 100, 120, 80),
 (7, 4, 12, 15, 10);
+
+INSERT INTO food (food_name, food_type, food_calories) VALUES
+('Chicken', 'protein', 165.0),
+('Rice', 'carbs', 130.0),
+('Broccoli', 'vegetable', 55.0),
+('Salmon', 'protein', 208.0),
+('Pasta', 'carbs', 131.0),
+('Spinach', 'vegetable', 23.0),
+('Eggs', 'protein', 155.0),
+('Oats', 'carbs', 389.0);
