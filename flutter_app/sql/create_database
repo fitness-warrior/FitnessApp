@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS rewards (
 
 -- Inserts
 
-INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, game_char_hp, game_char_attack, game_char_spped) VALUES
+INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, game_char_hp, game_char_attack, game_char_speed) VALUES
 (1, 'red', 'a', 200, 10, 5),
 (1, 'blue', 'b', 100, 25, 10),
 (1, 'green', 'c', 80, 15, 20);
