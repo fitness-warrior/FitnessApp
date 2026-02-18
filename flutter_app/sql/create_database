@@ -136,3 +136,13 @@ INSERT INTO users (game_char_id, user_name, user_surname, user_email) VALUES
 (3, 'Lisa', 'Garcia', 'lisa.garcia@email.com'),
 (1, 'James', 'Miller', 'james.miller@email.com'),
 (2, 'Anna', 'Davis', 'anna.davis@email.com');
+
+INSERT INTO enemy (game_char_id, enemy_name, enemy_health, enemy_attack, enemy_level) VALUES
+(1, 'Goblin', 50.0, 10.0, 1),
+(1, 'Orc', 120.0, 25.0, 3),
+(2, 'Troll', 200.0, 35.0, 5),
+(2, 'Dragon', 500.0, 80.0, 10),
+(3, 'Skeleton', 80.0, 15.0, 2),
+(3, 'Zombie', 100.0, 20.0, 3),
+(1, 'Vampire', 300.0, 50.0, 7),
+(2, 'Demon', 400.0, 65.0, 9);
