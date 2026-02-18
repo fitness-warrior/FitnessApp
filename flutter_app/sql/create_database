@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS game_char (
     game_char_type type Not Null,
     game_char_hp INT NOt Null,
     game_char_attack INT NOT NULL,
-    game_char_spped INT NOT NULL
+    game_char_speed INT NOT NULL
     );
 
 CREATE TABLE IF NOT EXISTS users (
