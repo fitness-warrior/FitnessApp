@@ -166,3 +166,13 @@ INSERT INTO exersise (exer_name, exer_body_area, exer_type, exer_descrip, exer_v
 ('Cycling', 'legs', 'cardio', 'Low impact cardio', 'https://youtube.com/cycling'),
 ('Pull-ups', 'back', 'strength', 'Back and bicep exercise', 'https://youtube.com/pullups'),
 ('Jump Rope', 'full body', 'cardio', 'High intensity cardio', 'https://youtube.com/jumprope');
+
+INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_updated_at, work_day) VALUES
+(1, 'Chest Day', 'Focus on chest and triceps', '2026-02-01 10:00:00', '2026-02-01 10:00:00', '2026-02-18'),
+(2, 'Leg Day', 'Lower body workout', '2026-02-02 09:00:00', '2026-02-02 09:00:00', '2026-02-19'),
+(3, 'Cardio Session', 'Endurance training', '2026-02-03 07:00:00', '2026-02-03 07:00:00', '2026-02-20'),
+(4, 'Full Body', 'Complete body workout', '2026-02-04 08:00:00', '2026-02-04 08:00:00', '2026-02-21'),
+(5, 'Back Day', 'Back and biceps', '2026-02-05 10:00:00', '2026-02-05 10:00:00', '2026-02-22'),
+(6, 'HIIT Training', 'High intensity intervals', '2026-02-06 06:00:00', '2026-02-06 06:00:00', '2026-02-23'),
+(7, 'Strength Training', 'Heavy compound lifts', '2026-02-07 11:00:00', '2026-02-07 11:00:00', '2026-02-24'),
+(8, 'Recovery Cardio', 'Light cardio session', '2026-02-08 07:30:00', '2026-02-08 07:30:00', '2026-02-25');
