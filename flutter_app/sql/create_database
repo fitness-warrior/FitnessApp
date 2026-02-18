@@ -176,3 +176,13 @@ INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_u
 (6, 'HIIT Training', 'High intensity intervals', '2026-02-06 06:00:00', '2026-02-06 06:00:00', '2026-02-23'),
 (7, 'Strength Training', 'Heavy compound lifts', '2026-02-07 11:00:00', '2026-02-07 11:00:00', '2026-02-24'),
 (8, 'Recovery Cardio', 'Light cardio session', '2026-02-08 07:30:00', '2026-02-08 07:30:00', '2026-02-25');
+
+INSERT INTO meal_plan (body_id, meal_day, meal_name) VALUES
+(1, '2026-02-18 08:00:00', 'Breakfast Plan'),
+(2, '2026-02-18 12:00:00', 'Lunch Plan'),
+(3, '2026-02-18 18:00:00', 'Dinner Plan'),
+(4, '2026-02-19 08:00:00', 'Morning Meal'),
+(5, '2026-02-19 12:00:00', 'Afternoon Meal'),
+(6, '2026-02-19 18:00:00', 'Evening Meal'),
+(7, '2026-02-20 08:00:00', 'Protein Breakfast'),
+(8, '2026-02-20 12:00:00', 'Healthy Lunch');
