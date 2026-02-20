@@ -97,13 +97,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     ),
     Question(
       id: 'Q007',
-      prompt: 'Where will you mainly work out?',
-      type: QuestionType.singleChoice,
-      mandatory: true,
-      options: ['Home', 'Gym', 'Outdoors', 'Mixed Locations'],
-    ),
-    Question(
-      id: 'Q008',
       prompt: 'Which type of training do you enjoy most?',
       type: QuestionType.multiSelect,
       mandatory: true,
@@ -116,7 +109,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       ],
     ),
     Question(
-      id: 'Q009',
+      id: 'Q008',
       prompt:
           'Do you have any injuries or physical limitations we should consider?',
       type: QuestionType.multiSelect,
@@ -230,9 +223,8 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       'workoutFrequency': _responses['Q004'],
       'workoutDuration': _responses['Q005'],
       'equipmentAccess': _responses['Q006'] ?? [],
-      'workoutLocation': _responses['Q007'],
-      'trainingPreference': _responses['Q008'] ?? [],
-      'injuries': _responses['Q009'] ?? [],
+      'trainingPreference': _responses['Q007'] ?? [],
+      'injuries': _responses['Q008'] ?? [],
       'injuryDetails': null,
     };
 
