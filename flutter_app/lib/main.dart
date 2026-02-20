@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../widgets/questionnaire/questionnaire_widget.dart';
+import 'package:fitness_app_flutter/widgets/questionnaire/questionnaire_widget.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
