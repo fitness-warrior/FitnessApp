@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS equipment (
     equip_id SERIAL PRIMARY KEY,
-    equipment VARCHAR (20) NOT NULL
+    equipment_name VARCHAR (20) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_equip (
@@ -186,7 +186,7 @@ INSERT INTO users (game_char_id, user_name, user_surname, user_email) VALUES
 (1, 'James', 'Miller', 'james.miller@email.com'),
 (2, 'Anna', 'Davis', 'anna.davis@email.com');
 
-INSERT INTO equipment (equip_id, equipment) VALUES
+INSERT INTO equipment (equip_id, equipment_name) VALUES
 (1,'Dumbbells'),
 (2,'Barbells'),
 (3,'Resistance Bands'),
@@ -365,5 +365,5 @@ CREATE SCHEMA public;
 
 
 if __name__ == "__main__":
-    test = databaseSQL(CONN)
+    test = DatabaseSQL(CONN)
     test.run()
