@@ -132,13 +132,6 @@ CREATE TABLE IF NOT EXISTS rewards (
     );
 
 
---current order of making needed:
---game_char is top
---user / enemy
---body metrics
---both of the plans 
-
--- Inserts
 
 INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, game_char_hp, game_char_attack, game_char_speed) VALUES
 (1, 'red', 'a', 200, 10, 5),
@@ -155,6 +148,53 @@ INSERT INTO users (game_char_id, user_name, user_surname, user_email) VALUES
 (1, 'James', 'Miller', 'james.miller@email.com'),
 (2, 'Anna', 'Davis', 'anna.davis@email.com');
 
+INSERT INTO equipment (equip_id, equipment) VALUES
+(1,'Dumbbells'),
+(2,'Barbells'),
+(3,'Resistance Bands'),
+(4,'Resistance Bands'),
+(5,'Gym Machines'),
+(6,'Cardio Machines');
+
+
+INSERT INTO user_equip (user_id, equip_id) VALUES
+-- John Smith (1)
+(1, 1),
+(1, 3),
+(1, 6),
+
+-- Sarah Johnson (2)
+(2, 2),
+(2, 5),
+
+-- Mike Williams (3)
+(3, 1),
+(3, 2),
+(3, 5),
+
+-- Emma Brown (4)
+(4, 3),
+(4, 4),
+(4, 6),
+
+-- David Jones (5)
+(5, 2),
+(5, 6),
+
+-- Lisa Garcia (6)
+(6, 1),
+(6, 3),
+(6, 5),
+
+-- James Miller (7)
+(7, 2),
+(7, 4),
+
+-- Anna Davis (8)
+(8, 1),
+(8, 5),
+(8, 6);
+
 INSERT INTO enemy (game_char_id, enemy_name, enemy_health, enemy_attack, enemy_level) VALUES
 (1, 'Goblin', 50.0, 10.0, 1),
 (1, 'Orc', 120.0, 25.0, 3),
@@ -165,25 +205,25 @@ INSERT INTO enemy (game_char_id, enemy_name, enemy_health, enemy_attack, enemy_l
 (1, 'Vampire', 300.0, 50.0, 7),
 (2, 'Demon', 400.0, 65.0, 9);
 
-INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, body_age, body_gender) VALUES
-(1, 75.5, 78.0, 175.0, 25, 'male'),
-(2, 62.0, 65.0, 165.0, 28, 'female'),
-(3, 82.3, 80.0, 180.0, 32, 'male'),
-(4, 58.5, 60.0, 160.0, 24, 'female'),
-(5, 90.0, 92.0, 185.0, 35, 'male'),
-(6, 65.0, 67.0, 168.0, 30, 'female'),
-(7, 78.0, 75.0, 178.0, 27, 'male'),
-(8, 55.0, 57.0, 162.0, 26, 'female');
+INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, body_age, body_gender, body_goal) VALUES
+(1, 75.5, 78.0, 175.0, 25, 'male','Fat Loss'),
+(2, 62.0, 65.0, 165.0, 28, 'female', 'Endurance Improvement'),
+(3, 82.3, 80.0, 180.0, 32, 'male', 'Muscle Gain'),
+(4, 58.5, 60.0, 160.0, 24, 'female', 'Injury Rehabilitation'),
+(5, 90.0, 92.0, 185.0, 35, 'male', 'General Fitness'),
+(6, 65.0, 67.0, 168.0, 30, 'female', 'Athletic Performance'),
+(7, 78.0, 75.0, 178.0, 27, 'male', 'Fat Loss'),
+(8, 55.0, 57.0, 162.0, 26, 'female', 'General Fitness');
 
-INSERT INTO exersise (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid) VALUES
-('Push-ups', 'chest', 'strength', 'Classic upper body exercise', 'https://youtube.com/pushups'),
-('Squats', 'legs', 'strength', 'Lower body compound movement', 'https://youtube.com/squats'),
-('Running', 'full body', 'cardio', 'Outdoor cardio exercise', 'https://youtube.com/running'),
-('Bench Press', 'chest', 'strength', 'Chest and tricep builder', 'https://youtube.com/bench'),
-('Deadlift', 'back', 'strength', 'Full posterior chain exercise', 'https://youtube.com/deadlift'),
-('Cycling', 'legs', 'cardio', 'Low impact cardio', 'https://youtube.com/cycling'),
-('Pull-ups', 'back', 'strength', 'Back and bicep exercise', 'https://youtube.com/pullups'),
-('Jump Rope', 'full body', 'cardio', 'High intensity cardio', 'https://youtube.com/jumprope');
+INSERT INTO exersise (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip) VALUES
+('Push-ups', 'chest', 'strength', 'Classic upper body exercise', 'https://youtube.com/pushups', 'Bodyweight Only',),
+('Squats', 'legs', 'strength', 'Lower body compound movement', 'https://youtube.com/squats', 'Bodyweight Only',),
+('Running', 'full body', 'cardio', 'Outdoor cardio exercise', 'https://youtube.com/running', 'Dumbbells'),
+('Bench Press', 'chest', 'strength', 'Chest and tricep builder', 'https://youtube.com/bench', 'Barbells'),
+('Deadlift', 'back', 'strength', 'Full posterior chain exercise', 'https://youtube.com/deadlift','Gym Machines'),
+('Cycling', 'legs', 'cardio', 'Low impact cardio', 'https://youtube.com/cycling', 'Cardio Machines', 'Gym Machines'),
+('Pull-ups', 'back', 'strength', 'Back and bicep exercise', 'https://youtube.com/pullups', 'Bodyweight Only',),
+('Jump Rope', 'full body', 'cardio', 'High intensity cardio', 'https://youtube.com/jumprope', 'Resistance Bands');
 
 INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_updated_at, work_day) VALUES
 (1, 'Chest Day', 'Focus on chest and triceps', '2026-02-01 10:00:00', '2026-02-01 10:00:00', '2026-02-18'),
