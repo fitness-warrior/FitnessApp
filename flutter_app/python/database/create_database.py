@@ -31,11 +31,11 @@ class databaseSQL():
         END IF;
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'goal') THEN
         CREATE TYPE goal AS ENUM ('Fat Loss', 'Muscle Gain', 'Endurance Improvement', 'General Fitness',
-'Athletic Performance', 'Injury Rehabilitation',)
+'Athletic Performance', 'Injury Rehabilitation');
         END IF;
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'equip') THEN
         CREATE TYPE equip AS ENUM ('Bodyweight Only', 'Dumbbells', 'Barbells', 'Resistance Bands',
-'Gym Machines', 'Cardio Machines',);
+'Gym Machines', 'Cardio Machines');
         END IF;
     END$$;
     """)
@@ -68,13 +68,13 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS equipment (
     equip_id SERIAL PRIMARY KEY,
     equipment VARCHAR (20) NOT NULL
-)
+);
 
 CREATE TABLE IF NOT EXISTS user_equip (
     user_id INT NOT NULL REFERENCES users(user_id),
     equip_id INT NOT NULL REFERENCES equipment(equip_id),
     PRIMARY KEY (user_id, equip_id)
-)
+);
 
 
 CREATE TABLE IF NOT EXISTS body_metrics (
@@ -174,7 +174,11 @@ CREATE TABLE IF NOT EXISTS rewards (
     reward_type reward_type Not NULL,
     description TEXT
     );
+        """)
+        self.conn.commit()
     
+    def add_data(self):
+        self.cur.execute("""
 INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, game_char_hp, game_char_attack, game_char_speed) VALUES
 (1, 'red', 'a', 200, 10, 5),
 (1, 'blue', 'b', 100, 25, 10),
@@ -258,13 +262,13 @@ INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, b
 (8, 55.0, 57.0, 162.0, 26, 'female', 'General Fitness');
 
 INSERT INTO exersise (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip) VALUES
-('Push-ups', 'chest', 'strength', 'Classic upper body exercise', 'https://youtube.com/pushups', 'Bodyweight Only',),
-('Squats', 'legs', 'strength', 'Lower body compound movement', 'https://youtube.com/squats', 'Bodyweight Only',),
+('Push-ups', 'chest', 'strength', 'Classic upper body exercise', 'https://youtube.com/pushups', 'Bodyweight Only'),
+('Squats', 'legs', 'strength', 'Lower body compound movement', 'https://youtube.com/squats', 'Bodyweight Only'),
 ('Running', 'full body', 'cardio', 'Outdoor cardio exercise', 'https://youtube.com/running', 'Dumbbells'),
 ('Bench Press', 'chest', 'strength', 'Chest and tricep builder', 'https://youtube.com/bench', 'Barbells'),
 ('Deadlift', 'back', 'strength', 'Full posterior chain exercise', 'https://youtube.com/deadlift','Gym Machines'),
-('Cycling', 'legs', 'cardio', 'Low impact cardio', 'https://youtube.com/cycling', 'Cardio Machines', 'Gym Machines'),
-('Pull-ups', 'back', 'strength', 'Back and bicep exercise', 'https://youtube.com/pullups', 'Bodyweight Only',),
+('Cycling', 'legs', 'cardio', 'Low impact cardio', 'https://youtube.com/cycling', 'Cardio Machines'),
+('Pull-ups', 'back', 'strength', 'Back and bicep exercise', 'https://youtube.com/pullups', 'Bodyweight Only'),
 ('Jump Rope', 'full body', 'cardio', 'High intensity cardio', 'https://youtube.com/jumprope', 'Resistance Bands');
 
 INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_updated_at, work_day) VALUES
@@ -287,15 +291,15 @@ INSERT INTO meal_plan (body_id, meal_day, meal_name) VALUES
 (7, '2026-02-20 08:00:00', 'Protein Breakfast'),
 (8, '2026-02-20 12:00:00', 'Healthy Lunch');
 
-INSERT INTO plan_exersise (work_id, exer_id, plan_exer_amount, plan_exer_PB, plan_exer_PB_first) VALUES
-(1, 1, 20, 25, 15),
-(1, 4, 10, 12, 8),
-(2, 2, 15, 20, 10),
-(3, 3, 30, 35, 20),
-(4, 5, 8, 10, 5),
-(5, 7, 12, 15, 8),
-(6, 8, 100, 120, 80),
-(7, 4, 12, 15, 10);
+INSERT INTO plan_exersise (work_id, exer_id, plan_exer_amount, plan_exer_set, plan_exer_PB, plan_exer_PB_first) VALUES
+(1, 1, 20, 2, 25, 15),
+(1, 4, 10, 3, 12, 8),
+(2, 2, 15, 2, 20, 10),
+(3, 3, 30, 1, 35, 20),
+(4, 5, 8, 3, 10, 5),
+(5, 7, 12, 2, 15, 8),
+(6, 8, 100, 1, 120, 80),
+(7, 4, 12, 2, 15, 10);
 
 INSERT INTO food (food_name, food_type, food_calories) VALUES
 ('Chicken', 'protein', 165.0),
@@ -349,7 +353,25 @@ INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, descripti
         """)
         self.conn.commit()
         
+        
+    def delete_all(self):
+        self.cur.execute("""
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+                         """)
+        self.conn.commit()
+        
+    def run(self):
+        try:
+            self.connect_database()
+            self.delete_all()
+            self.create()
+            self.add_data()
+        except Exception as e:
+            print("Error:", e)
+            self.conn.rollback()
+
+
 if __name__ == "__main__":
     test = databaseSQL()
-    test.connect_database()
-    test.create()
+    test.run()
