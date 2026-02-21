@@ -14,13 +14,19 @@ CREATE TABLE IF NOT EXISTS users (
     game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
     user_name Varchar (40) NOT NULL,
     user_surname Varchar (40) NOT NULL,
-    user_email Varchar (40) NOT NULL,
-    user_dumbbells BOOLEAN NOT NULL,
-    user_Barbells BOOLEAN NOT NULL,
-    user_resis_bands BOOLEAN NOT NULL,
-    user_gym_mach BOOLEAN NOT NULL,
-    user_cardio_mach BOOLEAN NOT NULL
+    user_email Varchar (40) NOT NULL
     );
+
+CREATE TABLE IF NOT EXISTS equipment (
+    equip_id SERIAL PRIMARY KEY,
+    equipment VARCHAR (20) NOT NULL
+)
+
+CREATE TABLE IF NOT EXISTS user_equip (
+    user_id INT NOT NULL REFERENCES users(user_id),
+    equip_id INT NOT NULL REFERENCES equipment(equip_id),
+    PRIMARY KEY (user_id, equip_id)
+)
 
 CREATE TYPE gender AS ENUM ('male','female');
 CREATE TYPE goal AS ENUM ('Fat Loss', 'Muscle Gain', 'Endurance Improvement', 'General Fitness',

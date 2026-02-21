@@ -29,6 +29,14 @@ class databaseSQL():
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'reward_type') THEN
         CREATE TYPE reward_type AS ENUM ('item','currency','experience');
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'goal') THEN
+        CREATE TYPE goal AS ENUM ('Fat Loss', 'Muscle Gain', 'Endurance Improvement', 'General Fitness',
+'Athletic Performance', 'Injury Rehabilitation',)
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'equip') THEN
+        CREATE TYPE equip AS ENUM ('Bodyweight Only', 'Dumbbells', 'Barbells', 'Resistance Bands',
+'Gym Machines', 'Cardio Machines',);
+        END IF;
     END$$;
     """)
         self.conn.commit()
@@ -57,6 +65,17 @@ CREATE TABLE IF NOT EXISTS users (
     user_email Varchar (40) NOT NULL
     );
 
+CREATE TABLE IF NOT EXISTS equipment (
+    equip_id SERIAL PRIMARY KEY,
+    equipment VARCHAR (20) NOT NULL
+)
+
+CREATE TABLE IF NOT EXISTS user_equip (
+    user_id INT NOT NULL REFERENCES users(user_id),
+    equip_id INT NOT NULL REFERENCES equipment(equip_id),
+    PRIMARY KEY (user_id, equip_id)
+)
+
 
 CREATE TABLE IF NOT EXISTS body_metrics (
     body_id SERIAL PRIMARY KEY,
@@ -65,7 +84,8 @@ CREATE TABLE IF NOT EXISTS body_metrics (
     body_past_weight FLOAT,
     body_height FLOAT NOT NULL, -- in CM 
     body_age INT NOT NULL,
-    body_gender gender NOT NULL
+    body_gender gender NOT NULL,
+    body_goal goal NOT NULL
     );
 
 
@@ -75,7 +95,8 @@ CREATE TABLE IF NOT EXISTS exersise (
     exer_body_area VARCHAR (20) Not Null,
     exer_type focuse Not Null,
     exer_descrip TEXT,
-    exer_vid TEXT
+    exer_vid TEXT,
+    exer_equip equip NOT NULL
     );
 
 CREATE TABLE IF NOT EXISTS work_plan (
@@ -93,6 +114,7 @@ CREATE TABLE IF NOT EXISTS plan_exersise (
     work_id INT NOT NULL REFERENCES work_plan(work_id),
     exer_id INT NOT NULL REFERENCES exersise(exer_id),
     plan_exer_amount INT NOT NULL,
+    plan_exer_set INT NOT NULL,
     plan_exer_PB INT, --Personal best
     plan_exer_PB_first INT
     );
