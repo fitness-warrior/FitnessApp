@@ -1,16 +1,9 @@
 import psycopg2
-from dotenv import load_dotenv
-import os
-
+from login import CUR, CONN
 
 class databaseSQL():
-    def connect_database(self):
-        load_dotenv()
-        self.conn = psycopg2.connect(
-            host= "localhost",   #just login stuff that is default 
-            dbname= "fitApp",    #name of database
-            user= "postgres",    #just login stuff that is default 
-            password= os.getenv("DB_PASS")) #your password you made in a .env file
+    def connect_database(self,CONN):
+        self.conn = CONN
         self.cur = self.conn.cursor()
         
     def create_type(self):
@@ -373,5 +366,5 @@ CREATE SCHEMA public;
 
 
 if __name__ == "__main__":
-    test = databaseSQL()
+    test = databaseSQL(CONN)
     test.run()
