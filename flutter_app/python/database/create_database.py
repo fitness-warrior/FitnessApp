@@ -1,8 +1,8 @@
 import psycopg2
-from login import CUR, CONN
+from login import CONN
 
 class databaseSQL():
-    def connect_database(self,CONN):
+    def __init__(self,CONN):
         self.conn = CONN
         self.cur = self.conn.cursor()
         
@@ -356,10 +356,10 @@ CREATE SCHEMA public;
         
     def run(self):
         try:
-            self.connect_database()
             self.delete_all()
             self.create()
             self.add_data()
+            print("complete database")
         except Exception as e:
             print("Error:", e)
             self.conn.rollback()
