@@ -14,10 +14,17 @@ CREATE TABLE IF NOT EXISTS users (
     game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
     user_name Varchar (40) NOT NULL,
     user_surname Varchar (40) NOT NULL,
-    user_email Varchar (40) NOT NULL
+    user_email Varchar (40) NOT NULL,
+    user_dumbbells BOOLEAN NOT NULL,
+    user_Barbells BOOLEAN NOT NULL,
+    user_resis_bands BOOLEAN NOT NULL,
+    user_gym_mach BOOLEAN NOT NULL,
+    user_cardio_mach BOOLEAN NOT NULL
     );
 
 CREATE TYPE gender AS ENUM ('male','female');
+CREATE TYPE goal AS ENUM ('Fat Loss', 'Muscle Gain', 'Endurance Improvement', 'General Fitness',
+'Athletic Performance', 'Injury Rehabilitation',)
 CREATE TABLE IF NOT EXISTS body_metrics (
     body_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id),
@@ -25,17 +32,21 @@ CREATE TABLE IF NOT EXISTS body_metrics (
     body_past_weight FLOAT,
     body_height FLOAT NOT NULL, -- in CM 
     body_age INT NOT NULL,
-    body_gender gender NOT NULL
+    body_gender gender NOT NULL,
+    body_goal goal NOT NULL
     );
 
 CREATE TYPE focuse AS ENUM ('strength','cardio');
+CREATE TYPE equip AS ENUM ('Bodyweight Only', 'Dumbbells', 'Barbells', 'Resistance Bands',
+'Gym Machines', 'Cardio Machines',);
 CREATE TABLE IF NOT EXISTS exersise (
     exer_id SERIAL PRIMARY KEY,
     exer_name VARCHAR (20) Not NULL,
     exer_body_area VARCHAR (20) Not Null,
     exer_type focuse Not Null,
     exer_descrip TEXT,
-    exer_vid TEXT
+    exer_vid TEXT,
+    exer_equip equip NOT NULL
     );
 
 CREATE TABLE IF NOT EXISTS work_plan (
@@ -53,6 +64,7 @@ CREATE TABLE IF NOT EXISTS plan_exersise (
     work_id INT NOT NULL REFERENCES work_plan(work_id),
     exer_id INT NOT NULL REFERENCES exersise(exer_id),
     plan_exer_amount INT NOT NULL,
+    plan_exer_set INT NOT NULL,
     plan_exer_PB INT, --Personal best
     plan_exer_PB_first INT
     );
