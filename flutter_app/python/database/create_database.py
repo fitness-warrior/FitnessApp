@@ -1,4 +1,3 @@
-import psycopg2
 from login import CONN
 
 class databaseSQL():
