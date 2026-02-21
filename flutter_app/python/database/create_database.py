@@ -1,6 +1,6 @@
 from login import CONN
 
-class databaseSQL():
+class DatabaseSQL():
     def __init__(self,CONN):
         self.conn = CONN
         self.cur = self.conn.cursor()
