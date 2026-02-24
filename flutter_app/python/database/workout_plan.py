@@ -4,7 +4,7 @@ from datetime import datetime
 class WorkoutPlanGenerator:
 
     def __init__(self, CONN):
-        self.CONN = CONN
+        self.conn = CONN
         self.cur = self.conn.cursor()
 
     def auto_generate_plan(self, user_id, focus_type = 'strength', plan_name = 'Auto Generated Workout'):
@@ -105,4 +105,44 @@ class WorkoutPlanGenerator:
         work_id = self.cur.fetchone()[0]
         return work_id
     
+    def _add_exercises_to_plan(self, work_id, exercise_ids):
+        
+        for exer_id in exercise_ids:
+            self.cur.execute("""
+                INSERT INTO plan_exersise (
+                    work_id, 
+                    exer_id, 
+                    plan_exer_amount, 
+                    plan_exer_PB,
+                    plan_exer_PB_first
+                )
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                work_id,
+                exer_id,
+                12,
+                0,
+                0
+            ))
+        
+        self.conn.commit()
 
+def test():
+    """Test the workout plan generator"""
+    generator = WorkoutPlanGenerator(CONN)
+    
+    # Test: Generate a strength workout for user 1
+    work_id = generator.auto_generate_plan(
+        user_id=1, 
+        focus_type='strength',
+        plan_name='My Auto Workout'
+    )
+    
+    if work_id:
+        print(f"✓ Created workout plan with ID: {work_id}")
+    else:
+        print("✗ Failed to create workout plan")
+
+
+if __name__ == "__main__":
+    test()
