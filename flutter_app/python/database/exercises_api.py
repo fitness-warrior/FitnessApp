@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify, abort, Response
 from login import CONN
 import logging
 from logging.handlers import RotatingFileHandler
-from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+import time
 
 app = Flask(__name__)
 
@@ -23,10 +24,14 @@ def log_request_info():
         'args': dict(request.args),
         'remote_addr': request.remote_addr,
     })
+    # start timer for latency measurement
+    request._start_time = time.time()
 
 # --- Basic Prometheus metrics ---
 REQ_COUNTER = Counter('ex_api_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'http_status'])
 ERR_COUNTER = Counter('ex_api_exceptions_total', 'Total exceptions')
+# Histogram for request latency (seconds)
+REQ_LATENCY = Histogram('ex_api_request_latency_seconds', 'Request latency seconds', ['method', 'endpoint'])
 
 
 @app.route('/health', methods=['GET'])
@@ -191,3 +196,26 @@ def create_plan_exercise():
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
+
+
+@app.after_request
+def after_request(response):
+    # observe request duration and increment metrics
+    try:
+        start = getattr(request, '_start_time', None)
+        duration = (time.time() - start) if start else 0.0
+        endpoint = request.path
+        REQ_LATENCY.labels(method=request.method, endpoint=endpoint).observe(duration)
+        REQ_COUNTER.labels(method=request.method, endpoint=endpoint, http_status=str(response.status_code)).inc()
+        logger.info('request end', extra={'method': request.method, 'path': request.path, 'status': response.status_code, 'duration': duration})
+    except Exception as e:
+        logger.exception('error in after_request: %s', e)
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log exception, increment error metric, and return JSON 500
+    ERR_COUNTER.inc()
+    logger.exception('Unhandled exception: %s', e)
+    return jsonify({'error': 'internal server error'}), 500
