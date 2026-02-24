@@ -93,7 +93,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     return Column(
       children: [
         _buildSearchBar(),
-        _buildAreaFilter(),
+        _buildFilters(),
         Expanded(child: _buildExerciseList()),
       ],
     );
@@ -124,31 +124,116 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     );
   }
 
-  Widget _buildAreaFilter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: DropdownButtonFormField<String>(
-        value: _selectedArea,
-        decoration: const InputDecoration(
-          labelText: 'Body Area',
-          border: OutlineInputBorder(),
-          isDense: true,
+  Widget _buildFilters() {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Filters',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                TextButton.icon(
+                  onPressed: _clearFilters,
+                  icon: const Icon(Icons.clear_all, size: 16),
+                  label: const Text('Clear'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildAreaFilter(),
+            const SizedBox(height: 8),
+            _buildTypeFilter(),
+            const SizedBox(height: 8),
+            Text(
+              'Equipment',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 4),
+            _buildEquipmentFilter(),
+          ],
         ),
-        items: [
-          const DropdownMenuItem<String>(
-            value: null,
-            child: Text('All Areas'),
-          ),
-          ..._bodyAreas.map((area) => DropdownMenuItem(
-                value: area,
-                child: Text(area),
-              )),
-        ],
-        onChanged: (value) {
-          setState(() => _selectedArea = value);
-          _loadExercises();
-        },
       ),
+    );
+  }
+
+  Widget _buildAreaFilter() {
+    return DropdownButtonFormField<String>(
+      value: _selectedArea,
+      decoration: const InputDecoration(
+        labelText: 'Body Area',
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      items: [
+        const DropdownMenuItem<String>(
+          value: null,
+          child: Text('All Areas'),
+        ),
+        ..._bodyAreas.map((area) => DropdownMenuItem(
+              value: area,
+              child: Text(area),
+            )),
+      ],
+      onChanged: (value) {
+        setState(() => _selectedArea = value);
+        _loadExercises();
+      },
+    );
+  }
+
+  Widget _buildTypeFilter() {
+    return DropdownButtonFormField<String>(
+      value: _selectedType,
+      decoration: const InputDecoration(
+        labelText: 'Type',
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      items: [
+        const DropdownMenuItem<String>(
+          value: null,
+          child: Text('All Types'),
+        ),
+        ..._types.map((type) => DropdownMenuItem(
+              value: type,
+              child: Text(type),
+            )),
+      ],
+      onChanged: (value) {
+        setState(() => _selectedType = value);
+        _loadExercises();
+      },
+    );
+  }
+
+  Widget _buildEquipmentFilter() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: _equipment.map((equip) {
+        final isSelected = _selectedEquipment.contains(equip);
+        return FilterChip(
+          label: Text(equip, style: const TextStyle(fontSize: 12)),
+          selected: isSelected,
+          onSelected: (selected) {
+            setState(() {
+              if (selected) {
+                _selectedEquipment.add(equip);
+              } else {
+                _selectedEquipment.remove(equip);
+              }
+            });
+            _loadExercises();
+          },
+        );
+      }).toList(),
     );
   }
 
