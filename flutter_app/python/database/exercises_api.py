@@ -1,7 +1,42 @@
-from flask import Flask, request, jsonify, abort
+from flask import Flask, request, jsonify, abort, Response
 from login import CONN
+import logging
+from logging.handlers import RotatingFileHandler
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
+
+# --- Logging configuration ---
+logger = logging.getLogger('exercises_api')
+logger.setLevel(logging.INFO)
+handler = RotatingFileHandler('exercises_api.log', maxBytes=5 * 1024 * 1024, backupCount=2)
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# Log every request
+@app.before_request
+def log_request_info():
+    logger.info('request start', extra={
+        'method': request.method,
+        'path': request.path,
+        'args': dict(request.args),
+        'remote_addr': request.remote_addr,
+    })
+
+# --- Basic Prometheus metrics ---
+REQ_COUNTER = Counter('ex_api_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'http_status'])
+ERR_COUNTER = Counter('ex_api_exceptions_total', 'Total exceptions')
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'}), 200
+
+
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 # Helper to convert DB rows to dicts for exercise list/detail
 def row_to_exercise(row):
