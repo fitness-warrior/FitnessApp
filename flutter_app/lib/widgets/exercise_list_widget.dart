@@ -242,11 +242,6 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
       return const Center(child: CircularProgressIndicator());
     }
 
-  Widget _buildExerciseList() {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     if (_error != null) {
       return Center(
         child: Column(
