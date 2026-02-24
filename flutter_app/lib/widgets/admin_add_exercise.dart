@@ -23,7 +23,10 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _saving = true; _result = null; });
+    setState(() {
+      _saving = true;
+      _result = null;
+    });
 
     final payload = {
       'exer_name': _nameCtl.text.trim(),
@@ -45,15 +48,23 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
       );
       if (res.statusCode == 201) {
         final data = json.decode(res.body);
-        setState(() { _result = 'Created exer_id: ${data['exer_id']}'; });
+        setState(() {
+          _result = 'Created exer_id: ${data['exer_id']}';
+        });
         _formKey.currentState!.reset();
       } else {
-        setState(() { _result = 'Error ${res.statusCode}: ${res.body}'; });
+        setState(() {
+          _result = 'Error ${res.statusCode}: ${res.body}';
+        });
       }
     } catch (e) {
-      setState(() { _result = 'Exception: $e'; });
+      setState(() {
+        _result = 'Exception: $e';
+      });
     } finally {
-      setState(() { _saving = false; });
+      setState(() {
+        _saving = false;
+      });
     }
   }
 
@@ -70,18 +81,22 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
               TextFormField(
                 controller: _nameCtl,
                 decoration: InputDecoration(labelText: 'Name'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               SizedBox(height: 8),
               TextFormField(
                 controller: _areaCtl,
                 decoration: InputDecoration(labelText: 'Body area'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _type,
-                items: ['strength','cardio'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                items: ['strength', 'cardio']
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
                 onChanged: (v) => setState(() => _type = v ?? 'strength'),
                 decoration: InputDecoration(labelText: 'Type'),
               ),
@@ -89,9 +104,17 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
               DropdownButtonFormField<String>(
                 value: _equip,
                 items: [
-                  'Bodyweight Only','Dumbbells','Barbells','Resistance Bands','Gym Machines','Cardio Machines'
-                ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                onChanged: (v) => setState(() => _equip = v ?? 'Bodyweight Only'),
+                  'Bodyweight Only',
+                  'Dumbbells',
+                  'Barbells',
+                  'Resistance Bands',
+                  'Gym Machines',
+                  'Cardio Machines'
+                ]
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (v) =>
+                    setState(() => _equip = v ?? 'Bodyweight Only'),
                 decoration: InputDecoration(labelText: 'Equipment'),
               ),
               SizedBox(height: 8),
@@ -109,7 +132,9 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _saving ? null : _submit,
-                child: _saving ? CircularProgressIndicator(color: Colors.white) : Text('Create'),
+                child: _saving
+                    ? CircularProgressIndicator(color: Colors.white)
+                    : Text('Create'),
               ),
               if (_result != null) ...[
                 SizedBox(height: 12),
