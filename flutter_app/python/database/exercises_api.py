@@ -94,6 +94,14 @@ def list_exercises():
     # commit only when not running tests to allow transactional isolation in tests
     if not app.config.get('TESTING'):
         CONN.commit()
+    # record metric
+    try:
+        for r in rows:
+            pass
+    except Exception:
+        pass
+    REQ_COUNTER.labels(method=request.method, endpoint='/api/exercises', http_status='200').inc()
+    logger.info('request end', extra={'count': len(results)})
     return jsonify(results)
 
 
@@ -111,7 +119,10 @@ def get_exercise(exer_id):
     row = cur.fetchone()
     cur.close()
     if not row:
+        REQ_COUNTER.labels(method=request.method, endpoint='/api/exercises/<id>', http_status='404').inc()
         abort(404, description='Exercise not found')
+    REQ_COUNTER.labels(method=request.method, endpoint='/api/exercises/<id>', http_status='200').inc()
+    logger.info('fetched exercise', extra={'exer_id': exer_id})
     return jsonify(row_to_exercise(row))
 
 
@@ -147,6 +158,8 @@ def create_exercise():
     if not app.config.get('TESTING'):
         CONN.commit()
     cur.close()
+    REQ_COUNTER.labels(method=request.method, endpoint='/api/exercises', http_status='201').inc()
+    logger.info('created exercise', extra={'exer_id': new_id, 'name': data.get('exer_name')})
     return jsonify({'exer_id': new_id}), 201
 
 
