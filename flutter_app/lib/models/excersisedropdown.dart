@@ -45,6 +45,45 @@ class _ExerciseDropdownState extends State<ExerciseDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_exercises.isEmpty) {
+      return const Center(
+        child: Text('No exercises available'),
+      );
+    }
+
+    return DropdownButtonFormField<Map<String, dynamic>>(
+      value: _selectedExercise,
+      decoration: InputDecoration(
+        labelText: 'Select Exercise',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      hint: const Text('Choose an exercise'),
+      isExpanded: true,
+      items: _exercises.map((exercise) {
+        return DropdownMenuItem<Map<String, dynamic>>(
+          value: exercise,
+          child: Text(
+            exercise['exer_name'] ?? 'Unknown Exercise',
+            style: const TextStyle(fontSize: 16),
+          ),
+        );
+      }).toList(),
+      onChanged: (Map<String, dynamic>? value) {
+        setState(() {
+          _selectedExercise = value;
+        });
+        widget.onExerciseSelected(value);
+      },
+    );
   }
 }
