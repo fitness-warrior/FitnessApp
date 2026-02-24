@@ -14,6 +14,17 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   bool _loading = false;
   String? _error;
   final TextEditingController _searchController = TextEditingController();
+  String? _selectedArea;
+
+  final List<String> _bodyAreas = [
+    'chest',
+    'back',
+    'legs',
+    'arms',
+    'shoulders',
+    'core',
+    'full body',
+  ];
 
   @override
   void initState() {
@@ -38,6 +49,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
         name: _searchController.text.trim().isEmpty
             ? null
             : _searchController.text.trim(),
+        area: _selectedArea,
       );
       setState(() {
         _exercises = exercises;
@@ -56,6 +68,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     return Column(
       children: [
         _buildSearchBar(),
+        _buildAreaFilter(),
         Expanded(child: _buildExerciseList()),
       ],
     );
@@ -82,6 +95,34 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
         ),
         onChanged: (_) => setState(() {}),
         onSubmitted: (_) => _loadExercises(),
+      ),
+    );
+  }
+
+  Widget _buildAreaFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: DropdownButtonFormField<String>(
+        value: _selectedArea,
+        decoration: const InputDecoration(
+          labelText: 'Body Area',
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        items: [
+          const DropdownMenuItem<String>(
+            value: null,
+            child: Text('All Areas'),
+          ),
+          ..._bodyAreas.map((area) => DropdownMenuItem(
+                value: area,
+                child: Text(area),
+              )),
+        ],
+        onChanged: (value) {
+          setState(() => _selectedArea = value);
+          _loadExercises();
+        },
       ),
     );
   }
