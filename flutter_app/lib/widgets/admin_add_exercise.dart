@@ -6,6 +6,7 @@ class AdminAddExercise extends StatefulWidget {
   const AdminAddExercise({Key? key}) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _AdminAddExerciseState createState() => _AdminAddExerciseState();
 }
 
@@ -71,38 +72,38 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Admin: Add Exercise')),
+      appBar: AppBar(title: const Text('Admin: Add Exercise')),
       body: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
               TextFormField(
                 controller: _nameCtl,
-                decoration: InputDecoration(labelText: 'Name'),
+                decoration: const InputDecoration(labelText: 'Name'),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _areaCtl,
-                decoration: InputDecoration(labelText: 'Body area'),
+                decoration: const InputDecoration(labelText: 'Body area'),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _type,
+                initialValue: _type,
                 items: ['strength', 'cardio']
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
                 onChanged: (v) => setState(() => _type = v ?? 'strength'),
-                decoration: InputDecoration(labelText: 'Type'),
+                decoration: const InputDecoration(labelText: 'Type'),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _equip,
+                initialValue: _equip,
                 items: [
                   'Bodyweight Only',
                   'Dumbbells',
@@ -115,29 +116,29 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
                     .toList(),
                 onChanged: (v) =>
                     setState(() => _equip = v ?? 'Bodyweight Only'),
-                decoration: InputDecoration(labelText: 'Equipment'),
+                decoration: const InputDecoration(labelText: 'Equipment'),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _descCtl,
-                decoration: InputDecoration(labelText: 'Description'),
+                decoration: const InputDecoration(labelText: 'Description'),
                 minLines: 2,
                 maxLines: 6,
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _vidCtl,
-                decoration: InputDecoration(labelText: 'Video URL (optional)'),
+                decoration: const InputDecoration(labelText: 'Video URL (optional)'),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _saving ? null : _submit,
                 child: _saving
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text('Create'),
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Create'),
               ),
               if (_result != null) ...[
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(_result!),
               ]
             ],
