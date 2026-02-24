@@ -13,11 +13,18 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   List<Map<String, dynamic>> _exercises = [];
   bool _loading = false;
   String? _error;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadExercises();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadExercises() async {
@@ -27,7 +34,11 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     });
 
     try {
-      final exercises = await ExerciseService.listExercises();
+      final exercises = await ExerciseService.listExercises(
+        name: _searchController.text.trim().isEmpty
+            ? null
+            : _searchController.text.trim(),
+      );
       setState(() {
         _exercises = exercises;
         _loading = false;
@@ -42,6 +53,45 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _buildSearchBar(),
+        Expanded(child: _buildExerciseList()),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          labelText: 'Search exercises',
+          prefixIcon: const Icon(Icons.search),
+          border: const OutlineInputBorder(),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    _loadExercises();
+                  },
+                )
+              : null,
+        ),
+        onChanged: (_) => setState(() {}),
+        onSubmitted: (_) => _loadExercises(),
+      ),
+    );
+  }
+
+  Widget _buildExerciseList() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+  Widget _buildExerciseList() {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
