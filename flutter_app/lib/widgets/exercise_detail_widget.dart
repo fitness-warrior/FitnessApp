@@ -4,7 +4,8 @@ import '../services/exercise_service.dart';
 
 class ExerciseDetailWidget extends StatefulWidget {
   final int exerId;
-  const ExerciseDetailWidget({Key? key, required this.exerId}) : super(key: key);
+  const ExerciseDetailWidget({Key? key, required this.exerId})
+      : super(key: key);
 
   @override
   _ExerciseDetailWidgetState createState() => _ExerciseDetailWidgetState();
@@ -41,7 +42,8 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open video URL')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Could not open video URL')));
     }
   }
 
@@ -67,16 +69,12 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
           Text(title, style: Theme.of(context).textTheme.headline6),
           SizedBox(height: 8),
           Row(children: [
-            if (area.isNotEmpty)
-              Chip(label: Text(area)),
+            if (area.isNotEmpty) Chip(label: Text(area)),
             SizedBox(width: 8),
-            if (type.isNotEmpty)
-              Chip(label: Text(type)),
+            if (type.isNotEmpty) Chip(label: Text(type)),
             SizedBox(width: 8),
-            if (equip.isNotEmpty)
-              Chip(label: Text(equip)),
+            if (equip.isNotEmpty) Chip(label: Text(equip)),
           ]),
-
           SizedBox(height: 12),
           Card(
             child: Padding(
@@ -84,7 +82,6 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
               child: Text(desc),
             ),
           ),
-
           SizedBox(height: 12),
           if (plan != null) ...[
             Text('Plan', style: Theme.of(context).textTheme.subtitle1),
@@ -96,7 +93,6 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
             ]),
             SizedBox(height: 12),
           ],
-
           Text('Video', style: Theme.of(context).textTheme.subtitle1),
           SizedBox(height: 8),
           if (vid != null && vid.isNotEmpty)
