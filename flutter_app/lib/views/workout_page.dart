@@ -10,6 +10,7 @@ class WorkoutPage extends StatefulWidget {
 
 class _WorkoutPageState extends State<WorkoutPage> {
   final List<Map<String, dynamic>> _workoutExercises = [];
+  final Map<int, List<Map<String, TextEditingController>>> _setControllers = {};
   Map<String, dynamic>? _placeholderExercise;
   bool _isLoadingPlaceholder = true;
 
@@ -48,6 +49,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
     if (_placeholderExercise == null) return;
     setState(() {
       _workoutExercises.add(Map.from(_placeholderExercise!));
+      // Start each exercise with one empty set
+      _setControllers[_workoutExercises.length - 1] = [
+        {'kg': TextEditingController(), 'reps': TextEditingController()},
+      ];
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -59,9 +64,45 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _removeExercise(int index) {
+    // Dispose controllers for this exercise
+    if (_setControllers.containsKey(index)) {
+      for (final set in _setControllers[index]!) {
+        set['kg']!.dispose();
+        set['reps']!.dispose();
+      }
+      _setControllers.remove(index);
+    }
     setState(() {
       _workoutExercises.removeAt(index);
     });
+  }
+
+  void _addSet(int exerciseIndex) {
+    setState(() {
+      _setControllers[exerciseIndex]?.add(
+        {'kg': TextEditingController(), 'reps': TextEditingController()},
+      );
+    });
+  }
+
+  void _removeSet(int exerciseIndex, int setIndex) {
+    if ((_setControllers[exerciseIndex]?.length ?? 0) <= 1) return;
+    setState(() {
+      final set = _setControllers[exerciseIndex]!.removeAt(setIndex);
+      set['kg']!.dispose();
+      set['reps']!.dispose();
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final sets in _setControllers.values) {
+      for (final set in sets) {
+        set['kg']!.dispose();
+        set['reps']!.dispose();
+      }
+    }
+    super.dispose();
   }
 
   @override
@@ -137,10 +178,113 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () => _removeExercise(index),
                     ),
-                    children: const [
+                    children: [
                       Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text('Sets coming in next step...'),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Sets header row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Sets',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add_circle,
+                                      color: Colors.green),
+                                  tooltip: 'Add Set',
+                                  onPressed: () => _addSet(index),
+                                ),
+                              ],
+                            ),
+                            // One row per set
+                            if (_setControllers[index] != null)
+                              ...List.generate(
+                                _setControllers[index]!.length,
+                                (setIndex) {
+                                  final ctrl =
+                                      _setControllers[index]![setIndex];
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          '${setIndex + 1}.',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        // KG field
+                                        SizedBox(
+                                          width: 80,
+                                          child: TextField(
+                                            controller: ctrl['kg'],
+                                            keyboardType: TextInputType.number,
+                                            decoration: InputDecoration(
+                                              labelText: 'KG',
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 8,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        // REPS field
+                                        SizedBox(
+                                          width: 80,
+                                          child: TextField(
+                                            controller: ctrl['reps'],
+                                            keyboardType: TextInputType.number,
+                                            decoration: InputDecoration(
+                                              labelText: 'REPS',
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 8,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        // Remove set button
+                                        IconButton(
+                                          icon: const Icon(Icons.remove_circle,
+                                              color: Colors.red),
+                                          tooltip: 'Remove Set',
+                                          onPressed: (_setControllers[index]
+                                                          ?.length ??
+                                                      0) >
+                                                  1
+                                              ? () =>
+                                                  _removeSet(index, setIndex)
+                                              : null,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
