@@ -266,19 +266,88 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     }
 
     if (_exercises.isEmpty) {
-      return const Center(child: Text('No exercises found'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.fitness_center, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              'No exercises found',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            const Text('Try adjusting your filters'),
+          ],
+        ),
+      );
     }
 
-    return ListView.builder(
-      itemCount: _exercises.length,
-      itemBuilder: (context, index) {
-        final exercise = _exercises[index];
-        return ListTile(
-          title: Text(exercise['exer_name'] ?? 'Unknown'),
-          subtitle: Text(exercise['exer_body_area'] ?? 'N/A'),
-          trailing: const Icon(Icons.chevron_right),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: _loadExercises,
+      child: ListView.builder(
+        itemCount: _exercises.length,
+        itemBuilder: (context, index) {
+          final exercise = _exercises[index];
+          return _buildExerciseCard(exercise);
+        },
+      ),
+    );
+  }
+
+  Widget _buildExerciseCard(Map<String, dynamic> exercise) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: exercise['exer_type'] == 'strength'
+              ? Colors.blue
+              : Colors.orange,
+          child: Icon(
+            exercise['exer_type'] == 'strength'
+                ? Icons.fitness_center
+                : Icons.directions_run,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          exercise['exer_name'] ?? 'Unknown',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.accessibility_new, size: 14, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(exercise['exer_body_area'] ?? 'N/A'),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Icon(Icons.build, size: 14, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(exercise['exer_equip'] ?? 'N/A'),
+              ],
+            ),
+          ],
+        ),
+        isThreeLine: true,
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          // TODO: Navigate to exercise detail
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('View ${exercise['exer_name']} details'),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        },
+      ),
     );
   }
 }
