@@ -56,6 +56,9 @@ def list_exercises():
     cur.close()
 
     results = [row_to_exercise(r) for r in rows]
+    # commit only when not running tests to allow transactional isolation in tests
+    if not app.config.get('TESTING'):
+        CONN.commit()
     return jsonify(results)
 
 
@@ -106,7 +109,8 @@ def create_exercise():
         data.get('exer_equip'),
     ))
     new_id = cur.fetchone()[0]
-    CONN.commit()
+    if not app.config.get('TESTING'):
+        CONN.commit()
     cur.close()
     return jsonify({'exer_id': new_id}), 201
 
@@ -131,7 +135,8 @@ def create_plan_exercise():
         data.get('sets'),
     ))
     new_id = cur.fetchone()[0]
-    CONN.commit()
+    if not app.config.get('TESTING'):
+        CONN.commit()
     cur.close()
     return jsonify({'plan_exer_id': new_id}), 201
 

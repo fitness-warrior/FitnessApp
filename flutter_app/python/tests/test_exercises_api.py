@@ -15,6 +15,24 @@ def cursor():
     yield cur
     cur.close()
 
+
+@pytest.fixture(autouse=True)
+def transactional(cursor):
+    """Create a savepoint before each test and rollback after to keep DB state isolated.
+
+    Requires the app to set `app.config['TESTING'] = True` so handlers avoid committing.
+    """
+    try:
+        cursor.execute("SAVEPOINT test_sp")
+    except Exception:
+        pass
+    yield
+    try:
+        cursor.execute("ROLLBACK TO SAVEPOINT test_sp")
+        cursor.execute("RELEASE SAVEPOINT test_sp")
+    except Exception:
+        pass
+
 def test_create_and_get_exercise(client, cursor):
     # Create a unique exercise
     payload = {
