@@ -19,6 +19,31 @@ class _ExerciseDropdownState extends State<ExerciseDropdown> {
   bool _isLoading = true;
 
   @override
+  void initState() {
+    super.initState();
+    _loadExercises();
+  }
+
+  Future<void> _loadExercises() async {
+    try {
+      final exercises = await ExerciseDb.instance.listExercises();
+      setState(() {
+        _exercises = exercises;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading exercises: $e')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return const Placeholder();
   }
