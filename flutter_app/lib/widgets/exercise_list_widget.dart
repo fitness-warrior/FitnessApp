@@ -15,6 +15,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   String? _error;
   final TextEditingController _searchController = TextEditingController();
   String? _selectedArea;
+  String? _selectedType;
+  List<String> _selectedEquipment = [];
 
   final List<String> _bodyAreas = [
     'chest',
@@ -24,6 +26,17 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     'shoulders',
     'core',
     'full body',
+  ];
+
+  final List<String> _types = ['strength', 'cardio'];
+
+  final List<String> _equipment = [
+    'Bodyweight Only',
+    'Dumbbells',
+    'Barbells',
+    'Resistance Bands',
+    'Gym Machines',
+    'Cardio Machines',
   ];
 
   @override
@@ -50,6 +63,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
             ? null
             : _searchController.text.trim(),
         area: _selectedArea,
+        type: _selectedType,
+        equipment: _selectedEquipment.isEmpty ? null : _selectedEquipment,
       );
       setState(() {
         _exercises = exercises;
@@ -61,6 +76,16 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
         _loading = false;
       });
     }
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _selectedArea = null;
+      _selectedType = null;
+      _selectedEquipment.clear();
+      _searchController.clear();
+    });
+    _loadExercises();
   }
 
   @override
