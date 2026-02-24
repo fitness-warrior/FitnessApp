@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitness_app_flutter/widgets/questionnaire/questionnaire_widget.dart';
+import 'views/workout_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,10 +18,8 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Onboarding Questionnaire')),
-        body: const SafeArea(child: QuestionnairePage()),
-      ),
+      home: const WorkoutPage(),
     );
   }
 }
+
