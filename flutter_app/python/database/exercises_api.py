@@ -43,6 +43,29 @@ def health():
 def metrics():
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
+
+@app.after_request
+def after_request(response):
+    # observe request duration and increment metrics
+    try:
+        start = getattr(request, '_start_time', None)
+        duration = (time.time() - start) if start else 0.0
+        endpoint = request.path
+        REQ_LATENCY.labels(method=request.method, endpoint=endpoint).observe(duration)
+        REQ_COUNTER.labels(method=request.method, endpoint=endpoint, http_status=str(response.status_code)).inc()
+        logger.info('request end', extra={'method': request.method, 'path': request.path, 'status': response.status_code, 'duration': duration})
+    except Exception as e:
+        logger.exception('error in after_request: %s', e)
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log exception, increment error metric, and return JSON 500
+    ERR_COUNTER.inc()
+    logger.exception('Unhandled exception: %s', e)
+    return jsonify({'error': 'internal server error'}), 500
+
 # Helper to convert DB rows to dicts for exercise list/detail
 def row_to_exercise(row):
     # row = (exer_id, exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip, plan_exer_set, plan_exer_amount)
@@ -99,14 +122,7 @@ def list_exercises():
     # commit only when not running tests to allow transactional isolation in tests
     if not app.config.get('TESTING'):
         CONN.commit()
-    # record metric
-    try:
-        for r in rows:
-            pass
-    except Exception:
-        pass
-    REQ_COUNTER.labels(method=request.method, endpoint='/api/exercises', http_status='200').inc()
-    logger.info('request end', extra={'count': len(results)})
+    # results returned; metrics and request logging handled in after_request
     return jsonify(results)
 
 
@@ -124,9 +140,7 @@ def get_exercise(exer_id):
     row = cur.fetchone()
     cur.close()
     if not row:
-        REQ_COUNTER.labels(method=request.method, endpoint='/api/exercises/<id>', http_status='404').inc()
         abort(404, description='Exercise not found')
-    REQ_COUNTER.labels(method=request.method, endpoint='/api/exercises/<id>', http_status='200').inc()
     logger.info('fetched exercise', extra={'exer_id': exer_id})
     return jsonify(row_to_exercise(row))
 
@@ -163,7 +177,6 @@ def create_exercise():
     if not app.config.get('TESTING'):
         CONN.commit()
     cur.close()
-    REQ_COUNTER.labels(method=request.method, endpoint='/api/exercises', http_status='201').inc()
     logger.info('created exercise', extra={'exer_id': new_id, 'name': data.get('exer_name')})
     return jsonify({'exer_id': new_id}), 201
 
@@ -196,26 +209,4 @@ def create_plan_exercise():
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
-
-
-@app.after_request
-def after_request(response):
-    # observe request duration and increment metrics
-    try:
-        start = getattr(request, '_start_time', None)
-        duration = (time.time() - start) if start else 0.0
-        endpoint = request.path
-        REQ_LATENCY.labels(method=request.method, endpoint=endpoint).observe(duration)
-        REQ_COUNTER.labels(method=request.method, endpoint=endpoint, http_status=str(response.status_code)).inc()
-        logger.info('request end', extra={'method': request.method, 'path': request.path, 'status': response.status_code, 'duration': duration})
-    except Exception as e:
-        logger.exception('error in after_request: %s', e)
-    return response
-
-
-@app.errorhandler(Exception)
-def handle_exception(e):
-    # Log exception, increment error metric, and return JSON 500
-    ERR_COUNTER.inc()
-    logger.exception('Unhandled exception: %s', e)
-    return jsonify({'error': 'internal server error'}), 500
+ 

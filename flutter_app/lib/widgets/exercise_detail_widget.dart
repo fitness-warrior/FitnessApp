@@ -49,9 +49,9 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Center(child: CircularProgressIndicator());
+    if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) return Center(child: Text('Error: $_error'));
-    if (_exercise == null) return Center(child: Text('No data'));
+    if (_exercise == null) return const Center(child: Text('No data'));
 
     final title = _exercise!['exer_name'] ?? 'Exercise';
     final area = _exercise!['exer_body_area'] ?? '';
@@ -62,47 +62,48 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
     final plan = _exercise!['plan'];
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.headline6),
-          SizedBox(height: 8),
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
           Row(children: [
             if (area.isNotEmpty) Chip(label: Text(area)),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             if (type.isNotEmpty) Chip(label: Text(type)),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             if (equip.isNotEmpty) Chip(label: Text(equip)),
           ]),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               child: Text(desc),
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           if (plan != null) ...[
-            Text('Plan', style: Theme.of(context).textTheme.subtitle1),
-            SizedBox(height: 6),
+            Text('Plan', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 6),
             Row(children: [
               Text('Sets: ${plan['sets'] ?? '-'}'),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
               Text('Reps: ${plan['reps'] ?? '-'}'),
             ]),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
           ],
-          Text('Video', style: Theme.of(context).textTheme.subtitle1),
-          SizedBox(height: 8),
+          Text('Video', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
           if (vid != null && vid.isNotEmpty)
             ElevatedButton.icon(
-              icon: Icon(Icons.play_arrow),
-              label: Text('Open video'),
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Open video'),
               onPressed: () => _openVideo(vid),
             )
           else
-            Text('No video available', style: TextStyle(color: Colors.grey)),
+            const Text('No video available',
+                style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
