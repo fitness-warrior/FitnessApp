@@ -23,7 +23,8 @@ class ExerciseService {
     if (equipment != null && equipment.isNotEmpty) {
       final query = Map<String, String>.from(uri.queryParameters);
       for (var i = 0; i < equipment.length; i++) {
-        query['equipment'] = equipment[i]; // repeated key supported by http package
+        query['equipment'] =
+            equipment[i]; // repeated key supported by http package
       }
       finalUri = uri.replace(queryParameters: query);
     }
