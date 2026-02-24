@@ -166,6 +166,12 @@ CREATE TABLE IF NOT EXISTS rewards (
     reward_type reward_type Not NULL,
     description TEXT
     );
+        
+        -- Indexes to speed up exercise queries and filtering
+        CREATE INDEX IF NOT EXISTS idx_exersise_name ON exersise (exer_name);
+        CREATE INDEX IF NOT EXISTS idx_exersise_body_area ON exersise (exer_body_area);
+        CREATE INDEX IF NOT EXISTS idx_exersise_equip ON exersise (exer_equip);
+
         """)
         self.conn.commit()
     
