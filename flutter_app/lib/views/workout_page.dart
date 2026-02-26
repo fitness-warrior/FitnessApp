@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
+import '../dialogs/finish_workout_dialog.dart';
+import '../services/workout_service.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({Key? key}) : super(key: key);
@@ -141,6 +143,24 @@ class _WorkoutPageState extends State<WorkoutPage> {
         );
       }
     }
+  }
+
+  void _openFinishDialog() {
+    if (_workoutExercises.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => FinishWorkoutDialog(
+        exercises: _workoutExercises,
+        setControllers: _setControllers,
+        onSuccess: (result) {
+          setState(() {
+            _workoutExercises.clear();
+            _setControllers.clear();
+          });
+        },
+      ),
+    );
   }
 
   @override
@@ -428,11 +448,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
             ),
       floatingActionButton: _workoutExercises.isNotEmpty
           ? FloatingActionButton(
-              onPressed: _isLoadingPlaceholder ? null : _addExercise,
-              tooltip: 'Add Exercise',
-              child: const Icon(Icons.add),
+              onPressed: _openFinishDialog,
+              backgroundColor: Colors.green,
+              tooltip: 'Finish Workout',
+              child: const Icon(Icons.check_circle),
             )
           : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
