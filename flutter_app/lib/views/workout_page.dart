@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/exercise_db.dart';
+import '../dialogs/excercise_search_dialog.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({Key? key}) : super(key: key);
@@ -94,6 +95,24 @@ class _WorkoutPageState extends State<WorkoutPage> {
     });
   }
 
+  void _openSearchDialog() async {
+    final selectedExercise = await showDialog(
+      context: context,
+      builder: (context) => ExerciseSearchDialog(
+        onExerciseSelected: (exercise) {
+          Navigator.pop(context, exercise);
+        },
+      ),
+    );
+
+    if (selectedExercise != null) {
+      setState(() {
+        _placeholderExercise = selectedExercise;
+      });
+      _addExercise();
+    }
+  }
+
   @override
   void dispose() {
     for (final sets in _setControllers.values) {
@@ -111,6 +130,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
       appBar: AppBar(
         title: const Text('My Workout'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Search Exercises',
+            onPressed: _openSearchDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.add_circle),
             tooltip: 'Add Exercise',
