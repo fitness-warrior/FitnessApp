@@ -4,6 +4,7 @@ import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
+import '../widgets/common/header.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({Key? key}) : super(key: key);
@@ -137,7 +138,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Added ${exercises.length} exercises to your workout!'),
+            content:
+                Text('Added ${exercises.length} exercises to your workout!'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -178,7 +180,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Workout'),
+        title: Row(
+          children: [
+            HeaderWithDropdown(
+              title: '',
+              onMenuSelected: (value) {
+                // Handle menu selection here
+              },
+            ),
+            const SizedBox(width: 8),
+            const Text('My Workout'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
