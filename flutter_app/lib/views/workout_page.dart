@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
+import '../dialogs/generate_workout_dialog.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({Key? key}) : super(key: key);
@@ -113,6 +114,35 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
+  void _openGenerateDialog() async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => GenerateWorkoutDialog(
+        onGenerate: (count, exercises) {
+          Navigator.pop(context, {'count': count, 'exercises': exercises});
+        },
+      ),
+    );
+
+    if (result != null) {
+      final exercises = result['exercises'] as List<Map<String, dynamic>>;
+      for (final exercise in exercises) {
+        setState(() {
+          _placeholderExercise = exercise;
+        });
+        _addExercise();
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added ${exercises.length} exercises to your workout!'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     for (final sets in _setControllers.values) {
@@ -134,6 +164,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
             icon: const Icon(Icons.search),
             tooltip: 'Search Exercises',
             onPressed: _openSearchDialog,
+          ),
+          IconButton(
+            icon: const Icon(Icons.shuffle),
+            tooltip: 'Generate Workout',
+            onPressed: _openGenerateDialog,
           ),
           IconButton(
             icon: const Icon(Icons.add_circle),
