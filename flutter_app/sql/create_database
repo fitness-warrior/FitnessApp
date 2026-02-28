@@ -392,3 +392,43 @@ INSERT INTO food (food_name, food_type, food_calories) VALUES
 ('Crackers', 'snack', 120.0),
 ('Chips', 'snack', 152.0),
 ('Pretzels', 'snack', 108.0);
+
+INSERT INTO collection_foods (collection_id, food_id) 
+SELECT 1, food_id FROM food 
+WHERE food_type IN ('vegetable', 'fruit', 'carbs') 
+AND food_name IN ('Rice', 'Broccoli', 'Spinach', 'Oats', 'Quinoa', 'Brown Rice', 
+                  'Sweet Potato', 'Carrots', 'Kale', 'Bell Peppers', 'Tomatoes', 
+                  'Cucumber', 'Cauliflower', 'Green Beans', 'Lettuce', 
+                  'Apple', 'Banana', 'Orange', 'Strawberries', 'Blueberries', 
+                  'Grapes', 'Watermelon', 'Mango', 'Avocado', 'Almonds', 
+                  'Walnuts', 'Cashews', 'Tofu');
+
+INSERT INTO collection_foods (collection_id, food_id) 
+SELECT 2, food_id FROM food 
+WHERE food_type IN ('vegetable', 'fruit', 'carbs', 'fat') 
+OR food_name IN ('Eggs', 'Greek Yogurt', 'Cottage Cheese', 'Cheese', 'Tofu');
+
+INSERT INTO collection_foods (collection_id, food_id) 
+SELECT 3, food_id FROM food 
+WHERE food_type = 'protein';
+
+INSERT INTO collection_foods (collection_id, food_id) 
+SELECT 4, food_id FROM food 
+WHERE food_type IN ('protein', 'vegetable', 'fat');
+
+INSERT INTO collection_foods (collection_id, food_id) 
+SELECT 5, food_id FROM food 
+WHERE food_type IN ('protein', 'fat')
+OR food_name IN ('Broccoli', 'Spinach', 'Cauliflower', 'Avocado', 'Kale');
+
+INSERT INTO collection_foods (collection_id, food_id) 
+SELECT 6, food_id FROM food 
+WHERE food_calories < 100;
+
+INSERT INTO collection_foods (collection_id, food_id) 
+SELECT 7, food_id FROM food 
+WHERE food_type IN ('protein', 'carbs');
+
+INSERT INTO collection_foods (collection_id, food_id) 
+SELECT 8, food_id FROM food
+WHERE food_type = 'snack';
