@@ -328,3 +328,67 @@ INSERT INTO meal_collection (collection_name, collection_type, description) VALU
 ('Low Calorie', 'low_calorie', 'Meals under 300 calories for weight loss'),
 ('Post Workout', 'post_workout', 'Recovery meals with protein and carbs'),
 ('Quick Snacks', 'snacks', 'Fast and easy snack options');
+
+--Run this before inserting additional food data;
+ALTER TABLE food ALTER COLUMN food_name TYPE VARCHAR(50);
+
+INSERT INTO food (food_name, food_type, food_calories) VALUES
+-- Proteins
+('Beef', 'protein', 250.0),
+('Tuna', 'protein', 132.0),
+('Turkey', 'protein', 135.0),
+('Tofu', 'protein', 76.0),
+('Greek Yogurt', 'protein', 100.0),
+('Cottage Cheese', 'protein', 98.0),
+('Protein Shake', 'protein', 120.0),
+('Pork Chop', 'protein', 231.0),
+
+-- Carbs
+('Quinoa', 'carbs', 222.0),
+('Brown Rice', 'carbs', 218.0),
+('Sweet Potato', 'carbs', 112.0),
+('White Bread', 'carbs', 265.0),
+('Whole Wheat Bread', 'carbs', 247.0),
+('Bagel', 'carbs', 289.0),
+('Couscous', 'carbs', 176.0),
+('Cereal', 'carbs', 379.0),
+
+-- Vegetables
+('Carrots', 'vegetable', 41.0),
+('Kale', 'vegetable', 33.0),
+('Bell Peppers', 'vegetable', 31.0),
+('Tomatoes', 'vegetable', 18.0),
+('Cucumber', 'vegetable', 16.0),
+('Cauliflower', 'vegetable', 25.0),
+('Green Beans', 'vegetable', 31.0),
+('Lettuce', 'vegetable', 15.0),
+
+-- Fruits
+('Apple', 'fruit', 95.0),
+('Banana', 'fruit', 105.0),
+('Orange', 'fruit', 62.0),
+('Strawberries', 'fruit', 49.0),
+('Blueberries', 'fruit', 84.0),
+('Grapes', 'fruit', 104.0),
+('Watermelon', 'fruit', 86.0),
+('Mango', 'fruit', 135.0),
+
+-- Fats/Oils
+('Avocado', 'fat', 240.0),
+('Olive Oil', 'fat', 119.0),
+('Almonds', 'fat', 164.0),
+('Peanut Butter', 'fat', 188.0),
+('Walnuts', 'fat', 185.0),
+('Cheese', 'fat', 113.0),
+('Butter', 'fat', 102.0),
+('Cashews', 'fat', 157.0),
+
+-- Snacks
+('Granola Bar', 'snack', 140.0),
+('Protein Bar', 'snack', 200.0),
+('Trail Mix', 'snack', 173.0),
+('Popcorn', 'snack', 55.0),
+('Rice Cakes', 'snack', 35.0),
+('Crackers', 'snack', 120.0),
+('Chips', 'snack', 152.0),
+('Pretzels', 'snack', 108.0);
