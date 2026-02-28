@@ -130,6 +130,20 @@ CREATE TABLE IF NOT EXISTS rewards (
     reward_type reward_type Not NULL,
     description TEXT
     );
+--Added two new tables for meal collection page
+CREATE TABLE IF NOT EXISTS meal_collection (
+    collection_id SERIAL PRIMARY KEY,
+    collection_name VARCHAR(50) NOT NULL,
+    collection_type VARCHAR(20) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS collection_foods (
+    collection_id INT NOT NULL REFERENCES meal_collection(collection_id),
+    food_id INT NOT NULL REFERENCES food(food_id),
+    PRIMARY KEY (collection_id, food_id)
+);
 
 
 
