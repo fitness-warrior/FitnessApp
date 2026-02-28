@@ -33,13 +33,13 @@ def seed():
     inserted = []
     for ex in EXERCISES:
         # check if exercise exists by name
-        cur.execute('SELECT exer_id FROM exersise WHERE exer_name = %s', (ex['exer_name'],))
+        cur.execute('SELECT exer_id FROM exercise WHERE exer_name = %s', (ex['exer_name'],))
         row = cur.fetchone()
         if row:
             inserted.append((ex['exer_name'], row[0], False))
             continue
         cur.execute('''
-            INSERT INTO exersise (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip)
+            INSERT INTO exercise (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip)
             VALUES (%s, %s, %s, %s, %s, %s) RETURNING exer_id
         ''', (
             ex['exer_name'], ex['exer_body_area'], ex['exer_type'], ex['exer_descrip'], ex['exer_vid'], ex['exer_equip']

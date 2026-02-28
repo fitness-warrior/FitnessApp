@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS body_metrics (
     );
 
 
-CREATE TABLE IF NOT EXISTS exersise (
+CREATE TABLE IF NOT EXISTS exercise (
     exer_id SERIAL PRIMARY KEY,
     exer_name VARCHAR (20) Not NULL,
     exer_body_area VARCHAR (20) Not Null,
@@ -101,10 +101,10 @@ CREATE TABLE IF NOT EXISTS work_plan (
     work_day DATE
     );
 
-CREATE TABLE IF NOT EXISTS plan_exersise (
+CREATE TABLE IF NOT EXISTS plan_exercise (
     plan_exer_id SERIAL PRIMARY KEY,
     work_id INT NOT NULL REFERENCES work_plan(work_id),
-    exer_id INT NOT NULL REFERENCES exersise(exer_id),
+    exer_id INT NOT NULL REFERENCES exercise(exer_id),
     plan_exer_amount INT NOT NULL,
     plan_exer_set INT NOT NULL,
     plan_exer_PB INT, --Personal best
@@ -168,9 +168,9 @@ CREATE TABLE IF NOT EXISTS rewards (
     );
         
         -- Indexes to speed up exercise queries and filtering
-        CREATE INDEX IF NOT EXISTS idx_exersise_name ON exersise (exer_name);
-        CREATE INDEX IF NOT EXISTS idx_exersise_body_area ON exersise (exer_body_area);
-        CREATE INDEX IF NOT EXISTS idx_exersise_equip ON exersise (exer_equip);
+        CREATE INDEX IF NOT EXISTS idx_exercise_name ON exercise (exer_name);
+        CREATE INDEX IF NOT EXISTS idx_exercise_body_area ON exercise (exer_body_area);
+        CREATE INDEX IF NOT EXISTS idx_exercise_equip ON exercise (exer_equip);
 
         """)
         self.conn.commit()
@@ -259,7 +259,7 @@ INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, b
 (7, 78.0, 75.0, 178.0, 27, 'male', 'Fat Loss'),
 (8, 55.0, 57.0, 162.0, 26, 'female', 'General Fitness');
 
-INSERT INTO exersise (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip) VALUES
+INSERT INTO exercise (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip) VALUES
 ('Push-ups', 'chest', 'strength', 'Classic upper body exercise', 'https://youtube.com/pushups', 'Bodyweight Only'),
 ('Squats', 'legs', 'strength', 'Lower body compound movement', 'https://youtube.com/squats', 'Bodyweight Only'),
 ('Running', 'full body', 'cardio', 'Outdoor cardio exercise', 'https://youtube.com/running', 'Dumbbells'),
@@ -289,7 +289,7 @@ INSERT INTO meal_plan (body_id, meal_day, meal_name) VALUES
 (7, '2026-02-20 08:00:00', 'Protein Breakfast'),
 (8, '2026-02-20 12:00:00', 'Healthy Lunch');
 
-INSERT INTO plan_exersise (work_id, exer_id, plan_exer_amount, plan_exer_set, plan_exer_PB, plan_exer_PB_first) VALUES
+INSERT INTO plan_exercise (work_id, exer_id, plan_exer_amount, plan_exer_set, plan_exer_PB, plan_exer_PB_first) VALUES
 (1, 1, 20, 2, 25, 15),
 (1, 4, 10, 3, 12, 8),
 (2, 2, 15, 2, 20, 10),

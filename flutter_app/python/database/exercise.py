@@ -15,8 +15,8 @@ class ExerciseSelection:
         SELECT e.exer_id, e.exer_name, e.exer_body_area, e.exer_type,
             e.exer_descrip, e.exer_vid, e.exer_equip,
             pe.plan_exer_set, pe.plan_exer_amount
-        FROM exersise AS e
-        JOIN plan_exersise AS pe ON e.exer_id = pe.exer_id
+        FROM exercise AS e
+        JOIN plan_exercise AS pe ON e.exer_id = pe.exer_id
         WHERE 1=1
         """
 
