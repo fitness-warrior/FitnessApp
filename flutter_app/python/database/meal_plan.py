@@ -49,3 +49,40 @@ class MealPlanSelection:
         
         self.cur.execute(query, tuple(params))
         return self.cur.fetchall()
+    
+def test():
+    selector = MealPlanSelection(CONN)
+    
+    print("=== MEAL PLAN SYSTEM TEST ===\n")
+    
+    # Test 1: Show all collections
+    print("1. All Collections:")
+    collections = selector.get_collections()
+    for c in collections:
+        print(f"   [{c[0]}] {c[1]}")
+    print()
+    
+    # Test 2: Foods in Vegan collection (ID 1)
+    print("2. Vegan Foods (first 5):")
+    vegan = selector.get_foods_in_collection(1)
+    for food in vegan[:5]:
+        print(f"   - {food[1]} ({food[3]} cal)")
+    print(f"   Total: {len(vegan)} foods\n")
+    
+    # Test 3: Filter within High Protein collection (ID 3)
+    print("3. High Protein under 150 calories:")
+    lean = selector.filter_foods(collection_id=3, max_calories=150)
+    for food in lean:
+        print(f"   - {food[1]} ({food[3]} cal)")
+    print()
+    
+    # Test 4: Search across all foods
+    print("4. Search 'chicken' (all collections):")
+    chicken = selector.filter_foods(search_name='chicken')
+    for food in chicken:
+        print(f"   - {food[1]} ({food[2]}, {food[3]} cal)")
+    print()
+
+
+if __name__ == "__main__":
+    test()
