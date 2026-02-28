@@ -1,33 +1,8 @@
+SET search_path TO public;
+
+---------------- ENUM TYPES ----------------
+
 CREATE TYPE type AS ENUM ('a','b','c');
-
-CREATE TABLE IF NOT EXISTS game_char (
-    game_char_id SERIAL PRIMARY KEY,
-    game_char_level INT NOT NULL,
-    game_char_colour VARCHAR(20) NOT NULL,
-    game_char_type type NOT NULL,
-    game_char_hp INT NOT NULL,
-    game_char_attack INT NOT NULL,
-    game_char_speed INT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS users (
-    user_id SERIAL PRIMARY KEY,
-    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
-    user_name VARCHAR(40) NOT NULL,
-    user_surname VARCHAR(40) NOT NULL,
-    user_email VARCHAR(40) UNIQUE NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS equipment (
-    equip_id SERIAL PRIMARY KEY,
-    equipment VARCHAR(20) NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS user_equip (
-    user_id INT NOT NULL REFERENCES users(user_id),
-    equip_id INT NOT NULL REFERENCES equipment(equip_id),
-    PRIMARY KEY (user_id, equip_id)
-);
 
 CREATE TYPE gender AS ENUM ('male','female');
 
@@ -40,18 +15,7 @@ CREATE TYPE goal AS ENUM (
 'Injury Rehabilitation'
 );
 
-CREATE TABLE IF NOT EXISTS body_metrics (
-    body_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(user_id),
-    body_weight FLOAT NOT NULL,
-    body_past_weight FLOAT,
-    body_height FLOAT NOT NULL,
-    body_age INT NOT NULL,
-    body_gender gender NOT NULL,
-    body_goal goal NOT NULL
-);
-
-CREATE TYPE focuse AS ENUM ('strength','cardio');
+CREATE TYPE focus AS ENUM ('strength','cardio');
 
 CREATE TYPE equip AS ENUM (
 'Bodyweight Only',
@@ -62,19 +26,73 @@ CREATE TYPE equip AS ENUM (
 'Cardio Machines'
 );
 
-CREATE TABLE IF NOT EXISTS exercise (
+CREATE TYPE reward_type AS ENUM ('item','currency','experience');
+
+---------------- GAME CHARACTER ----------------
+
+CREATE TABLE game_char (
+    game_char_id SERIAL PRIMARY KEY,
+    game_char_level INT NOT NULL,
+    game_char_colour VARCHAR(20) NOT NULL,
+    game_char_type type NOT NULL,
+    game_char_hp INT NOT NULL,
+    game_char_attack INT NOT NULL,
+    game_char_speed INT NOT NULL
+);
+
+---------------- USERS ----------------
+
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
+    user_name VARCHAR(40) NOT NULL,
+    user_surname VARCHAR(40) NOT NULL,
+    user_email VARCHAR(40) UNIQUE NOT NULL
+);
+
+---------------- EQUIPMENT ----------------
+
+CREATE TABLE equipment (
+    equip_id SERIAL PRIMARY KEY,
+    equipment VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE user_equip (
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+    equip_id INT REFERENCES equipment(equip_id),
+    PRIMARY KEY (user_id,equip_id)
+);
+
+---------------- BODY METRICS ----------------
+
+CREATE TABLE body_metrics (
+    body_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+    body_weight FLOAT NOT NULL,
+    body_past_weight FLOAT,
+    body_height FLOAT NOT NULL,
+    body_age INT NOT NULL,
+    body_gender gender NOT NULL,
+    body_goal goal NOT NULL
+);
+
+---------------- EXERCISE ----------------
+
+CREATE TABLE exercise (
     exer_id SERIAL PRIMARY KEY,
     exer_name VARCHAR(50) NOT NULL,
     exer_body_area VARCHAR(20) NOT NULL,
-    exer_type focuse NOT NULL,
+    exer_type focus NOT NULL,
     exer_descrip TEXT,
     exer_vid TEXT,
     exer_equip equip NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS work_plan (
+---------------- WORK PLAN ----------------
+
+CREATE TABLE work_plan (
     work_id SERIAL PRIMARY KEY,
-    body_id INT NOT NULL REFERENCES body_metrics(body_id),
+    body_id INT REFERENCES body_metrics(body_id),
     work_name VARCHAR(50) NOT NULL,
     work_descrip TEXT,
     work_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -82,37 +100,41 @@ CREATE TABLE IF NOT EXISTS work_plan (
     work_day DATE
 );
 
-CREATE TABLE IF NOT EXISTS plan_exercise (
+CREATE TABLE plan_exercise (
     plan_exer_id SERIAL PRIMARY KEY,
-    work_id INT NOT NULL REFERENCES work_plan(work_id),
-    exer_id INT NOT NULL REFERENCES exercise(exer_id),
+    work_id INT REFERENCES work_plan(work_id),
+    exer_id INT REFERENCES exercise(exer_id),
     plan_exer_amount INT NOT NULL,
     plan_exer_set INT NOT NULL,
     plan_exer_PB INT,
     plan_exer_PB_first INT
 );
 
-CREATE TABLE IF NOT EXISTS meal_plan (
+---------------- MEALS ----------------
+
+CREATE TABLE meal_plan (
     meal_id SERIAL PRIMARY KEY,
-    body_id INT NOT NULL REFERENCES body_metrics(body_id),
+    body_id INT REFERENCES body_metrics(body_id),
     meal_day TIMESTAMP,
     meal_name VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS food (
+CREATE TABLE food (
     food_id SERIAL PRIMARY KEY,
     food_name VARCHAR(50),
     food_type VARCHAR(50),
     food_calories FLOAT
 );
 
-CREATE TABLE IF NOT EXISTS food_plan (
+CREATE TABLE food_plan (
     food_plan_id SERIAL PRIMARY KEY,
-    food_id INT NOT NULL REFERENCES food(food_id),
-    meal_id INT NOT NULL REFERENCES meal_plan(meal_id)
+    food_id INT REFERENCES food(food_id),
+    meal_id INT REFERENCES meal_plan(meal_id)
 );
 
-CREATE TABLE IF NOT EXISTS custom_items (
+---------------- GAME ITEMS ----------------
+
+CREATE TABLE custom_items (
     item_id SERIAL PRIMARY KEY,
     item_name VARCHAR(20),
     item_effect INT,
@@ -120,35 +142,35 @@ CREATE TABLE IF NOT EXISTS custom_items (
     item_type VARCHAR(20)
 );
 
-CREATE TABLE IF NOT EXISTS game_items (
-    item_id INT NOT NULL REFERENCES custom_items(item_id),
-    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
-    PRIMARY KEY (item_id, game_char_id)
+CREATE TABLE game_items (
+    item_id INT REFERENCES custom_items(item_id),
+    game_char_id INT REFERENCES game_char(game_char_id),
+    PRIMARY KEY (item_id,game_char_id)
 );
 
-CREATE TABLE IF NOT EXISTS enemy (
+---------------- ENEMY ----------------
+
+CREATE TABLE enemy (
     enemy_id SERIAL PRIMARY KEY,
-    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
+    game_char_id INT REFERENCES game_char(game_char_id),
     enemy_name VARCHAR(20) NOT NULL,
     enemy_health FLOAT NOT NULL,
     enemy_attack FLOAT NOT NULL,
     enemy_level INT NOT NULL
 );
 
-CREATE TYPE reward_type AS ENUM ('item','currency','experience');
-
-CREATE TABLE IF NOT EXISTS rewards (
+CREATE TABLE rewards (
     reward_id SERIAL PRIMARY KEY,
-    enemy_id INT NOT NULL REFERENCES enemy(enemy_id),
+    enemy_id INT REFERENCES enemy(enemy_id),
     reward_level INT NOT NULL,
     reward_name VARCHAR(20) NOT NULL,
     reward_type reward_type NOT NULL,
     description TEXT
-<<<<<<< HEAD
-=======
-    );
---Added two new tables for meal collection page
-CREATE TABLE IF NOT EXISTS meal_collection (
+);
+
+---------------- MEAL COLLECTION ----------------
+
+CREATE TABLE meal_collection (
     collection_id SERIAL PRIMARY KEY,
     collection_name VARCHAR(50) NOT NULL,
     collection_type VARCHAR(20) NOT NULL,
@@ -156,29 +178,36 @@ CREATE TABLE IF NOT EXISTS meal_collection (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS collection_foods (
-    collection_id INT NOT NULL REFERENCES meal_collection(collection_id),
-    food_id INT NOT NULL REFERENCES food(food_id),
-    PRIMARY KEY (collection_id, food_id)
->>>>>>> 1fba9cae2b4d4b42b0e28e2efb02c84eeb745d61
+CREATE TABLE collection_foods (
+    collection_id INT REFERENCES meal_collection(collection_id),
+    food_id INT REFERENCES food(food_id),
+    PRIMARY KEY (collection_id,food_id)
 );
 
+INSERT INTO game_char
+(game_char_level, game_char_colour, game_char_type,
+ game_char_hp, game_char_attack, game_char_speed)
+VALUES
+(1,'red','a',200,10,5),
+(1,'blue','b',100,25,10),
+(1,'green','c',80,15,20),
+(1,'yellow','a',210,12,6),
+(1,'purple','b',150,20,9),
+(1,'black','c',120,18,11),
+(1,'white','a',170,14,8),
+(1,'orange','b',140,16,10);
 
-
-INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, game_char_hp, game_char_attack, game_char_speed) VALUES
-(1, 'red', 'a', 200, 10, 5),
-(1, 'blue', 'b', 100, 25, 10),
-(1, 'green', 'c', 80, 15, 20);
-
-INSERT INTO users (game_char_id, user_name, user_surname, user_email) VALUES
+INSERT INTO users
+(game_char_id, user_name, user_surname, user_email)
+VALUES
 (1, 'John', 'Smith', 'john.smith@email.com'),
 (2, 'Sarah', 'Johnson', 'sarah.j@email.com'),
 (3, 'Mike', 'Williams', 'mike.w@email.com'),
-(1, 'Emma', 'Brown', 'emma.brown@email.com'),
-(2, 'David', 'Jones', 'david.jones@email.com'),
-(3, 'Lisa', 'Garcia', 'lisa.garcia@email.com'),
-(1, 'James', 'Miller', 'james.miller@email.com'),
-(2, 'Anna', 'Davis', 'anna.davis@email.com');
+(4, 'Emma', 'Brown', 'emma.brown@email.com'),
+(5, 'David', 'Jones', 'david.jones@email.com'),
+(6, 'Lisa', 'Garcia', 'lisa.garcia@email.com'),
+(7, 'James', 'Miller', 'james.miller@email.com'),
+(8, 'Anna', 'Davis', 'anna.davis@email.com');
 
 INSERT INTO equipment (equip_id, equipment) VALUES
 (1,'Dumbbells'),
@@ -229,13 +258,13 @@ INSERT INTO user_equip (user_id, equip_id) VALUES
 
 INSERT INTO enemy (game_char_id, enemy_name, enemy_health, enemy_attack, enemy_level) VALUES
 (1, 'Goblin', 50.0, 10.0, 1),
-(1, 'Orc', 120.0, 25.0, 3),
-(2, 'Troll', 200.0, 35.0, 5),
-(2, 'Dragon', 500.0, 80.0, 10),
-(3, 'Skeleton', 80.0, 15.0, 2),
-(3, 'Zombie', 100.0, 20.0, 3),
-(1, 'Vampire', 300.0, 50.0, 7),
-(2, 'Demon', 400.0, 65.0, 9);
+(2, 'Orc', 120.0, 25.0, 3),
+(3, 'Troll', 200.0, 35.0, 5),
+(4, 'Dragon', 500.0, 80.0, 10),
+(5, 'Skeleton', 80.0, 15.0, 2),
+(6, 'Zombie', 100.0, 20.0, 3),
+(7, 'Vampire', 300.0, 50.0, 7),
+(8, 'Demon', 400.0, 65.0, 9);
 
 INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, body_age, body_gender, body_goal) VALUES
 (1, 75.5, 78.0, 175.0, 25, 'male','Fat Loss'),
@@ -279,15 +308,18 @@ INSERT INTO meal_plan (body_id, meal_day, meal_name) VALUES
 (7, '2026-02-20 08:00:00', 'Protein Breakfast'),
 (8, '2026-02-20 12:00:00', 'Healthy Lunch');
 
-INSERT INTO plan_exercise (work_id, exer_id, plan_exer_amount, plan_exer_PB, plan_exer_PB_first) VALUES
-(1, 1, 20, 25, 15),
-(1, 4, 10, 12, 8),
-(2, 2, 15, 20, 10),
-(3, 3, 30, 35, 20),
-(4, 5, 8, 10, 5),
-(5, 7, 12, 15, 8),
-(6, 8, 100, 120, 80),
-(7, 4, 12, 15, 10);
+INSERT INTO plan_exercise
+(work_id, exer_id, plan_exer_amount, plan_exer_set,
+ plan_exer_PB, plan_exer_PB_first)
+VALUES
+(1, 1, 20, 3, 25, 15),
+(2, 4, 10, 4, 12, 8),
+(3, 2, 15, 3, 20, 10),
+(4, 3, 30, 2, 35, 20),
+(5, 5, 8, 5, 10, 5),
+(6, 7, 12, 3, 15, 8),
+(7, 8, 100, 2, 120, 80),
+(8, 4, 12, 4, 15, 10);
 
 INSERT INTO food (food_name, food_type, food_calories) VALUES
 ('Chicken', 'protein', 165.0),
