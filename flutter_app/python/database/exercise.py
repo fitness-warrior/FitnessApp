@@ -87,7 +87,7 @@ WHERE ue.user_id = %s
         return [row[0] for row in self.cur.fetchall()]
         
 def test():    
-    plan = ExersiseSelection(CONN)
+    plan = ExerciseSelection(CONN)
     equipment = plan.auto_equipment(2)
     results = plan.exer_filter(equipment=equipment)
     print(results)
