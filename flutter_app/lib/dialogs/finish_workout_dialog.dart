@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/exercise_db.dart';
+import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
 
 class FinishWorkoutDialog extends StatefulWidget {
@@ -57,14 +57,13 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
     try {
       final exerciseData = _buildExerciseData();
 
-      // Save locally first (always works, no server needed)
-      await ExerciseDb.instance.saveWorkout(
-        exercisesWithSets: exerciseData,
-      );
+      // Save locally (works on all platforms including web)
+      await WorkoutStorage.saveWorkout(exerciseData);
 
-      // Best-effort sync to API
+      // Best-effort sync to API (skip if backend unreachable)
       try {
-        await WorkoutService.submitWorkout(exerciseData);
+        await WorkoutService.submitWorkout(exerciseData)
+            .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
       widget.onSuccess({});
