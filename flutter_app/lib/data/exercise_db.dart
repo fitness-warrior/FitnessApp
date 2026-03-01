@@ -211,6 +211,30 @@ class ExerciseDb {
     return workId;
   }
 
+  Future<List<Map<String, dynamic>>> getWorkouts() async {
+    final db = await instance.database;
+    final rows = await db.query('workouts', orderBy: 'work_date DESC');
+    return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getWorkoutLogs(int workId) async {
+    final db = await instance.database;
+    final rows = await db.query(
+      'workout_logs',
+      where: 'work_id = ?',
+      whereArgs: [workId],
+    );
+    return rows.map((r) {
+      final sets = (jsonDecode(r['sets_data'] as String) as List)
+          .cast<Map<String, dynamic>>();
+      return {
+        'exer_id': r['exer_id'],
+        'exer_name': r['exer_name'],
+        'sets': sets,
+      };
+    }).toList();
+  }
+
   Future close() async {
     final db = await instance.database;
     await db.close();
