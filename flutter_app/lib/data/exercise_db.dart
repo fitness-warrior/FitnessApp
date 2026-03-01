@@ -15,7 +15,12 @@ class ExerciseDb {
   Future<Database> _initDB(String fileName) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, fileName);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createDB,
+      onUpgrade: _upgradeDB,
+    );
   }
 
   Future _createDB(Database db, int version) async {
@@ -40,6 +45,45 @@ class ExerciseDb {
         FOREIGN KEY (exer_id) REFERENCES exercises (exer_id)
       )
     ''');
+    await db.execute('''
+      CREATE TABLE workouts (
+        work_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+        work_name TEXT,
+        work_date TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE workout_logs (
+        log_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+        work_id   INTEGER NOT NULL,
+        exer_id   INTEGER,
+        exer_name TEXT NOT NULL,
+        sets_data TEXT NOT NULL,
+        FOREIGN KEY (work_id) REFERENCES workouts (work_id)
+      )
+    ''');
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS workouts (
+          work_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+          work_name TEXT,
+          work_date TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS workout_logs (
+          log_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+          work_id   INTEGER NOT NULL,
+          exer_id   INTEGER,
+          exer_name TEXT NOT NULL,
+          sets_data TEXT NOT NULL,
+          FOREIGN KEY (work_id) REFERENCES workouts (work_id)
+        )
+      ''');
+    }
   }
 
   Future<List<Map<String, dynamic>>> listExercises({
