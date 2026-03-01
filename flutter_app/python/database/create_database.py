@@ -350,8 +350,23 @@ INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, descripti
 (8, 9, 'Demon Soul', 'experience', 'Grants massive experience');
         """)
         self.conn.commit()
-        
-        
+
+        self.cur.execute("""
+CREATE TABLE IF NOT EXISTS completed_workouts (
+    work_id   SERIAL PRIMARY KEY,
+    work_name VARCHAR(100),
+    work_date TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS completed_workout_logs (
+    log_id    SERIAL PRIMARY KEY,
+    work_id   INT NOT NULL REFERENCES completed_workouts(work_id),
+    exer_id   INT,
+    exer_name VARCHAR(100) NOT NULL,
+    sets_data TEXT NOT NULL
+);
+        """)
+        self.conn.commit()
+
     def delete_all(self):
         self.cur.execute("""
 DROP SCHEMA public CASCADE;
