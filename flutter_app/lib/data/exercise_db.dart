@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -187,6 +188,27 @@ class ExerciseDb {
       'plan_exer_amount': data['reps'],
     });
     return id;
+  }
+
+  Future<int> saveWorkout({
+    required List<Map<String, dynamic>> exercisesWithSets,
+    String? name,
+  }) async {
+    final db = await instance.database;
+    final now = DateTime.now().toIso8601String();
+    final workId = await db.insert('workouts', {
+      'work_name': name ?? 'Workout ${now.substring(0, 10)}',
+      'work_date': now,
+    });
+    for (final ex in exercisesWithSets) {
+      await db.insert('workout_logs', {
+        'work_id': workId,
+        'exer_id': ex['exer_id'],
+        'exer_name': ex['exer_name'],
+        'sets_data': jsonEncode(ex['sets'] ?? []),
+      });
+    }
+    return workId;
   }
 
   Future close() async {
