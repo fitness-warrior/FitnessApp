@@ -322,10 +322,12 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
               onPressed: () {
                 // Navigate to WorkoutPage and open search dialog with tags
                 Navigator.of(context).pop();
-                final tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+                final tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ??
+                    <String>[];
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (_) => WorkoutPage(initialRecommendationTags: tags),
+                    builder: (_) =>
+                        WorkoutPage(initialRecommendationTags: tags),
                   ),
                 );
               },
