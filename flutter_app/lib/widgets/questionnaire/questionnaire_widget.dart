@@ -1,4 +1,7 @@
 import 'dart:convert';
+import '../../models/recommendation_profile.dart';
+import '../../services/recommendation_service.dart';
+import '../../services/recommendation_storage.dart';
 
 import 'package:flutter/material.dart';
 
@@ -216,42 +219,109 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     }
 
     // Map to canonical output schema
-    final Map<String, dynamic> out = {
-      'age': int.tryParse(_responses['Q001'] ?? ''),
-      'fitnessGoal': _responses['Q002'],
-      'fitnessLevel': _responses['Q003'],
-      'workoutFrequency': _responses['Q004'],
-      'workoutDuration': _responses['Q005'],
-      'equipmentAccess': _responses['Q006'] ?? [],
-      'trainingPreference': _responses['Q007'] ?? [],
-      'injuries': _responses['Q008'] ?? [],
-      'injuryDetails': null,
-    };
+    final age = int.tryParse(_responses['Q001'] ?? '0') ?? 0;
+    final fitnessGoalRaw = (_responses['Q002'] ?? '').toString();
+    final fitnessLevelRaw = (_responses['Q003'] ?? '').toString();
+    final durationRaw = (_responses['Q005'] ?? '').toString();
+    final equipmentRaw = (_responses['Q006'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+    final injuriesRaw = (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
 
-    // If injuries include Other, capture detail
-    if ((out['injuries'] as List).contains('Other')) {
-      final detail = _textControllers['Q009']!.text.trim();
-      out['injuryDetails'] = detail.isEmpty ? null : detail;
+    // Normalize mappings
+    String mapGoal(String g) {
+      final s = g.toLowerCase();
+      if (s.contains('fat')) return 'fat_loss';
+      if (s.contains('muscle') || s.contains('gain')) return 'strength';
+      if (s.contains('endurance')) return 'endurance';
+      if (s.contains('rehab') || s.contains('injury')) return 'rehab';
+      return 'general_fitness';
     }
 
-    final jsonStr = const JsonEncoder.withIndent('  ').convert(out);
-    // For now show dialog with JSON and also print to console
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Questionnaire Result'),
-        content: SingleChildScrollView(child: Text(jsonStr)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+    String mapExperience(String e) {
+      final s = e.toLowerCase();
+      if (s.contains('beginner')) return 'beginner';
+      if (s.contains('intermediate')) return 'intermediate';
+      if (s.contains('advanced')) return 'advanced';
+      return 'beginner';
+    }
+
+    int mapDuration(String d) {
+      if (d.contains('20')) return 25;
+      if (d.contains('30-45')) return 35;
+      if (d.contains('45')) return 50;
+      if (d.contains('60')) return 75;
+      if (d.contains('30')) return 35;
+      return 30;
+    }
+
+    List<String> mapEquipment(List<String> eq) {
+      return eq.map((e) {
+        final s = e.toLowerCase();
+        if (s.contains('bodyweight')) return 'bodyweight';
+        if (s.contains('dumbbell')) return 'dumbbells';
+        if (s.contains('barbell')) return 'barbells';
+        if (s.contains('resistance')) return 'resistance_bands';
+        if (s.contains('gym machine')) return 'gym_machines';
+        if (s.contains('cardio')) return 'cardio_machines';
+        return s.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+      }).toList();
+    }
+
+    List<String> mapInjuries(List<String> inj) {
+      final res = <String>[];
+      for (final i in inj) {
+        final s = i.toLowerCase();
+        if (s.contains('knee')) res.add('knee');
+        else if (s.contains('back')) res.add('back');
+        else if (s.contains('shoulder')) res.add('shoulder');
+        else if (s.contains('joint')) res.add('joint');
+        else if (s.contains('none')) continue;
+        else res.add('other');
+      }
+      return res;
+    }
+
+    final profile = RecommendationProfile(
+      goal: mapGoal(fitnessGoalRaw),
+      experience: mapExperience(fitnessLevelRaw),
+      equipment: mapEquipment(equipmentRaw),
+      workoutLengthMinutes: mapDuration(durationRaw),
+      injuredAreas: mapInjuries(injuriesRaw),
     );
-    // developer output
-    // ignore: avoid_print
-    print(jsonStr);
+
+    // Persist profile locally
+    RecommendationStorage.saveProfile(profile);
+
+    // Call recommendation service
+    RecommendationService.getRecommendations(profile).then((rec) {
+      final jsonStr = const JsonEncoder.withIndent('  ').convert({
+        'profile': profile.toJson(),
+        'recommendation': rec,
+      });
+
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Recommendations Ready'),
+          content: SingleChildScrollView(child: Text(jsonStr)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Return recommendation result to caller so UI can apply filters
+                Navigator.of(context).pop();
+                Navigator.of(context).maybePop(rec);
+              },
+              child: const Text('Apply Recommendations'),
+            ),
+          ],
+        ),
+      );
+      // ignore: avoid_print
+      print(jsonStr);
+    });
   }
 
   Widget _buildCurrent() {
