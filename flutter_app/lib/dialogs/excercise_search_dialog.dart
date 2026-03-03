@@ -58,8 +58,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
 
   Future<void> _loadRecommendations() async {
     try {
-      final RecommendationProfile? profile =
-          await RecommendationStorage.loadProfile();
+      final profile = await RecommendationStorage.loadProfile();
       if (profile == null) return;
       final rec = await RecommendationService.getRecommendations(profile);
       final tags =
@@ -78,8 +77,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   Future<void> _performSearch(String query) async {
     List<String>? tags = widget.initialTags;
     if (tags == null || tags.isEmpty) {
-      final RecommendationProfile? profile =
-          await RecommendationStorage.loadProfile();
+      final profile = await RecommendationStorage.loadProfile();
       if (profile == null) return;
       final rec = await RecommendationService.getRecommendations(profile);
       tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
@@ -99,8 +97,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     });
 
     try {
-      // Use ExerciseService directly for filtered searches
-      final results = await ExerciseService.listExercises(
+      final results = await ExerciseRepository.listExercises(
         name: query.trim().isEmpty ? null : query.trim(),
         area: _selectedArea,
         type: _selectedType,
@@ -186,67 +183,6 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                     _performSearch(value);
                   }
                 },
-              ),
-            ),
-            // Filter dropdowns
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedArea,
-                      decoration: InputDecoration(
-                        labelText: 'Body Area',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('All')),
-                        ..._bodyAreas.map((area) => DropdownMenuItem(
-                              value: area,
-                              child: Text(area),
-                            )),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _selectedArea = value);
-                        _performSearch(_searchController.text);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedType,
-                      decoration: InputDecoration(
-                        labelText: 'Type',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('All')),
-                        ..._types.map((type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type),
-                            )),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _selectedType = value);
-                        _performSearch(_searchController.text);
-                      },
-                    ),
-                  ),
-                ],
               ),
             ),
 

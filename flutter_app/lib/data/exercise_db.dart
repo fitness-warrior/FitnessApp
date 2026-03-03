@@ -6,9 +6,7 @@ class ExerciseDb {
   ExerciseDb._();
 
   // Update this URL to match your backend API
-  // Use 10.0.2.2 for Android emulator (maps to host machine's localhost)
-  // Use your PC's local IP (e.g. 192.168.x.x) for a physical device
-  static const String baseUrl = 'http://10.0.2.2:5001/api';
+  static const String baseUrl = 'http://localhost:5001/api';
 
   Future<List<Map<String, dynamic>>> listExercises({
     String? name,
