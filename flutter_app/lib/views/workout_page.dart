@@ -238,8 +238,15 @@ class _WorkoutPageState extends State<WorkoutPage> {
         title: HeaderWithDropdown(
           title: 'My Workout',
           onMenuSelected: (value) {
-            Navigator.of(context).pushReplacementNamed(
-                '/${value.toLowerCase().replaceAll(' ', '_')}');
+            final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
+            final routes = {'/my_workout', '/my_meal'};
+            if (routes.contains(route)) {
+              Navigator.of(context).pushReplacementNamed(route);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('$value coming soon')),
+              );
+            }
           },
         ),
         actions: [
