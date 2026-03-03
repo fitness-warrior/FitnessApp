@@ -7,10 +7,12 @@ import '../services/recommendation_storage.dart';
 
 class ExerciseSearchDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onExerciseSelected;
+  final List<String>? initialTags;
 
   const ExerciseSearchDialog({
     Key? key,
     required this.onExerciseSelected,
+    this.initialTags,
   }) : super(key: key);
 
   @override
@@ -72,7 +74,13 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     }
   }
 
-  Future<void> _performSearch(String query) async {
+          List<String>? tags = widget.initialTags;
+          if (tags == null || tags.isEmpty) {
+            final profile = await RecommendationStorage.loadProfile();
+            if (profile == null) return;
+            final rec = await RecommendationService.getRecommendations(profile);
+            tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+          }
     if (query.trim().isEmpty &&
         _selectedArea == null &&
         _selectedType == null) {
