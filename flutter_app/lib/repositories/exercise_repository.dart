@@ -5,6 +5,41 @@ import '../services/exercise_service.dart';
 /// ExerciseRepository: unified access to exercise data.
 
 class ExerciseRepository {
+  // Simple in-memory cache keyed by query string
+  static final Map<String, List<Map<String, dynamic>>> _cache = {};
+
+  static String _queryKey({
+    String? name,
+    String? area,
+    String? type,
+    List<String>? equipment,
+    List<String>? recommendationTags,
+    List<int>? ids,
+  }) {
+    return '${name ?? ''}|${area ?? ''}|${type ?? ''}|${equipment?.join(',') ?? ''}|${recommendationTags?.join(',') ?? ''}|${ids?.join(',') ?? ''}';
+  }
+
+  /// Clear the entire repository cache
+  static void clearCache() => _cache.clear();
+
+  /// Invalidate a specific key (optional)
+  static void invalidateCache({
+    String? name,
+    String? area,
+    String? type,
+    List<String>? equipment,
+    List<String>? recommendationTags,
+    List<int>? ids,
+  }) {
+    _cache.remove(_queryKey(
+      name: name,
+      area: area,
+      type: type,
+      equipment: equipment,
+      recommendationTags: recommendationTags,
+      ids: ids,
+    ));
+  }
   static Future<List<Map<String, dynamic>>> listExercises({
     String? name,
     String? area,
@@ -14,6 +49,19 @@ class ExerciseRepository {
     List<int>? ids,
     bool forceRefresh = false,
   }) async {
+    final key = _queryKey(
+      name: name,
+      area: area,
+      type: type,
+      equipment: equipment,
+      recommendationTags: recommendationTags,
+      ids: ids,
+    );
+
+    // Return cached results when available and not forcing refresh
+    if (!forceRefresh && _cache.containsKey(key)) {
+      return List<Map<String, dynamic>>.from(_cache[key]!);
+    }
     // If ids provided, return local items by id
     if (ids != null && ids.isNotEmpty) {
       final results = <Map<String, dynamic>>[];
@@ -81,8 +129,19 @@ class ExerciseRepository {
           if (forceRefresh || normalized.isEmpty) normalized = remoteNorm;
         }
       } catch (_) {
-        // swallow remote errors here; UI should handle showing retry if needed
+        // On remote error, try to return cached results if present
+        if (_cache.containsKey(key)) {
+          return List<Map<String, dynamic>>.from(_cache[key]!);
+        }
+        // otherwise swallow and continue returning whatever normalized contains
       }
+    }
+
+    // Cache results for next time
+    try {
+      _cache[key] = List<Map<String, dynamic>>.from(normalized);
+    } catch (_) {
+      // ignore cache write errors
     }
 
     return normalized;
