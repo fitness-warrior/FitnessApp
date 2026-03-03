@@ -81,6 +81,26 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
         _loading = false;
       });
     } catch (e) {
+      // Try to show cached results if available
+      try {
+        final cached = await ExerciseRepository.listExercises(
+          name: _searchController.text.trim().isEmpty
+              ? null
+              : _searchController.text.trim(),
+          area: _selectedArea,
+          type: _selectedType,
+          equipment: _selectedEquipment.isEmpty ? null : _selectedEquipment,
+        );
+        if (cached.isNotEmpty) {
+          setState(() {
+            _exercises = cached;
+            _error = 'Showing cached results: ${e.toString()}';
+            _loading = false;
+          });
+          return;
+        }
+      } catch (_) {}
+
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -318,6 +338,33 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
       },
       child: ListView(
         children: [
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              child: Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(_error!, style: const TextStyle(color: Colors.black87))),
+                    TextButton(
+                      onPressed: () async {
+                        setState(() {
+                          _error = null;
+                          _loading = true;
+                        });
+                        await _loadExercises();
+                        await _loadRecommendationsIfNeeded();
+                      },
+                      child: const Text('Retry')),
+                  ],
+                ),
+              ),
+            ),
           if (widget.recommendationTags != null &&
               widget.recommendationTags!.isNotEmpty)
             _buildRecommendedSection(),
