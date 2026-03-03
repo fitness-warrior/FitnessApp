@@ -251,6 +251,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
             onPressed: _isLoadingPlaceholder ? null : _openGenerateDialog,
             tooltip: 'Generate Workout',
           ),
+          IconButton(
+            icon: const CircleAvatar(
+              radius: 14,
+              child: Icon(Icons.person, size: 18),
+            ),
+            onPressed: () {
+              // TODO: Navigate to profile page
+            },
+            tooltip: 'Profile',
+          ),
         ],
       ),
       body: Column(
