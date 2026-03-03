@@ -340,7 +340,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
         children: [
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
               child: Container(
                 padding: const EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
@@ -350,17 +351,19 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
                 ),
                 child: Row(
                   children: [
-                    Expanded(child: Text(_error!, style: const TextStyle(color: Colors.black87))),
+                    Expanded(
+                        child: Text(_error!,
+                            style: const TextStyle(color: Colors.black87))),
                     TextButton(
-                      onPressed: () async {
-                        setState(() {
-                          _error = null;
-                          _loading = true;
-                        });
-                        await _loadExercises();
-                        await _loadRecommendationsIfNeeded();
-                      },
-                      child: const Text('Retry')),
+                        onPressed: () async {
+                          setState(() {
+                            _error = null;
+                            _loading = true;
+                          });
+                          await _loadExercises();
+                          await _loadRecommendationsIfNeeded();
+                        },
+                        child: const Text('Retry')),
                   ],
                 ),
               ),
