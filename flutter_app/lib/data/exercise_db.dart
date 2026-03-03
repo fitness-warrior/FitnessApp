@@ -66,10 +66,14 @@ class ExerciseDb {
       )
     ''');
     // Indexes for faster filtering
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_body_area ON exercises (exer_body_area)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_type ON exercises (exer_type)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_tags ON exercises (exer_tags)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_equip ON exercises (exer_equip)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_exer_body_area ON exercises (exer_body_area)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_exer_type ON exercises (exer_type)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_exer_tags ON exercises (exer_tags)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_exer_equip ON exercises (exer_equip)');
   }
 
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -93,22 +97,27 @@ class ExerciseDb {
       ''');
       // Add new columns to exercises table and indexes if missing
       try {
-        await db.execute('ALTER TABLE exercises ADD COLUMN exer_difficulty TEXT');
+        await db
+            .execute('ALTER TABLE exercises ADD COLUMN exer_difficulty TEXT');
       } catch (_) {}
       try {
         await db.execute('ALTER TABLE exercises ADD COLUMN exer_tags TEXT');
       } catch (_) {}
       try {
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_body_area ON exercises (exer_body_area)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_exer_body_area ON exercises (exer_body_area)');
       } catch (_) {}
       try {
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_type ON exercises (exer_type)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_exer_type ON exercises (exer_type)');
       } catch (_) {}
       try {
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_tags ON exercises (exer_tags)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_exer_tags ON exercises (exer_tags)');
       } catch (_) {}
       try {
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_equip ON exercises (exer_equip)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_exer_equip ON exercises (exer_equip)');
       } catch (_) {}
     }
   }
