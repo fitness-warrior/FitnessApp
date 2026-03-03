@@ -1,5 +1,5 @@
 import json
-from login import CONN
+from .login import CONN
 from datetime import datetime
 
 

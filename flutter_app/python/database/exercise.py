@@ -1,4 +1,4 @@
-from login import CONN
+from .login import CONN
 
 
 class ExerciseSelection:
