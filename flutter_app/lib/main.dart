@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fitness_app_flutter/services/recommendation_storage.dart';
 import 'package:fitness_app_flutter/widgets/questionnaire/questionnaire_widget.dart';
 import 'package:fitness_app_flutter/views/workout_page.dart';
+import 'package:fitness_app_flutter/views/meal_plan_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const QuestionnaireLauncher(),
+      routes: {
+        '/my_workout': (_) => const WorkoutPage(),
+        '/my_meal': (_) => const MealPlanPage(),
+      },
     );
   }
 }

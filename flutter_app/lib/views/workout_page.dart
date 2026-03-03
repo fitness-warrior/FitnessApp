@@ -6,6 +6,7 @@ import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/finish_button.dart';
+import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -237,8 +238,15 @@ class _WorkoutPageState extends State<WorkoutPage> {
         title: HeaderWithDropdown(
           title: 'My Workout',
           onMenuSelected: (value) {
-            Navigator.of(context).pushReplacementNamed(
-                '/${value.toLowerCase().replaceAll(' ', '_')}');
+            final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
+            final routes = {'/my_workout', '/my_meal'};
+            if (routes.contains(route)) {
+              Navigator.of(context).pushReplacementNamed(route);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('$value coming soon')),
+              );
+            }
           },
         ),
         actions: [
@@ -258,7 +266,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
               child: Icon(Icons.person, size: 18),
             ),
             onPressed: () {
-              // TODO: Navigate to profile page
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
             },
             tooltip: 'Profile',
           ),
