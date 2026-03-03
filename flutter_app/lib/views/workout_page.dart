@@ -5,7 +5,6 @@ import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
-import '../widgets/common/footer.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -252,6 +251,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
             onPressed: _isLoadingPlaceholder ? null : _openGenerateDialog,
             tooltip: 'Generate Workout',
           ),
+          IconButton(
+            icon: const CircleAvatar(
+              radius: 14,
+              child: Icon(Icons.person, size: 18),
+            ),
+            onPressed: () {
+              // TODO: Navigate to profile page
+            },
+            tooltip: 'Profile',
+          ),
         ],
       ),
       body: Column(
@@ -395,7 +404,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 child: const Text('Finish Workout'),
               ),
             ),
-          const ResponsiveFooter(),
         ],
       ),
     );
