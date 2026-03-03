@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// A centered "Finish Workout" button fixed to the bottom of the screen.
-/// Pass [onPressed] to wire up the action when ready.
+/// A full-width "Finish Workout" button fixed to the bottom of the screen.
+/// Place this inside [Scaffold.bottomNavigationBar].
 class FinishButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
@@ -9,32 +9,26 @@ class FinishButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-        child: Center(
-          child: ElevatedButton(
-            onPressed: onPressed,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(220, 52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-              ),
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              elevation: 4,
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      child: SizedBox(
+        height: 52,
+        child: ElevatedButton.icon(
+          onPressed: onPressed,
+          icon: const Icon(Icons.check_circle_outline),
+          label: const Text(
+            'Finish Workout',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check_circle_outline),
-                SizedBox(width: 10),
-                Text(
-                  'Finish Workout',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+            elevation: 4,
+            minimumSize: const Size(double.infinity, 52),
           ),
         ),
       ),

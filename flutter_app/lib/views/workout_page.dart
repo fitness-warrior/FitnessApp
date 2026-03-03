@@ -176,7 +176,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  // ignore: unused_element
   void _openFinishDialog() {
     if (_workoutExercises.isEmpty) return;
 
@@ -267,18 +266,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
       ),
       body: Column(
         children: [
-          // Add Exercise button row — left-aligned above the exercise list
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton.icon(
-                onPressed: _isLoadingPlaceholder ? null : _openSearchDialog,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Exercise'),
-              ),
-            ),
-          ),
           Expanded(
             child: _workoutExercises.isEmpty
                 ? Center(
@@ -397,8 +384,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openSearchDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Exercise'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       bottomNavigationBar: FinishButton(
-        onPressed: null, // TODO: wire up when ready
+        onPressed: _openFinishDialog,
       ),
     );
   }
