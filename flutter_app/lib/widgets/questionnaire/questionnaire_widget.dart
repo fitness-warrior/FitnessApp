@@ -3,6 +3,8 @@ import '../../models/recommendation_profile.dart';
 import '../../services/recommendation_service.dart';
 import '../../services/recommendation_storage.dart';
 
+import '../../views/workout_page.dart';
+
 import 'package:flutter/material.dart';
 
 enum QuestionType { singleChoice, multiSelect, number, text }
@@ -318,9 +320,14 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
             ),
             TextButton(
               onPressed: () {
-                // Return recommendation result to caller so UI can apply filters
+                // Navigate to WorkoutPage and open search dialog with tags
                 Navigator.of(context).pop();
-                Navigator.of(context).maybePop(rec);
+                final tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => WorkoutPage(initialRecommendationTags: tags),
+                  ),
+                );
               },
               child: const Text('Apply Recommendations'),
             ),
