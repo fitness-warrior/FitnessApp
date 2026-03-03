@@ -33,7 +33,9 @@ class ExerciseDb {
         exer_type TEXT,
         exer_descrip TEXT,
         exer_vid TEXT,
-        exer_equip TEXT
+        exer_equip TEXT,
+        exer_difficulty TEXT,
+        exer_tags TEXT
       )
     ''');
     await db.execute('''
@@ -63,6 +65,11 @@ class ExerciseDb {
         FOREIGN KEY (work_id) REFERENCES workouts (work_id)
       )
     ''');
+    // Indexes for faster filtering
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_body_area ON exercises (exer_body_area)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_type ON exercises (exer_type)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_tags ON exercises (exer_tags)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_equip ON exercises (exer_equip)');
   }
 
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -84,6 +91,25 @@ class ExerciseDb {
           FOREIGN KEY (work_id) REFERENCES workouts (work_id)
         )
       ''');
+      // Add new columns to exercises table and indexes if missing
+      try {
+        await db.execute('ALTER TABLE exercises ADD COLUMN exer_difficulty TEXT');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE exercises ADD COLUMN exer_tags TEXT');
+      } catch (_) {}
+      try {
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_body_area ON exercises (exer_body_area)');
+      } catch (_) {}
+      try {
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_type ON exercises (exer_type)');
+      } catch (_) {}
+      try {
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_tags ON exercises (exer_tags)');
+      } catch (_) {}
+      try {
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_exer_equip ON exercises (exer_equip)');
+      } catch (_) {}
     }
   }
 
@@ -92,11 +118,13 @@ class ExerciseDb {
     String? area,
     String? type,
     List<String>? equipment,
+    List<String>? tags,
   }) async {
     final db = await instance.database;
     var query = '''
       SELECT e.exer_id, e.exer_name, e.exer_body_area, e.exer_type,
              e.exer_descrip, e.exer_vid, e.exer_equip,
+             e.exer_difficulty, e.exer_tags,
              pe.plan_exer_set, pe.plan_exer_amount
       FROM exercises e
       LEFT JOIN plan_exercises pe ON e.exer_id = pe.exer_id
@@ -120,6 +148,11 @@ class ExerciseDb {
       final likes = equipment.map((_) => 'e.exer_equip LIKE ?').join(' OR ');
       query += ' AND ($likes)';
       params.addAll(equipment.map((e) => '%$e%'));
+    }
+    if (tags != null && tags.isNotEmpty) {
+      final likes = tags.map((_) => 'e.exer_tags LIKE ?').join(' OR ');
+      query += ' AND ($likes)';
+      params.addAll(tags.map((t) => '%$t%'));
     }
 
     final rows = await db.rawQuery(query, params);
