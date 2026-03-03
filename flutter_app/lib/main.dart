@@ -44,8 +44,9 @@ class _QuestionnaireLauncherState extends State<QuestionnaireLauncher> {
 
     // Always show questionnaire first. If you want to skip when profile exists,
     // load RecommendationStorage.loadProfile() and conditionally navigate.
-    final dynamic recResult = await Navigator.of(context).push<Map<String, dynamic>>(
-      MaterialPageRoute(builder: (_) => const QuestionnaireWidget()),
+    final dynamic recResult =
+        await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(builder: (_) => const QuestionnairePage()),
     );
 
     // Expect recResult to be a Map with 'tags' (List<String>) or null.
