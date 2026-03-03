@@ -27,10 +27,19 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   String? _selectedType;
 
   static const _bodyAreas = [
-    'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Cardio',
+    'Chest',
+    'Back',
+    'Shoulders',
+    'Arms',
+    'Legs',
+    'Core',
+    'Cardio',
   ];
   static const _types = [
-    'Strength', 'Bodyweight', 'Isolation', 'Cardio',
+    'Strength',
+    'Bodyweight',
+    'Isolation',
+    'Cardio',
   ];
 
   @override
@@ -50,9 +59,11 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
       final profile = await RecommendationStorage.loadProfile();
       if (profile == null) return;
       final rec = await RecommendationService.getRecommendations(profile);
-      final tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+      final tags =
+          (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
       if (tags.isEmpty) return;
-      final recResults = await ExerciseRepository.listExercises(recommendationTags: tags);
+      final recResults =
+          await ExerciseRepository.listExercises(recommendationTags: tags);
       setState(() {
         _recommended = recResults;
       });
@@ -62,7 +73,9 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   }
 
   Future<void> _performSearch(String query) async {
-    if (query.trim().isEmpty && _selectedArea == null && _selectedType == null) {
+    if (query.trim().isEmpty &&
+        _selectedArea == null &&
+        _selectedType == null) {
       setState(() {
         _searchResults = [];
       });
@@ -132,7 +145,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                 ],
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(
@@ -163,7 +176,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                 },
               ),
             ),
-            
+
             Expanded(
               child: _buildResultsList(),
             ),
@@ -204,7 +217,8 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
             padding: const EdgeInsets.all(12.0),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('Recommended for you', style: Theme.of(context).textTheme.titleMedium),
+              child: Text('Recommended for you',
+                  style: Theme.of(context).textTheme.titleMedium),
             ),
           ),
           SizedBox(
@@ -216,8 +230,10 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, idx) {
                 final exercise = _recommended[idx];
-                final name = exercise['name'] ?? exercise['exer_name'] ?? 'Unknown';
-                final area = exercise['area'] ?? exercise['exer_body_area'] ?? 'N/A';
+                final name =
+                    exercise['name'] ?? exercise['exer_name'] ?? 'Unknown';
+                final area =
+                    exercise['area'] ?? exercise['exer_body_area'] ?? 'N/A';
                 final type = exercise['type'] ?? exercise['exer_type'] ?? 'N/A';
                 return GestureDetector(
                   onTap: () => _selectExercise(exercise),
@@ -229,13 +245,22 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
-                            Text(area, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            Text(area,
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
                             const SizedBox(height: 6),
                             Text(type, style: const TextStyle(fontSize: 12)),
                             const Spacer(),
-                            Align(alignment: Alignment.bottomRight, child: Text('Add', style: TextStyle(color: Colors.blue[700], fontSize: 12))),
+                            Align(
+                                alignment: Alignment.bottomRight,
+                                child: Text('Add',
+                                    style: TextStyle(
+                                        color: Colors.blue[700],
+                                        fontSize: 12))),
                           ],
                         ),
                       ),
