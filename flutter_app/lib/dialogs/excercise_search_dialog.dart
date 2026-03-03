@@ -18,6 +18,15 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   List<Map<String, dynamic>> _searchResults = [];
   bool _isLoading = false;
   String? _error;
+  String? _selectedArea;
+  String? _selectedType;
+
+  static const _bodyAreas = [
+    'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Cardio',
+  ];
+  static const _types = [
+    'Strength', 'Bodyweight', 'Isolation', 'Cardio',
+  ];
 
   @override
   void dispose() {
@@ -26,7 +35,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   }
 
   Future<void> _performSearch(String query) async {
-    if (query.trim().isEmpty) {
+    if (query.trim().isEmpty && _selectedArea == null && _selectedType == null) {
       setState(() {
         _searchResults = [];
       });
@@ -39,7 +48,11 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     });
 
     try {
-      final results = await ExerciseService.listExercises(name: query.trim());
+      final results = await ExerciseService.listExercises(
+        name: query.trim().isEmpty ? null : query.trim(),
+        area: _selectedArea,
+        type: _selectedType,
+      );
       setState(() {
         _searchResults = results;
         _isLoading = false;

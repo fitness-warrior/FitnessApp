@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -15,7 +16,12 @@ class ExerciseDb {
   Future<Database> _initDB(String fileName) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, fileName);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createDB,
+      onUpgrade: _upgradeDB,
+    );
   }
 
   Future _createDB(Database db, int version) async {
@@ -40,6 +46,45 @@ class ExerciseDb {
         FOREIGN KEY (exer_id) REFERENCES exercises (exer_id)
       )
     ''');
+    await db.execute('''
+      CREATE TABLE workouts (
+        work_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+        work_name TEXT,
+        work_date TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE workout_logs (
+        log_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+        work_id   INTEGER NOT NULL,
+        exer_id   INTEGER,
+        exer_name TEXT NOT NULL,
+        sets_data TEXT NOT NULL,
+        FOREIGN KEY (work_id) REFERENCES workouts (work_id)
+      )
+    ''');
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS workouts (
+          work_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+          work_name TEXT,
+          work_date TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS workout_logs (
+          log_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+          work_id   INTEGER NOT NULL,
+          exer_id   INTEGER,
+          exer_name TEXT NOT NULL,
+          sets_data TEXT NOT NULL,
+          FOREIGN KEY (work_id) REFERENCES workouts (work_id)
+        )
+      ''');
+    }
   }
 
   Future<List<Map<String, dynamic>>> listExercises({
@@ -143,6 +188,51 @@ class ExerciseDb {
       'plan_exer_amount': data['reps'],
     });
     return id;
+  }
+
+  Future<int> saveWorkout({
+    required List<Map<String, dynamic>> exercisesWithSets,
+    String? name,
+  }) async {
+    final db = await instance.database;
+    final now = DateTime.now().toIso8601String();
+    final workId = await db.insert('workouts', {
+      'work_name': name ?? 'Workout ${now.substring(0, 10)}',
+      'work_date': now,
+    });
+    for (final ex in exercisesWithSets) {
+      await db.insert('workout_logs', {
+        'work_id': workId,
+        'exer_id': ex['exer_id'],
+        'exer_name': ex['exer_name'],
+        'sets_data': jsonEncode(ex['sets'] ?? []),
+      });
+    }
+    return workId;
+  }
+
+  Future<List<Map<String, dynamic>>> getWorkouts() async {
+    final db = await instance.database;
+    final rows = await db.query('workouts', orderBy: 'work_date DESC');
+    return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getWorkoutLogs(int workId) async {
+    final db = await instance.database;
+    final rows = await db.query(
+      'workout_logs',
+      where: 'work_id = ?',
+      whereArgs: [workId],
+    );
+    return rows.map((r) {
+      final sets = (jsonDecode(r['sets_data'] as String) as List)
+          .cast<Map<String, dynamic>>();
+      return {
+        'exer_id': r['exer_id'],
+        'exer_name': r['exer_name'],
+        'sets': sets,
+      };
+    }).toList();
   }
 
   Future close() async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
 
 class FinishWorkoutDialog extends StatefulWidget {
@@ -55,9 +56,17 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
 
     try {
       final exerciseData = _buildExerciseData();
-      final result = await WorkoutService.submitWorkout(exerciseData);
 
-      widget.onSuccess(result);
+      // Save locally (works on all platforms including web)
+      await WorkoutStorage.saveWorkout(exerciseData);
+
+      // Best-effort sync to API (skip if backend unreachable)
+      try {
+        await WorkoutService.submitWorkout(exerciseData)
+            .timeout(const Duration(seconds: 5));
+      } catch (_) {}
+
+      widget.onSuccess({});
       Navigator.pop(context);
 
       if (mounted) {
