@@ -58,7 +58,8 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
 
   Future<void> _loadRecommendations() async {
     try {
-      final profile = await RecommendationStorage.loadProfile();
+      final RecommendationProfile? profile =
+          await RecommendationStorage.loadProfile();
       if (profile == null) return;
       final rec = await RecommendationService.getRecommendations(profile);
       final tags =
@@ -75,13 +76,6 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   }
 
   Future<void> _performSearch(String query) async {
-    List<String>? tags = widget.initialTags;
-    if (tags == null || tags.isEmpty) {
-      final profile = await RecommendationStorage.loadProfile();
-      if (profile == null) return;
-      final rec = await RecommendationService.getRecommendations(profile);
-      tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
-    }
     if (query.trim().isEmpty &&
         _selectedArea == null &&
         _selectedType == null) {
@@ -97,7 +91,8 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     });
 
     try {
-      final results = await ExerciseRepository.listExercises(
+      // Use ExerciseService directly for fast name/area/type searches in the dialog
+      final results = await ExerciseService.listExercises(
         name: query.trim().isEmpty ? null : query.trim(),
         area: _selectedArea,
         type: _selectedType,
@@ -185,6 +180,59 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                 },
               ),
             ),
+
+            // Filter dropdowns — Body Area & Type
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedArea,
+                      isDense: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Body Area',
+                        border: OutlineInputBorder(),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('All')),
+                        ..._bodyAreas.map(
+                            (a) => DropdownMenuItem(value: a, child: Text(a))),
+                      ],
+                      onChanged: (value) {
+                        setState(() => _selectedArea = value);
+                        _performSearch(_searchController.text);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedType,
+                      isDense: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Type',
+                        border: OutlineInputBorder(),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('All')),
+                        ..._types.map(
+                            (t) => DropdownMenuItem(value: t, child: Text(t))),
+                      ],
+                      onChanged: (value) {
+                        setState(() => _selectedType = value);
+                        _performSearch(_searchController.text);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
 
             Expanded(
               child: _buildResultsList(),
