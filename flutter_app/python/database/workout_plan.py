@@ -65,7 +65,7 @@ class WorkoutPlanGenerator:
             # Get one exercise for each body area
             self.cur.execute("""
                 SELECT exer_id 
-                FROM exersise 
+                FROM exercise 
                 WHERE exer_body_area = %s 
                 AND exer_type = %s
                 LIMIT 1
@@ -109,7 +109,7 @@ class WorkoutPlanGenerator:
         
         for exer_id in exercise_ids:
             self.cur.execute("""
-                INSERT INTO plan_exersise (
+                INSERT INTO plan_exercise (
                     work_id, 
                     exer_id, 
                     plan_exer_amount, 

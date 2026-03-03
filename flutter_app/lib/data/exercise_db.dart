@@ -1,46 +1,12 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ExerciseDb {
-  ExerciseDb._init();
-  static final ExerciseDb instance = ExerciseDb._init();
+  static final ExerciseDb instance = ExerciseDb._();
+  ExerciseDb._();
 
-  static Database? _db;
-  Future<Database> get database async {
-    if (_db != null) return _db!;
-    _db = await _initDB('exercises.db');
-    return _db!;
-  }
-
-  Future<Database> _initDB(String fileName) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, fileName);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
-  }
-
-  Future _createDB(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE exercises (
-        exer_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        exer_name TEXT NOT NULL,
-        exer_body_area TEXT,
-        exer_type TEXT,
-        exer_descrip TEXT,
-        exer_vid TEXT,
-        exer_equip TEXT
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE plan_exercises (
-        plan_exer_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        work_id INTEGER,
-        exer_id INTEGER NOT NULL,
-        plan_exer_set INTEGER,
-        plan_exer_amount INTEGER,
-        FOREIGN KEY (exer_id) REFERENCES exercises (exer_id)
-      )
-    ''');
-  }
+  // Update this URL to match your backend API
+  static const String baseUrl = 'http://localhost:5001/api';
 
   Future<List<Map<String, dynamic>>> listExercises({
     String? name,
@@ -48,106 +14,74 @@ class ExerciseDb {
     String? type,
     List<String>? equipment,
   }) async {
-    final db = await instance.database;
-    var query = '''
-      SELECT e.exer_id, e.exer_name, e.exer_body_area, e.exer_type,
-             e.exer_descrip, e.exer_vid, e.exer_equip,
-             pe.plan_exer_set, pe.plan_exer_amount
-      FROM exercises e
-      LEFT JOIN plan_exercises pe ON e.exer_id = pe.exer_id
-      WHERE 1=1
-    ''';
-    final params = <dynamic>[];
+    try {
+      // Build query parameters
+      final queryParams = <String, String>{};
+      if (name != null) queryParams['name'] = name;
+      if (area != null) queryParams['area'] = area;
+      if (type != null) queryParams['type'] = type;
+      if (equipment != null && equipment.isNotEmpty) {
+        queryParams['equipment'] = equipment.join(',');
+      }
 
-    if (name != null) {
-      query += ' AND e.exer_name = ?';
-      params.add(name);
-    }
-    if (area != null) {
-      query += ' AND e.exer_body_area = ?';
-      params.add(area);
-    }
-    if (type != null) {
-      query += ' AND e.exer_type = ?';
-      params.add(type);
-    }
-    if (equipment != null && equipment.isNotEmpty) {
-      final likes = equipment.map((_) => 'e.exer_equip LIKE ?').join(' OR ');
-      query += ' AND ($likes)';
-      params.addAll(equipment.map((e) => '%$e%'));
-    }
+      final uri = Uri.parse('$baseUrl/exercises').replace(
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
 
-    final rows = await db.rawQuery(query, params);
-    return rows.map((r) {
-      return {
-        'exer_id': r['exer_id'],
-        'exer_name': r['exer_name'],
-        'exer_body_area': r['exer_body_area'],
-        'exer_type': r['exer_type'],
-        'exer_descrip': r['exer_descrip'],
-        'exer_vid': r['exer_vid'],
-        'exer_equip': r['exer_equip'],
-        'plan': r['plan_exer_set'] == null
-            ? null
-            : {'sets': r['plan_exer_set'], 'reps': r['plan_exer_amount']}
-      };
-    }).toList();
+      final response = await http.get(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+      } else {
+        print('Failed to load exercises: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('Error fetching exercises: $e');
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>?> getExercise(int id) async {
-    final db = await instance.database;
-    final row = await db.rawQuery('''
-      SELECT e.exer_id, e.exer_name, e.exer_body_area, e.exer_type,
-             e.exer_descrip, e.exer_vid, e.exer_equip,
-             pe.plan_exer_set, pe.plan_exer_amount
-      FROM exercises e
-      LEFT JOIN plan_exercises pe ON e.exer_id = pe.exer_id
-      WHERE e.exer_id = ?
-    ''', [id]);
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/exercises/$id'),
+        headers: {'Content-Type': 'application/json'},
+      );
 
-    if (row.isEmpty) return null;
-    final r = row.first;
-    return {
-      'exer_id': r['exer_id'],
-      'exer_name': r['exer_name'],
-      'exer_body_area': r['exer_body_area'],
-      'exer_type': r['exer_type'],
-      'exer_descrip': r['exer_descrip'],
-      'exer_vid': r['exer_vid'],
-      'exer_equip': r['exer_equip'],
-      'plan': r['plan_exer_set'] == null
-          ? null
-          : {'sets': r['plan_exer_set'], 'reps': r['plan_exer_amount']}
-    };
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return Map<String, dynamic>.from(data);
+      } else {
+        print('Failed to load exercise $id: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching exercise $id: $e');
+      return null;
+    }
   }
 
-  Future<int> createExercise(Map<String, dynamic> data) async {
-    final db = await instance.database;
-    final id = await db.insert('exercises', {
-      'exer_name': data['exer_name'],
-      'exer_body_area': data['exer_body_area'],
-      'exer_type': data['exer_type'],
-      'exer_descrip': data['exer_descrip'],
-      'exer_vid': data['exer_vid'],
-      'exer_equip': data['exer_equip'],
-    });
-    return id;
-  }
+  Future<List<Map<String, dynamic>>> searchExercises(String query) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/exercises/search?q=$query'),
+        headers: {'Content-Type': 'application/json'},
+      );
 
-  Future<int> createPlanExercise(Map<String, dynamic> data) async {
-    final db = await instance.database;
-    final id = await db.insert('plan_exercises', {
-      'work_id': data['work_id'],
-      'exer_id': data['exer_id'],
-      'plan_exer_set': data['sets'],
-      'plan_exer_amount': data['reps'],
-    });
-    return id;
-  }
-
-  Future close() async {
-    final db = await instance.database;
-    await db.close();
-    _db = null;
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print('Error searching exercises: $e');
+      return [];
+    }
   }
 }

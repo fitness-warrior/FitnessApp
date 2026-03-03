@@ -62,7 +62,7 @@ Each story includes priority (MUST / SHOULD / NICE-TO-HAVE), acceptance criteria
 - Acceptance criteria:
   - POST `/api/plan_exercises` accepts `{ work_id, exer_id, sets, reps }` and returns 201 with `plan_exer_id`.
   - After linking, GET `/api/exercises/{exer_id}` includes `plan` containing the `sets`/`reps` for that plan entry (or the plan list when multiple plans exist).
-- Mapping: `exercises_api.py` POST `/api/plan_exercises` and `plan_exersise` table.
+- Mapping: `exercises_api.py` POST `/api/plan_exercises` and `plan_exercise` table.
 
 ---
 

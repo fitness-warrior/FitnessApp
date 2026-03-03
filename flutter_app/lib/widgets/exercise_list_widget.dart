@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:fitness_app_flutter/services/exercise_service.dart';
+import 'package:fitness_app_flutter/repositories/exercise_repository.dart';
+import 'package:fitness_app_flutter/models/recommendation_profile.dart';
 
 /// Widget for browsing exercises
 class ExerciseListWidget extends StatefulWidget {
-  const ExerciseListWidget({Key? key}) : super(key: key);
+  /// Optional recommendation tags (from RecommendationService) to surface
+  /// a "Recommended for you" section and to score items.
+  final List<String>? recommendationTags;
+
+  const ExerciseListWidget({Key? key, this.recommendationTags})
+      : super(key: key);
 
   @override
   State<ExerciseListWidget> createState() => _ExerciseListWidgetState();
@@ -11,7 +17,9 @@ class ExerciseListWidget extends StatefulWidget {
 
 class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   List<Map<String, dynamic>> _exercises = [];
+  List<Map<String, dynamic>> _recommendedExercises = [];
   bool _loading = false;
+  bool _loadingRecommendations = false;
   String? _error;
   final TextEditingController _searchController = TextEditingController();
   String? _selectedArea;
@@ -43,6 +51,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   void initState() {
     super.initState();
     _loadExercises();
+    _loadRecommendationsIfNeeded();
   }
 
   @override
@@ -51,29 +60,74 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     super.dispose();
   }
 
-  Future<void> _loadExercises() async {
+  Future<void> _loadExercises({bool forceRefresh = false}) async {
     setState(() {
       _loading = true;
       _error = null;
     });
 
     try {
-      final exercises = await ExerciseService.listExercises(
+      final exercises = await ExerciseRepository.listExercises(
         name: _searchController.text.trim().isEmpty
             ? null
             : _searchController.text.trim(),
         area: _selectedArea,
         type: _selectedType,
         equipment: _selectedEquipment.isEmpty ? null : _selectedEquipment,
+        recommendationTags: widget.recommendationTags,
+        forceRefresh: forceRefresh,
       );
       setState(() {
         _exercises = exercises;
         _loading = false;
       });
     } catch (e) {
+      // Try to show cached results if available
+      try {
+        final cached = await ExerciseRepository.listExercises(
+          name: _searchController.text.trim().isEmpty
+              ? null
+              : _searchController.text.trim(),
+          area: _selectedArea,
+          type: _selectedType,
+          equipment: _selectedEquipment.isEmpty ? null : _selectedEquipment,
+        );
+        if (cached.isNotEmpty) {
+          setState(() {
+            _exercises = cached;
+            _error = 'Showing cached results: ${e.toString()}';
+            _loading = false;
+          });
+          return;
+        }
+      } catch (_) {}
+
       setState(() {
         _error = e.toString();
         _loading = false;
+      });
+    }
+  }
+
+  Future<void> _loadRecommendationsIfNeeded() async {
+    if (widget.recommendationTags == null || widget.recommendationTags!.isEmpty)
+      return;
+    setState(() {
+      _loadingRecommendations = true;
+    });
+    try {
+      final recs = await ExerciseRepository.listExercises(
+        recommendationTags: widget.recommendationTags,
+        // limit could be added to repo later
+      );
+      setState(() {
+        _recommendedExercises = recs;
+        _loadingRecommendations = false;
+      });
+    } catch (_) {
+      setState(() {
+        _recommendedExercises = [];
+        _loadingRecommendations = false;
       });
     }
   }
@@ -139,10 +193,35 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
                   'Filters',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                TextButton.icon(
-                  onPressed: _clearFilters,
-                  icon: const Icon(Icons.clear_all, size: 16),
-                  label: const Text('Clear'),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: _clearFilters,
+                      icon: const Icon(Icons.clear_all, size: 16),
+                      label: const Text('Clear'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () async {
+                        // Invalidate cache for current query and force refresh from server
+                        ExerciseRepository.invalidateCache(
+                          name: _searchController.text.trim().isEmpty
+                              ? null
+                              : _searchController.text.trim(),
+                          area: _selectedArea,
+                          type: _selectedType,
+                          equipment: _selectedEquipment.isEmpty
+                              ? null
+                              : _selectedEquipment,
+                          recommendationTags: widget.recommendationTags,
+                        );
+                        await _loadExercises(forceRefresh: true);
+                        await _loadRecommendationsIfNeeded();
+                      },
+                      icon: const Icon(Icons.sync, size: 16),
+                      label: const Text('Refresh'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -279,13 +358,140 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadExercises,
-      child: ListView.builder(
-        itemCount: _exercises.length,
-        itemBuilder: (context, index) {
-          final exercise = _exercises[index];
-          return _buildExerciseCard(exercise);
-        },
+      onRefresh: () async {
+        await _loadExercises(forceRefresh: true);
+        await _loadRecommendationsIfNeeded();
+      },
+      child: ListView(
+        children: [
+          if (_error != null)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              child: Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(_error!,
+                            style: const TextStyle(color: Colors.black87))),
+                    TextButton(
+                        onPressed: () async {
+                          setState(() {
+                            _error = null;
+                            _loading = true;
+                          });
+                          await _loadExercises();
+                          await _loadRecommendationsIfNeeded();
+                        },
+                        child: const Text('Retry')),
+                  ],
+                ),
+              ),
+            ),
+          if (widget.recommendationTags != null &&
+              widget.recommendationTags!.isNotEmpty)
+            _buildRecommendedSection(),
+          ..._exercises.map((e) => _buildExerciseCard(e)).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendedSection() {
+    if (_loadingRecommendations) {
+      return const Padding(
+        padding: EdgeInsets.all(12.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_recommendedExercises.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          child: Text('Recommended for you',
+              style: Theme.of(context).textTheme.titleMedium),
+        ),
+        SizedBox(
+          height: 140,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            itemBuilder: (context, index) {
+              final ex = _recommendedExercises[index];
+              return _buildRecommendedCard(ex);
+            },
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemCount: _recommendedExercises.length,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendedCard(Map<String, dynamic> exercise) {
+    final name = exercise['name'] ?? exercise['exer_name'] ?? 'Unknown';
+    final type = (exercise['type'] ?? exercise['exer_type'])?.toString() ?? '';
+    final area = exercise['area'] ?? exercise['exer_body_area'] ?? '';
+    final equipment = (exercise['equipment'] is List)
+        ? (exercise['equipment'] as List).join(', ')
+        : (exercise['exer_equip'] ?? '');
+
+    return GestureDetector(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('View $name details')),
+        );
+      },
+      child: SizedBox(
+        width: 220,
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor:
+                          type == 'strength' ? Colors.blue : Colors.orange,
+                      child: Icon(
+                          type == 'strength'
+                              ? Icons.fitness_center
+                              : Icons.directions_run,
+                          color: Colors.white),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: Text(name,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(area,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 6),
+                Text(equipment, style: const TextStyle(fontSize: 12)),
+                const Spacer(),
+                Align(
+                    alignment: Alignment.bottomRight,
+                    child: Text('Recommended',
+                        style:
+                            TextStyle(color: Colors.green[700], fontSize: 12))),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -295,9 +501,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: exercise['exer_type'] == 'strength'
-              ? Colors.blue
-              : Colors.orange,
+          backgroundColor:
+              exercise['exer_type'] == 'strength' ? Colors.blue : Colors.orange,
           child: Icon(
             exercise['exer_type'] == 'strength'
                 ? Icons.fitness_center
@@ -316,7 +521,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.accessibility_new, size: 14, color: Colors.grey[600]),
+                Icon(Icons.accessibility_new,
+                    size: 14, color: Colors.grey[600]),
                 const SizedBox(width: 4),
                 Text(exercise['exer_body_area'] ?? 'N/A'),
               ],

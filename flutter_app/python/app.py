@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
+from pydantic import BaseModel
 
 from database.exercise import ExerciseSelection
+from database.workout_save import WorkoutSave
 
 app = FastAPI(title="FitnessApp API")
 
@@ -16,6 +18,23 @@ app.add_middleware(
 )
 
 svc = ExerciseSelection()
+workout_svc = WorkoutSave()
+
+
+class SetData(BaseModel):
+    kg: str
+    reps: str
+
+
+class ExerciseEntry(BaseModel):
+    exer_id: int = 0
+    exer_name: str
+    sets: List[SetData] = []
+
+
+class SaveWorkoutRequest(BaseModel):
+    exercises: List[ExerciseEntry]
+    work_name: Optional[str] = None
 
 
 @app.get("/api/exercises")
@@ -53,6 +72,39 @@ def get_exercise(exercise_id: int):
         raise HTTPException(status_code=404, detail="Exercise not found")
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/workouts")
+def save_workout(body: SaveWorkoutRequest):
+    try:
+        exercises = [
+            {
+                "exer_id": ex.exer_id,
+                "exer_name": ex.exer_name,
+                "sets": [{"kg": s.kg, "reps": s.reps} for s in ex.sets],
+            }
+            for ex in body.exercises
+        ]
+        work_id = workout_svc.save_workout(exercises, work_name=body.work_name)
+        return {"work_id": work_id, "message": "Workout saved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/workouts")
+def get_workouts():
+    try:
+        return workout_svc.get_workouts()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/workouts/{work_id}")
+def get_workout_logs(work_id: int):
+    try:
+        return workout_svc.get_workout_logs(work_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
