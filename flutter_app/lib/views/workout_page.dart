@@ -184,7 +184,32 @@ class _WorkoutPageState extends State<WorkoutPage> {
       builder: (context) => FinishWorkoutDialog(
         exercises: _workoutExercises,
         setControllers: _setControllers,
-        onSuccess: (result) {
+        onSuccess: (result) async {
+          // Submit the completed workout to the backend
+          try {
+            final exercisesWithSets = List.generate(
+              _workoutExercises.length,
+              (i) {
+                final sets = _setControllers[i] ?? [];
+                return {
+                  ..._workoutExercises[i],
+                  'sets': List.generate(
+                      sets.length,
+                      (s) => {
+                            'kg': double.tryParse(sets[s]['kg']!.text) ?? 0,
+                            'reps': int.tryParse(sets[s]['reps']!.text) ?? 0,
+                          }),
+                };
+              },
+            );
+            await WorkoutService.submitWorkout(exercisesWithSets);
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Warning: Could not save workout: $e')),
+              );
+            }
+          }
           setState(() {
             _workoutExercises.clear();
             _setControllers.clear();
@@ -209,16 +234,22 @@ class _WorkoutPageState extends State<WorkoutPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Workout'),
+        title: HeaderWithDropdown(
+          title: 'My Workout',
+          onMenuSelected: (value) {
+            Navigator.of(context).pushReplacementNamed(
+                '/${value.toLowerCase().replaceAll(' ', '_')}');
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: _openSearchDialog,
+            onPressed: _isLoadingPlaceholder ? null : _openSearchDialog,
             tooltip: 'Search Exercises',
           ),
           IconButton(
             icon: const Icon(Icons.auto_awesome),
-            onPressed: _openGenerateDialog,
+            onPressed: _isLoadingPlaceholder ? null : _openGenerateDialog,
             tooltip: 'Generate Workout',
           ),
         ],
