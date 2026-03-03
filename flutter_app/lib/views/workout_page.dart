@@ -207,7 +207,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
           IconButton(
             icon: const Icon(Icons.add_circle),
             tooltip: 'Add Exercise',
-            onPressed: _isLoadingPlaceholder ? null : _addExercise,
+            onPressed: _isLoadingPlaceholder ? null : _openSearchDialog,
           ),
         ],
       ),
@@ -234,7 +234,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
                           onPressed:
-                              _isLoadingPlaceholder ? null : _addExercise,
+                              _isLoadingPlaceholder ? null : _openSearchDialog,
                           icon: const Icon(Icons.add),
                           label: Text(_isLoadingPlaceholder
                               ? 'Loading...'
