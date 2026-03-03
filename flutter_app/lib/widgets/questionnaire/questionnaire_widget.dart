@@ -291,6 +291,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     }
 
     final profile = RecommendationProfile(
+      age: age,
       goal: mapGoal(fitnessGoalRaw),
       experience: mapExperience(fitnessLevelRaw),
       equipment: mapEquipment(equipmentRaw),

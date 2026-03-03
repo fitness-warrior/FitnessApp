@@ -1,4 +1,5 @@
 class RecommendationProfile {
+  final int age; // user's age in years
   final String goal; // e.g., 'strength', 'endurance', 'fat_loss', 'mobility'
   final String experience; // e.g., 'beginner', 'intermediate', 'advanced'
   final List<String> equipment; // list of available equipment
@@ -6,6 +7,7 @@ class RecommendationProfile {
   final List<String> injuredAreas; // list of injured areas to avoid
 
   RecommendationProfile({
+    required this.age,
     required this.goal,
     required this.experience,
     required this.equipment,
@@ -14,6 +16,7 @@ class RecommendationProfile {
   });
 
   Map<String, dynamic> toJson() => {
+        'age': age,
         'goal': goal,
         'experience': experience,
         'equipment': equipment,
@@ -23,6 +26,7 @@ class RecommendationProfile {
 
   factory RecommendationProfile.fromJson(Map<String, dynamic> json) {
     return RecommendationProfile(
+      age: json['age'] as int? ?? 0,
       goal: json['goal'] as String? ?? '',
       experience: json['experience'] as String? ?? '',
       equipment: (json['equipment'] as List<dynamic>?)?.cast<String>() ?? [],
