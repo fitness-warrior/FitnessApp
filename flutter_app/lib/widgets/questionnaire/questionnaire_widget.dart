@@ -223,8 +223,10 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     final fitnessGoalRaw = (_responses['Q002'] ?? '').toString();
     final fitnessLevelRaw = (_responses['Q003'] ?? '').toString();
     final durationRaw = (_responses['Q005'] ?? '').toString();
-    final equipmentRaw = (_responses['Q006'] as List<dynamic>?)?.cast<String>() ?? <String>[];
-    final injuriesRaw = (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+    final equipmentRaw =
+        (_responses['Q006'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+    final injuriesRaw =
+        (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
 
     // Normalize mappings
     String mapGoal(String g) {
@@ -270,12 +272,18 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       final res = <String>[];
       for (final i in inj) {
         final s = i.toLowerCase();
-        if (s.contains('knee')) res.add('knee');
-        else if (s.contains('back')) res.add('back');
-        else if (s.contains('shoulder')) res.add('shoulder');
-        else if (s.contains('joint')) res.add('joint');
-        else if (s.contains('none')) continue;
-        else res.add('other');
+        if (s.contains('knee'))
+          res.add('knee');
+        else if (s.contains('back'))
+          res.add('back');
+        else if (s.contains('shoulder'))
+          res.add('shoulder');
+        else if (s.contains('joint'))
+          res.add('joint');
+        else if (s.contains('none'))
+          continue;
+        else
+          res.add('other');
       }
       return res;
     }
