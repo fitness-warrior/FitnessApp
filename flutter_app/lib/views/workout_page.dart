@@ -10,7 +10,8 @@ import '../widgets/common/footer.dart';
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
 
-  const WorkoutPage({Key? key, this.initialRecommendationTags}) : super(key: key);
+  const WorkoutPage({Key? key, this.initialRecommendationTags})
+      : super(key: key);
 
   @override
   State<WorkoutPage> createState() => _WorkoutPageState();
@@ -27,7 +28,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
     super.initState();
     _loadPlaceholderExercise();
     // If launched with recommendation tags, open the search dialog after build
-    if (widget.initialRecommendationTags != null && widget.initialRecommendationTags!.isNotEmpty) {
+    if (widget.initialRecommendationTags != null &&
+        widget.initialRecommendationTags!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openSearchDialogWithTags(widget.initialRecommendationTags!);
       });
