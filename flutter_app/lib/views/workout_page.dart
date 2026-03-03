@@ -8,7 +8,9 @@ import '../widgets/common/header.dart';
 import '../widgets/common/footer.dart';
 
 class WorkoutPage extends StatefulWidget {
-  const WorkoutPage({Key? key}) : super(key: key);
+  final List<String>? initialRecommendationTags;
+
+  const WorkoutPage({Key? key, this.initialRecommendationTags}) : super(key: key);
 
   @override
   State<WorkoutPage> createState() => _WorkoutPageState();
@@ -24,6 +26,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
   void initState() {
     super.initState();
     _loadPlaceholderExercise();
+    // If launched with recommendation tags, open the search dialog after build
+    if (widget.initialRecommendationTags != null && widget.initialRecommendationTags!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openSearchDialogWithTags(widget.initialRecommendationTags!);
+      });
+    }
   }
 
   Future<void> _loadPlaceholderExercise() async {
@@ -107,6 +115,25 @@ class _WorkoutPageState extends State<WorkoutPage> {
         onExerciseSelected: (exercise) {
           Navigator.pop(context, exercise);
         },
+      ),
+    );
+
+    if (selectedExercise != null) {
+      setState(() {
+        _placeholderExercise = selectedExercise;
+      });
+      _addExercise();
+    }
+  }
+
+  void _openSearchDialogWithTags(List<String> tags) async {
+    final selectedExercise = await showDialog(
+      context: context,
+      builder: (context) => ExerciseSearchDialog(
+        onExerciseSelected: (exercise) {
+          Navigator.pop(context, exercise);
+        },
+        initialTags: tags,
       ),
     );
 
