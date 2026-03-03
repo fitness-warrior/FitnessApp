@@ -27,7 +27,8 @@ class RecommendationProfile {
       experience: json['experience'] as String? ?? '',
       equipment: (json['equipment'] as List<dynamic>?)?.cast<String>() ?? [],
       workoutLengthMinutes: json['workoutLengthMinutes'] as int? ?? 0,
-      injuredAreas: (json['injuredAreas'] as List<dynamic>?)?.cast<String>() ?? [],
+      injuredAreas:
+          (json['injuredAreas'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 }
