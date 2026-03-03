@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class ExerciseService {
   // Update baseUrl if your API runs elsewhere
-  static const String baseUrl = 'http://10.0.2.2:5001/api';
+  static const String baseUrl = 'http://localhost:5001/api'; // Change from 10.0.2.2 to localhost
 
   static Future<List<Map<String, dynamic>>> listExercises({
     String? name,

@@ -40,7 +40,7 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
 
     try {
       final res = await http.post(
-        Uri.parse('http://10.0.2.2:5001/api/exercises'),
+        Uri.parse('http://localhost:5001/api/exercises'),
         headers: {
           'Content-Type': 'application/json',
           'X-Admin': 'true',
@@ -128,7 +128,8 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _vidCtl,
-                decoration: const InputDecoration(labelText: 'Video URL (optional)'),
+                decoration:
+                    const InputDecoration(labelText: 'Video URL (optional)'),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
