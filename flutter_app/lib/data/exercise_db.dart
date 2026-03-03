@@ -6,12 +6,30 @@ class ExerciseDb {
   ExerciseDb._();
 
   // Update this URL to match your backend API
-  static const String baseUrl = 'http://localhost:5000/api';
+  static const String baseUrl = 'http://localhost:5001/api';
 
-  Future<List<Map<String, dynamic>>> listExercises() async {
+  Future<List<Map<String, dynamic>>> listExercises({
+    String? name,
+    String? area,
+    String? type,
+    List<String>? equipment,
+  }) async {
     try {
+      // Build query parameters
+      final queryParams = <String, String>{};
+      if (name != null) queryParams['name'] = name;
+      if (area != null) queryParams['area'] = area;
+      if (type != null) queryParams['type'] = type;
+      if (equipment != null && equipment.isNotEmpty) {
+        queryParams['equipment'] = equipment.join(',');
+      }
+
+      final uri = Uri.parse('$baseUrl/exercises').replace(
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
+
       final response = await http.get(
-        Uri.parse('$baseUrl/exercises'),
+        uri,
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -25,6 +43,26 @@ class ExerciseDb {
     } catch (e) {
       print('Error fetching exercises: $e');
       return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> getExercise(int id) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/exercises/$id'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return Map<String, dynamic>.from(data);
+      } else {
+        print('Failed to load exercise $id: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching exercise $id: $e');
+      return null;
     }
   }
 

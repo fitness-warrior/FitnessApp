@@ -88,18 +88,21 @@ class ExerciseRepository {
       for (final item in normalized) {
         final itemTags = <String>{};
         // collect tags from normalized fields
-        if (item['type'] != null)
+        if (item['type'] != null) {
           itemTags.add(item['type'].toString().toLowerCase());
-        if (item['area'] != null)
+        }
+        if (item['area'] != null) {
           itemTags.add(item['area'].toString().toLowerCase());
+        }
         if (item['equipment'] != null) {
           final eq = (item['equipment'] as List)
               .map((e) => e.toString().toLowerCase());
           itemTags.addAll(eq);
         }
         // name-based tag
-        if (item['name'] != null)
+        if (item['name'] != null) {
           itemTags.addAll(item['name'].toString().toLowerCase().split(' '));
+        }
 
         // compute simple score: number of matching tags
         final matches = tagSet.intersection(itemTags).length;

@@ -261,7 +261,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     itemBuilder: (context, index) {
                       final exercise = _workoutExercises[index];
                       final sets = _setControllers[index] ?? [];
-                      
+
                       return Card(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: Padding(
