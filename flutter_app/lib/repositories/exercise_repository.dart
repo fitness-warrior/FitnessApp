@@ -5,7 +5,6 @@ import '../services/exercise_service.dart';
 /// ExerciseRepository: unified access to exercise data.
 
 class ExerciseRepository {
-  
   static Future<List<Map<String, dynamic>>> listExercises({
     String? name,
     String? area,
@@ -40,14 +39,18 @@ class ExerciseRepository {
       for (final item in normalized) {
         final itemTags = <String>{};
         // collect tags from normalized fields
-        if (item['type'] != null) itemTags.add(item['type'].toString().toLowerCase());
-        if (item['area'] != null) itemTags.add(item['area'].toString().toLowerCase());
+        if (item['type'] != null)
+          itemTags.add(item['type'].toString().toLowerCase());
+        if (item['area'] != null)
+          itemTags.add(item['area'].toString().toLowerCase());
         if (item['equipment'] != null) {
-          final eq = (item['equipment'] as List).map((e) => e.toString().toLowerCase());
+          final eq = (item['equipment'] as List)
+              .map((e) => e.toString().toLowerCase());
           itemTags.addAll(eq);
         }
         // name-based tag
-        if (item['name'] != null) itemTags.addAll(item['name'].toString().toLowerCase().split(' '));
+        if (item['name'] != null)
+          itemTags.addAll(item['name'].toString().toLowerCase().split(' '));
 
         // compute simple score: number of matching tags
         final matches = tagSet.intersection(itemTags).length;
@@ -121,7 +124,8 @@ class ExerciseRepository {
   static Map<String, dynamic> _normalizeRemoteRow(Map<String, dynamic> r) {
     final equipment = <String>[];
     if (r['equipment'] is String) {
-      equipment.addAll((r['equipment'] as String).split(',').map((s) => s.trim()));
+      equipment
+          .addAll((r['equipment'] as String).split(',').map((s) => s.trim()));
     } else if (r['equipment'] is List) {
       equipment.addAll((r['equipment'] as List).map((e) => e.toString()));
     }
@@ -135,7 +139,9 @@ class ExerciseRepository {
       'video': r['video'] ?? r['exer_vid'],
       'equipment': equipment,
       'difficulty': r['difficulty'] ?? '',
-      'tags': (r['tags'] is List) ? (r['tags'] as List).map((e) => e.toString()).toList() : <String>[],
+      'tags': (r['tags'] is List)
+          ? (r['tags'] as List).map((e) => e.toString()).toList()
+          : <String>[],
       'meta': {'source': 'remote'},
     };
   }
