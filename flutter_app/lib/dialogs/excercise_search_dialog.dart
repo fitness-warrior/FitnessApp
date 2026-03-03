@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import '../repositories/exercise_repository.dart';
 import '../services/exercise_service.dart';
+import '../models/recommendation_profile.dart';
+import '../services/recommendation_service.dart';
+import '../services/recommendation_storage.dart';
 
 class ExerciseSearchDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onExerciseSelected;
@@ -16,6 +20,7 @@ class ExerciseSearchDialog extends StatefulWidget {
 class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   final _searchController = TextEditingController();
   List<Map<String, dynamic>> _searchResults = [];
+  List<Map<String, dynamic>> _recommended = [];
   bool _isLoading = false;
   String? _error;
   String? _selectedArea;
@@ -34,6 +39,28 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadRecommendations();
+  }
+
+  Future<void> _loadRecommendations() async {
+    try {
+      final profile = await RecommendationStorage.loadProfile();
+      if (profile == null) return;
+      final rec = await RecommendationService.getRecommendations(profile);
+      final tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+      if (tags.isEmpty) return;
+      final recResults = await ExerciseRepository.listExercises(recommendationTags: tags);
+      setState(() {
+        _recommended = recResults;
+      });
+    } catch (_) {
+      // ignore errors; recommendations are optional
+    }
+  }
+
   Future<void> _performSearch(String query) async {
     if (query.trim().isEmpty && _selectedArea == null && _selectedType == null) {
       setState(() {
@@ -48,7 +75,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     });
 
     try {
-      final results = await ExerciseService.listExercises(
+      final results = await ExerciseRepository.listExercises(
         name: query.trim().isEmpty ? null : query.trim(),
         area: _selectedArea,
         type: _selectedType,
@@ -166,6 +193,60 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
             ],
           ),
         ),
+      );
+    }
+
+    // If user hasn't typed a query and we have recommendations, show them first
+    if (_searchController.text.isEmpty && _recommended.isNotEmpty) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Recommended for you', style: Theme.of(context).textTheme.titleMedium),
+            ),
+          ),
+          SizedBox(
+            height: 160,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: _recommended.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, idx) {
+                final exercise = _recommended[idx];
+                final name = exercise['name'] ?? exercise['exer_name'] ?? 'Unknown';
+                final area = exercise['area'] ?? exercise['exer_body_area'] ?? 'N/A';
+                final type = exercise['type'] ?? exercise['exer_type'] ?? 'N/A';
+                return GestureDetector(
+                  onTap: () => _selectExercise(exercise),
+                  child: SizedBox(
+                    width: 220,
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Text(area, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 6),
+                            Text(type, style: const TextStyle(fontSize: 12)),
+                            const Spacer(),
+                            Align(alignment: Alignment.bottomRight, child: Text('Add', style: TextStyle(color: Colors.blue[700], fontSize: 12))),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const Divider(),
+        ],
       );
     }
 
