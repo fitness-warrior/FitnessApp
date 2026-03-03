@@ -5,6 +5,7 @@ import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
+import '../widgets/common/finish_button.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -175,6 +176,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
+  // ignore: unused_element
   void _openFinishDialog() {
     if (_workoutExercises.isEmpty) return;
 
@@ -393,18 +395,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     },
                   ),
           ),
-          if (_workoutExercises.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                onPressed: _openFinishDialog,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                child: const Text('Finish Workout'),
-              ),
-            ),
         ],
+      ),
+      bottomNavigationBar: FinishButton(
+        onPressed: null, // TODO: wire up when ready
       ),
     );
   }
