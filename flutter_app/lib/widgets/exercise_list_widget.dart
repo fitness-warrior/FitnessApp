@@ -8,7 +8,8 @@ class ExerciseListWidget extends StatefulWidget {
   /// a "Recommended for you" section and to score items.
   final List<String>? recommendationTags;
 
-  const ExerciseListWidget({Key? key, this.recommendationTags}) : super(key: key);
+  const ExerciseListWidget({Key? key, this.recommendationTags})
+      : super(key: key);
 
   @override
   State<ExerciseListWidget> createState() => _ExerciseListWidgetState();
@@ -88,7 +89,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   }
 
   Future<void> _loadRecommendationsIfNeeded() async {
-    if (widget.recommendationTags == null || widget.recommendationTags!.isEmpty) return;
+    if (widget.recommendationTags == null || widget.recommendationTags!.isEmpty)
+      return;
     setState(() {
       _loadingRecommendations = true;
     });
@@ -316,7 +318,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
       },
       child: ListView(
         children: [
-          if (widget.recommendationTags != null && widget.recommendationTags!.isNotEmpty)
+          if (widget.recommendationTags != null &&
+              widget.recommendationTags!.isNotEmpty)
             _buildRecommendedSection(),
           ..._exercises.map((e) => _buildExerciseCard(e)).toList(),
         ],
@@ -338,7 +341,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-          child: Text('Recommended for you', style: Theme.of(context).textTheme.titleMedium),
+          child: Text('Recommended for you',
+              style: Theme.of(context).textTheme.titleMedium),
         ),
         SizedBox(
           height: 140,
@@ -382,19 +386,32 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: type == 'strength' ? Colors.blue : Colors.orange,
-                      child: Icon(type == 'strength' ? Icons.fitness_center : Icons.directions_run, color: Colors.white),
+                      backgroundColor:
+                          type == 'strength' ? Colors.blue : Colors.orange,
+                      child: Icon(
+                          type == 'strength'
+                              ? Icons.fitness_center
+                              : Icons.directions_run,
+                          color: Colors.white),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold))),
+                    Expanded(
+                        child: Text(name,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold))),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(area, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(area,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 6),
                 Text(equipment, style: const TextStyle(fontSize: 12)),
                 const Spacer(),
-                Align(alignment: Alignment.bottomRight, child: Text('Recommended', style: TextStyle(color: Colors.green[700], fontSize: 12))),
+                Align(
+                    alignment: Alignment.bottomRight,
+                    child: Text('Recommended',
+                        style:
+                            TextStyle(color: Colors.green[700], fontSize: 12))),
               ],
             ),
           ),
@@ -408,9 +425,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: exercise['exer_type'] == 'strength'
-              ? Colors.blue
-              : Colors.orange,
+          backgroundColor:
+              exercise['exer_type'] == 'strength' ? Colors.blue : Colors.orange,
           child: Icon(
             exercise['exer_type'] == 'strength'
                 ? Icons.fitness_center
@@ -429,7 +445,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.accessibility_new, size: 14, color: Colors.grey[600]),
+                Icon(Icons.accessibility_new,
+                    size: 14, color: Colors.grey[600]),
                 const SizedBox(width: 4),
                 Text(exercise['exer_body_area'] ?? 'N/A'),
               ],
