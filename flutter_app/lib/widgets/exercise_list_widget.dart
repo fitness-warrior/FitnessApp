@@ -60,7 +60,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     super.dispose();
   }
 
-  Future<void> _loadExercises() async {
+  Future<void> _loadExercises({bool forceRefresh = false}) async {
     setState(() {
       _loading = true;
       _error = null;
@@ -75,6 +75,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
         type: _selectedType,
         equipment: _selectedEquipment.isEmpty ? null : _selectedEquipment,
         recommendationTags: widget.recommendationTags,
+        forceRefresh: forceRefresh,
       );
       setState(() {
         _exercises = exercises;
@@ -192,10 +193,35 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
                   'Filters',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                TextButton.icon(
-                  onPressed: _clearFilters,
-                  icon: const Icon(Icons.clear_all, size: 16),
-                  label: const Text('Clear'),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: _clearFilters,
+                      icon: const Icon(Icons.clear_all, size: 16),
+                      label: const Text('Clear'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () async {
+                        // Invalidate cache for current query and force refresh from server
+                        ExerciseRepository.invalidateCache(
+                          name: _searchController.text.trim().isEmpty
+                              ? null
+                              : _searchController.text.trim(),
+                          area: _selectedArea,
+                          type: _selectedType,
+                          equipment: _selectedEquipment.isEmpty
+                              ? null
+                              : _selectedEquipment,
+                          recommendationTags: widget.recommendationTags,
+                        );
+                        await _loadExercises(forceRefresh: true);
+                        await _loadRecommendationsIfNeeded();
+                      },
+                      icon: const Icon(Icons.sync, size: 16),
+                      label: const Text('Refresh'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -333,7 +359,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        await _loadExercises();
+        await _loadExercises(forceRefresh: true);
         await _loadRecommendationsIfNeeded();
       },
       child: ListView(
