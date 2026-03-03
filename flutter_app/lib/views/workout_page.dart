@@ -6,6 +6,7 @@ import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/finish_button.dart';
+import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -258,7 +259,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
               child: Icon(Icons.person, size: 18),
             ),
             onPressed: () {
-              // TODO: Navigate to profile page
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
             },
             tooltip: 'Profile',
           ),
