@@ -74,13 +74,14 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     }
   }
 
-          List<String>? tags = widget.initialTags;
-          if (tags == null || tags.isEmpty) {
-            final profile = await RecommendationStorage.loadProfile();
-            if (profile == null) return;
-            final rec = await RecommendationService.getRecommendations(profile);
-            tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
-          }
+  Future<void> _performSearch(String query) async {
+    List<String>? tags = widget.initialTags;
+    if (tags == null || tags.isEmpty) {
+      final profile = await RecommendationStorage.loadProfile();
+      if (profile == null) return;
+      final rec = await RecommendationService.getRecommendations(profile);
+      tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+    }
     if (query.trim().isEmpty &&
         _selectedArea == null &&
         _selectedType == null) {

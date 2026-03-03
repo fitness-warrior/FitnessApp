@@ -40,6 +40,7 @@ class ExerciseRepository {
       ids: ids,
     ));
   }
+
   static Future<List<Map<String, dynamic>>> listExercises({
     String? name,
     String? area,
