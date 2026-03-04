@@ -279,14 +279,14 @@ INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, b
 INSERT INTO exercise
 (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip)
 VALUES
-('Push-ups','chest','strength','Classic upper body exercise','https://youtube.com/pushups','Bodyweight Only'),
-('Squats','legs','strength','Lower body compound movement','https://youtube.com/squats','Bodyweight Only'),
-('Running','full body','cardio','Outdoor cardio exercise','https://youtube.com/running','Dumbbells'),
-('Bench Press','chest','strength','Chest and tricep builder','https://youtube.com/bench','Barbells'),
-('Deadlift','back','strength','Full posterior chain exercise','https://youtube.com/deadlift','Gym Machines'),
-('Cycling','legs','cardio','Low impact cardio','https://youtube.com/cycling','Cardio Machines'),
-('Pull-ups','back','strength','Back and bicep exercise','https://youtube.com/pullups','Bodyweight Only'),
-('Jump Rope','full body','cardio','High intensity cardio','https://youtube.com/jumprope','Resistance Bands');
+('Push-ups','chest','strength','Classic upper body exercise','https://www.youtube.com/watch?v=3ze34NnKM7s','Bodyweight Only'),
+('Squats','legs','strength','Lower body compound movement','https://www.youtube.com/watch?v=KnaCp9CgSjw','Bodyweight Only'),
+('Running','full body','cardio','Outdoor cardio exercise','https://www.youtube.com/watch?v=ARylWpUCsGk','Dumbbells'),
+('Bench Press','chest','strength','Chest and tricep builder','https://www.youtube.com/watch?v=mCrcJSZ0kts','Barbells'),
+('Deadlift','back','strength','Full posterior chain exercise','https://www.youtube.com/watch?v=ljsGANvaOCo','Gym Machines'),
+('Cycling','legs','cardio','Low impact cardio','https://www.youtube.com/watch?v=PufoCwPIzFo','Cardio Machines'),
+('Pull-ups','back','strength','Back and bicep exercise','https://www.youtube.com/watch?v=JSLqIl8NeX8','Bodyweight Only'),
+('Jump Rope','full body','cardio','High intensity cardio','https://www.youtube.com/watch?v=iU0izgfbhvY','Resistance Bands');
 
 INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_updated_at, work_day) VALUES
 (1, 'Chest Day', 'Focus on chest and triceps', '2026-02-01 10:00:00', '2026-02-01 10:00:00', '2026-02-18'),
