@@ -5,6 +5,8 @@ import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
+import '../widgets/common/finish_button.dart';
+import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -236,8 +238,15 @@ class _WorkoutPageState extends State<WorkoutPage> {
         title: HeaderWithDropdown(
           title: 'My Workout',
           onMenuSelected: (value) {
-            Navigator.of(context).pushReplacementNamed(
-                '/${value.toLowerCase().replaceAll(' ', '_')}');
+            final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
+            final routes = {'/my_workout', '/my_meal'};
+            if (routes.contains(route)) {
+              Navigator.of(context).pushReplacementNamed(route);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('$value coming soon')),
+              );
+            }
           },
         ),
         actions: [
@@ -257,7 +266,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
               child: Icon(Icons.person, size: 18),
             ),
             onPressed: () {
-              // TODO: Navigate to profile page
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
             },
             tooltip: 'Profile',
           ),
@@ -265,18 +276,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
       ),
       body: Column(
         children: [
-          // Add Exercise button row — left-aligned above the exercise list
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton.icon(
-                onPressed: _isLoadingPlaceholder ? null : _openSearchDialog,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Exercise'),
-              ),
-            ),
-          ),
           Expanded(
             child: _workoutExercises.isEmpty
                 ? Center(
@@ -393,18 +392,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     },
                   ),
           ),
-          if (_workoutExercises.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                onPressed: _openFinishDialog,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                child: const Text('Finish Workout'),
-              ),
-            ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openSearchDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Exercise'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      bottomNavigationBar: FinishButton(
+        onPressed: _openFinishDialog,
       ),
     );
   }
