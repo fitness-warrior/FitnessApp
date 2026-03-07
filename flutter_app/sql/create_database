@@ -376,15 +376,15 @@ INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, reward_de
 (7, 7, 'Vampire Fang', 'item', 'Rare alchemical ingredient'),
 (8, 9, 'Demon Soul', 'experience', 'Grants massive experience');
 
-INSERT INTO meal_collection (collection_name, collection_type, collection_description) VALUES
-('Vegan Meals', 'vegan', 'Plant-based meals with no animal products'),
-('Vegetarian Meals', 'vegetarian', 'Meals without meat but may include dairy/eggs'),
-('High Protein', 'high_protein', 'Protein-rich meals for muscle building'),
-('Low Carb', 'low_carb', 'Low carbohydrate meals for weight management'),
-('Keto Friendly', 'keto', 'High fat, low carb meals for ketogenic diet'),
-('Low Calorie', 'low_calorie', 'Meals under 300 calories for weight loss'),
-('Post Workout', 'post_workout', 'Recovery meals with protein and carbs'),
-('Quick Snacks', 'snacks', 'Fast and easy snack options');
+INSERT INTO meal_collection (collection_name, collection_type, collection_description, collection_link) VALUES
+('Vegan Meals', 'vegan', 'Plant-based meals with no animal products', 'https://example.com/collections/vegan'),
+('Vegetarian Meals', 'vegetarian', 'Meals without meat but may include dairy/eggs', 'https://example.com/collections/vegetarian'),
+('High Protein', 'high_protein', 'Protein-rich meals for muscle building', 'https://example.com/collections/high-protein'),
+('Low Carb', 'low_carb', 'Low carbohydrate meals for weight management', 'https://example.com/collections/low-carb'),
+('Keto Friendly', 'keto', 'High fat, low carb meals for ketogenic diet', 'https://example.com/collections/keto'),
+('Low Calorie', 'low_calorie', 'Meals under 300 calories for weight loss', 'https://example.com/collections/low-calorie'),
+('Post Workout', 'post_workout', 'Recovery meals with protein and carbs', 'https://example.com/collections/post-workout'),
+('Quick Snacks', 'snacks', 'Fast and easy snack options', 'https://example.com/collections/snacks');
 
 --Run this before inserting additional food data;
 ALTER TABLE food ALTER COLUMN food_name TYPE VARCHAR(50);
