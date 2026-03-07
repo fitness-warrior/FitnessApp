@@ -168,7 +168,7 @@ CREATE TABLE rewards (
     reward_level INT NOT NULL,
     reward_name VARCHAR(20) NOT NULL,
     reward_type reward_type NOT NULL,
-    description TEXT
+    reward_description TEXT
 );
 
 ---------------- MEAL COLLECTION ----------------
@@ -177,7 +177,7 @@ CREATE TABLE meal_collection (
     collection_id SERIAL PRIMARY KEY,
     collection_name VARCHAR(50) NOT NULL,
     collection_type VARCHAR(20) NOT NULL,
-    description TEXT,
+    collection_description TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -365,7 +365,7 @@ INSERT INTO game_items (item_id, game_char_id) VALUES
 (7, 3),
 (8, 3);
 
-INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, description) VALUES
+INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, reward_description) VALUES
 (1, 1, 'Goblin Gold', 'currency', 'Small amount of gold from goblin'),
 (2, 3, 'Orc Axe', 'item', 'A crude but effective axe'),
 (3, 5, 'Troll Hide', 'item', 'Tough leather for crafting armor'),
@@ -375,7 +375,7 @@ INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, descripti
 (7, 7, 'Vampire Fang', 'item', 'Rare alchemical ingredient'),
 (8, 9, 'Demon Soul', 'experience', 'Grants massive experience');
 
-INSERT INTO meal_collection (collection_name, collection_type, description) VALUES
+INSERT INTO meal_collection (collection_name, collection_type, collection_description) VALUES
 ('Vegan Meals', 'vegan', 'Plant-based meals with no animal products'),
 ('Vegetarian Meals', 'vegetarian', 'Meals without meat but may include dairy/eggs'),
 ('High Protein', 'high_protein', 'Protein-rich meals for muscle building'),
