@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/daily_meal_plan.dart';
 import '../models/meal_item.dart';
 import '../widgets/common/header.dart';
+import 'recipe_list_page.dart';
 
 class MealPlanPage extends StatelessWidget {
   const MealPlanPage({Key? key}) : super(key: key);
@@ -48,13 +49,25 @@ class MealPlanPage extends StatelessWidget {
             }
           },
         ),
-        actions: const [
+        actions: [
           IconButton(
+            icon: const Icon(Icons.restaurant_menu),
+            tooltip: 'Browse Recipes',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RecipeListPage(),
+                ),
+              );
+            },
+          ),
+          const IconButton(
             icon: Icon(Icons.delete_sweep),
             tooltip: 'Clear day',
             onPressed: null,
           ),
-          IconButton(
+          const IconButton(
             icon: CircleAvatar(
               radius: 14,
               child: Icon(Icons.person, size: 18),
