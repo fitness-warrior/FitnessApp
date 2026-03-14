@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../data/demo_recipes.dart';
+import 'recipe_detail_page.dart';
 
 class RecipeListPage extends StatelessWidget {
   const RecipeListPage({Key? key}) : super(key: key);
@@ -23,6 +24,12 @@ class RecipeListPage extends StatelessWidget {
               subtitle: Text('${recipe.ingredients.length} ingredients • ${recipe.steps.length} steps'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecipeDetailPage(recipe: recipe),
+                  ),
+                );
               },
             ),
           );
