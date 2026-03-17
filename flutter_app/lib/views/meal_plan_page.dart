@@ -131,64 +131,170 @@ class _DateAndCalorieHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const dailyTarget = 2000.0;
-    final progress = (totalCalories / dailyTarget).clamp(0.0, 1.0);
-    final over = totalCalories > dailyTarget;
+    const dailyGoal = 2000.0;
+    const exercise = 0.0;
+    final remaining = (dailyGoal - totalCalories + exercise).toInt();
+    final progress = (totalCalories / dailyGoal).clamp(0.0, 1.0);
+    final over = remaining < 0;
 
     return Card(
-      margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Column(
           children: [
-            // Date row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const IconButton(
-                    icon: Icon(Icons.chevron_left), onPressed: null),
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                const IconButton(
-                    icon: Icon(Icons.chevron_right), onPressed: null),
-              ],
-            ),
-            const SizedBox(height: 6),
-            // Calorie info
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${totalCalories.toInt()} kcal',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: over ? Colors.red : Colors.green[700],
+                  label,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                Text(
-                  '/ ${dailyTarget.toInt()} kcal goal',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: null,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: null,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            // Progress bar
+            Text(
+              'Calories Remaining',
+              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              remaining.abs().toString(),
+              style: TextStyle(
+                fontSize: 42,
+                fontWeight: FontWeight.w800,
+                color: over ? Colors.red : Colors.blue[700],
+                height: 1,
+              ),
+            ),
+            Text(
+              over ? 'Over your goal' : 'Under your goal',
+              style: TextStyle(
+                fontSize: 12,
+                color: over ? Colors.red[400] : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _MetricBox(
+                    label: 'Goal',
+                    value: dailyGoal.toInt().toString(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _MetricBox(
+                    label: 'Food',
+                    value: totalCalories.toInt().toString(),
+                    isEmphasis: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _MetricBox(
+                    label: 'Exercise',
+                    value: exercise.toInt().toString(),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  'Daily Progress',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                const Spacer(),
+                Text(
+                  '${totalCalories.toInt()} / ${dailyGoal.toInt()} kcal',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
                 value: progress,
-                minHeight: 10,
+                minHeight: 11,
                 backgroundColor: Colors.grey[200],
                 valueColor: AlwaysStoppedAnimation<Color>(
-                    over ? Colors.red : Colors.green),
+                  over ? Colors.red : Colors.blue,
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MetricBox extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isEmphasis;
+
+  const _MetricBox({
+    required this.label,
+    required this.value,
+    this.isEmphasis = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: isEmphasis ? Colors.blue[700] : Colors.grey[900],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -208,102 +314,146 @@ class _MealSlotCard extends StatelessWidget {
     final slotCalories = items.fold<double>(0, (s, i) => s + i.calories);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 2,
-      child: Theme(
-        // Remove the ExpansionTile top border
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: true,
-          leading: CircleAvatar(
-            backgroundColor: _slotColor(slot).withValues(alpha: 0.15),
-            child: Icon(_slotIcon(slot), color: _slotColor(slot), size: 20),
-          ),
-          title: Text(
-            slot.label,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${slotCalories.toInt()} kcal',
-                style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 4),
-              const Icon(Icons.expand_more),
-            ],
-          ),
-          children: [
-            if (items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text('No foods added yet.',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-              )
-            else
-              ...items.map((food) => ListTile(
-                    dense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                    leading: CircleAvatar(
-                      radius: 14,
-                      backgroundColor:
-                          _typeColor(food.type).withValues(alpha: 0.15),
-                      child: Text(
-                        food.type.isNotEmpty ? food.type[0] : '?',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: _typeColor(food.type)),
-                      ),
+      elevation: 1.5,
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            ),
+            padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+            child: Row(
+              children: [
+                Icon(_slotIcon(slot), color: _slotColor(slot), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    slot.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
                     ),
-                    title:
-                        Text(food.name, style: const TextStyle(fontSize: 14)),
-                    subtitle: Text(food.type,
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[500])),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${food.calories.toInt()} kcal',
-                          style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(width: 4),
-                        // Delete icon — UI only, disabled
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          color: Colors.red[200],
-                          onPressed: null,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                  )),
-            // "Add food" button — UI only, disabled
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: null,
+                  icon: const Icon(Icons.add_circle_outline, size: 18),
+                  label: const Text('Add Food'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue,
+                    visualDensity: VisualDensity.compact,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (items.isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: OutlinedButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add food'),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.grey[300]!),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  minimumSize: const Size(double.infinity, 36),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'No foods added yet.',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ...items.map(_buildFoodRow),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  'Total',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${slotCalories.toInt()} kcal',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFoodRow(MealItem food) {
+    final typeColor = _typeColor(food.type);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            height: 28,
+            width: 28,
+            decoration: BoxDecoration(
+              color: typeColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                food.type.isNotEmpty ? food.type[0] : '?',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: typeColor,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  food.name,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                Text(
+                  food.type,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            food.calories.toInt().toString(),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            'kcal',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            color: Colors.red[200],
+            onPressed: null,
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
       ),
     );
   }
