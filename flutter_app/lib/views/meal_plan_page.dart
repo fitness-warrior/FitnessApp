@@ -52,6 +52,15 @@ class MealPlanPage extends StatelessWidget {
       .expand((items) => items)
       .fold(0, (s, i) => s + i.calories);
 
+    double _caloriesForType(String type) => _demoSlots.values
+      .expand((items) => items)
+      .where((item) => item.type == type)
+      .fold(0, (sum, item) => sum + item.calories);
+
+    double get _proteinCalories => _caloriesForType('Protein');
+    double get _carbCalories => _caloriesForType('Carb');
+    double get _fatCalories => _caloriesForType('Fat');
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,6 +110,9 @@ class MealPlanPage extends StatelessWidget {
             child: _DateAndCalorieHeader(
               label: 'Today',
               totalCalories: _totalCalories,
+              proteinCalories: _proteinCalories,
+              carbCalories: _carbCalories,
+              fatCalories: _fatCalories,
             ),
           ),
           for (final slot in MealSlot.values)
@@ -123,10 +135,16 @@ class MealPlanPage extends StatelessWidget {
 class _DateAndCalorieHeader extends StatelessWidget {
   final String label;
   final double totalCalories;
+  final double proteinCalories;
+  final double carbCalories;
+  final double fatCalories;
 
   const _DateAndCalorieHeader({
     required this.label,
     required this.totalCalories,
+    required this.proteinCalories,
+    required this.carbCalories,
+    required this.fatCalories,
   });
 
   @override
@@ -136,6 +154,7 @@ class _DateAndCalorieHeader extends StatelessWidget {
     final remaining = (dailyGoal - totalCalories + exercise).toInt();
     final progress = (totalCalories / dailyGoal).clamp(0.0, 1.0);
     final over = remaining < 0;
+    final macroTotal = proteinCalories + carbCalories + fatCalories;
 
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
@@ -249,9 +268,106 @@ class _DateAndCalorieHeader extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  'Macros',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                height: 10,
+                child: macroTotal <= 0
+                    ? Container(color: Colors.grey[200])
+                    : Row(
+                        children: [
+                          if (proteinCalories > 0)
+                            Expanded(
+                              flex: proteinCalories.round(),
+                              child: Container(color: Colors.red),
+                            ),
+                          if (carbCalories > 0)
+                            Expanded(
+                              flex: carbCalories.round(),
+                              child: Container(color: Colors.amber),
+                            ),
+                          if (fatCalories > 0)
+                            Expanded(
+                              flex: fatCalories.round(),
+                              child: Container(color: Colors.orange),
+                            ),
+                        ],
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              runSpacing: 6,
+              children: [
+                _MacroLegendItem(
+                  label: 'Protein',
+                  value: proteinCalories.toInt(),
+                  color: Colors.red,
+                ),
+                _MacroLegendItem(
+                  label: 'Carbs',
+                  value: carbCalories.toInt(),
+                  color: Colors.amber,
+                ),
+                _MacroLegendItem(
+                  label: 'Fats',
+                  value: fatCalories.toInt(),
+                  color: Colors.orange,
+                ),
+              ],
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MacroLegendItem extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+
+  const _MacroLegendItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          '$label: $value kcal',
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
