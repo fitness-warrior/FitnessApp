@@ -123,7 +123,10 @@ CREATE TABLE food (
     food_id SERIAL PRIMARY KEY,
     food_name VARCHAR(50),
     food_type VARCHAR(50),
-    food_calories FLOAT
+    food_calories FLOAT NOT NULL,
+    food_fat FLOAT NOT NULL,
+    food_fibre Float NOT NULL,
+    food_protein Float NOT NULL,
 );
 
 CREATE TABLE food_plan (
@@ -165,7 +168,7 @@ CREATE TABLE rewards (
     reward_level INT NOT NULL,
     reward_name VARCHAR(20) NOT NULL,
     reward_type reward_type NOT NULL,
-    description TEXT
+    reward_description TEXT
 );
 
 ---------------- MEAL COLLECTION ----------------
@@ -174,8 +177,9 @@ CREATE TABLE meal_collection (
     collection_id SERIAL PRIMARY KEY,
     collection_name VARCHAR(50) NOT NULL,
     collection_type VARCHAR(20) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
+    collection_description TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    collection_link TEXT
 );
 
 CREATE TABLE collection_foods (
@@ -321,15 +325,16 @@ VALUES
 (7, 8, 100, 2, 120, 80),
 (8, 4, 12, 4, 15, 10);
 
-INSERT INTO food (food_name, food_type, food_calories) VALUES
-('Chicken', 'protein', 165.0),
-('Rice', 'carbs', 130.0),
-('Broccoli', 'vegetable', 55.0),
-('Salmon', 'protein', 208.0),
-('Pasta', 'carbs', 131.0),
-('Spinach', 'vegetable', 23.0),
-('Eggs', 'protein', 155.0),
-('Oats', 'carbs', 389.0);
+-- food_name, food_type, food_calories, food_fat, food_fibre, food_protein
+INSERT INTO food (food_name, food_type, food_calories, food_fat, food_fibre, food_protein) VALUES
+('Chicken', 'protein', 165.0, 3.6, 0.0, 31.0),
+('Rice', 'carbs', 130.0, 0.3, 0.4, 2.7),
+('Broccoli', 'vegetable', 55.0, 0.6, 5.1, 3.7),
+('Salmon', 'protein', 208.0, 13.0, 0.0, 20.0),
+('Pasta', 'carbs', 131.0, 1.1, 1.8, 5.0),
+('Spinach', 'vegetable', 23.0, 0.4, 2.2, 2.9),
+('Eggs', 'protein', 155.0, 11.0, 0.0, 13.0),
+('Oats', 'carbs', 389.0, 6.9, 10.6, 16.9);
 
 INSERT INTO food_plan (food_id, meal_id) VALUES
 (1, 1),
@@ -361,7 +366,7 @@ INSERT INTO game_items (item_id, game_char_id) VALUES
 (7, 3),
 (8, 3);
 
-INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, description) VALUES
+INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, reward_description) VALUES
 (1, 1, 'Goblin Gold', 'currency', 'Small amount of gold from goblin'),
 (2, 3, 'Orc Axe', 'item', 'A crude but effective axe'),
 (3, 5, 'Troll Hide', 'item', 'Tough leather for crafting armor'),
@@ -371,79 +376,123 @@ INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, descripti
 (7, 7, 'Vampire Fang', 'item', 'Rare alchemical ingredient'),
 (8, 9, 'Demon Soul', 'experience', 'Grants massive experience');
 
-INSERT INTO meal_collection (collection_name, collection_type, description) VALUES
-('Vegan Meals', 'vegan', 'Plant-based meals with no animal products'),
-('Vegetarian Meals', 'vegetarian', 'Meals without meat but may include dairy/eggs'),
-('High Protein', 'high_protein', 'Protein-rich meals for muscle building'),
-('Low Carb', 'low_carb', 'Low carbohydrate meals for weight management'),
-('Keto Friendly', 'keto', 'High fat, low carb meals for ketogenic diet'),
-('Low Calorie', 'low_calorie', 'Meals under 300 calories for weight loss'),
-('Post Workout', 'post_workout', 'Recovery meals with protein and carbs'),
-('Quick Snacks', 'snacks', 'Fast and easy snack options');
+INSERT INTO meal_collection (collection_name, collection_type, collection_description, collection_link) VALUES
+('Vegan Meals', 'vegan', 'Plant-based meals with no animal products', 'https://example.com/collections/vegan'),
+('Vegetarian Meals', 'vegetarian', 'Meals without meat but may include dairy/eggs', 'https://example.com/collections/vegetarian'),
+('High Protein', 'high_protein', 'Protein-rich meals for muscle building', 'https://example.com/collections/high-protein'),
+('Low Carb', 'low_carb', 'Low carbohydrate meals for weight management', 'https://example.com/collections/low-carb'),
+('Keto Friendly', 'keto', 'High fat, low carb meals for ketogenic diet', 'https://example.com/collections/keto'),
+('Low Calorie', 'low_calorie', 'Meals under 300 calories for weight loss', 'https://example.com/collections/low-calorie'),
+('Post Workout', 'post_workout', 'Recovery meals with protein and carbs', 'https://example.com/collections/post-workout'),
+('Quick Snacks', 'snacks', 'Fast and easy snack options', 'https://example.com/collections/snacks');
 
 --Run this before inserting additional food data;
 ALTER TABLE food ALTER COLUMN food_name TYPE VARCHAR(50);
 
-INSERT INTO food (food_name, food_type, food_calories) VALUES
+-- food_name, food_type, food_calories, food_fat, food_fibre, food_protein
+INSERT INTO food (food_name, food_type, food_calories, food_fat, food_fibre, food_protein) VALUES
 -- Proteins
-('Beef', 'protein', 250.0),
-('Tuna', 'protein', 132.0),
-('Turkey', 'protein', 135.0),
-('Tofu', 'protein', 76.0),
-('Greek Yogurt', 'protein', 100.0),
-('Cottage Cheese', 'protein', 98.0),
-('Protein Shake', 'protein', 120.0),
-('Pork Chop', 'protein', 231.0),
+('Beef', 'protein', 250.0, 15.0, 0.0, 26.0),
+('Tuna', 'protein', 132.0, 1.0, 0.0, 28.0),
+('Turkey', 'protein', 135.0, 1.0, 0.0, 30.0),
+('Tofu', 'protein', 76.0, 4.8, 0.3, 8.0),
+('Greek Yogurt', 'protein', 100.0, 0.7, 0.0, 17.0),
+('Cottage Cheese', 'protein', 98.0, 4.3, 0.0, 11.0),
+('Protein Shake', 'protein', 120.0, 1.0, 1.0, 24.0),
+('Pork Chop', 'protein', 231.0, 13.0, 0.0, 27.0),
 
 -- Carbs
-('Quinoa', 'carbs', 222.0),
-('Brown Rice', 'carbs', 218.0),
-('Sweet Potato', 'carbs', 112.0),
-('White Bread', 'carbs', 265.0),
-('Whole Wheat Bread', 'carbs', 247.0),
-('Bagel', 'carbs', 289.0),
-('Couscous', 'carbs', 176.0),
-('Cereal', 'carbs', 379.0),
+('Quinoa', 'carbs', 222.0, 3.6, 5.2, 8.1),
+('Brown Rice', 'carbs', 218.0, 1.6, 3.5, 4.5),
+('Sweet Potato', 'carbs', 112.0, 0.1, 3.8, 2.0),
+('White Bread', 'carbs', 265.0, 3.2, 2.7, 9.0),
+('Whole Wheat Bread', 'carbs', 247.0, 3.4, 6.0, 13.0),
+('Bagel', 'carbs', 289.0, 1.7, 2.3, 11.0),
+('Couscous', 'carbs', 176.0, 0.3, 2.2, 6.0),
+('Cereal', 'carbs', 379.0, 1.5, 5.0, 7.0),
 
 -- Vegetables
-('Carrots', 'vegetable', 41.0),
-('Kale', 'vegetable', 33.0),
-('Bell Peppers', 'vegetable', 31.0),
-('Tomatoes', 'vegetable', 18.0),
-('Cucumber', 'vegetable', 16.0),
-('Cauliflower', 'vegetable', 25.0),
-('Green Beans', 'vegetable', 31.0),
-('Lettuce', 'vegetable', 15.0),
+('Carrots', 'vegetable', 41.0, 0.2, 2.8, 0.9),
+('Kale', 'vegetable', 33.0, 0.5, 2.0, 2.9),
+('Bell Peppers', 'vegetable', 31.0, 0.3, 2.1, 1.0),
+('Tomatoes', 'vegetable', 18.0, 0.2, 1.2, 0.9),
+('Cucumber', 'vegetable', 16.0, 0.1, 0.5, 0.7),
+('Cauliflower', 'vegetable', 25.0, 0.3, 2.0, 1.9),
+('Green Beans', 'vegetable', 31.0, 0.1, 3.4, 1.8),
+('Lettuce', 'vegetable', 15.0, 0.2, 1.3, 1.4),
 
 -- Fruits
-('Apple', 'fruit', 95.0),
-('Banana', 'fruit', 105.0),
-('Orange', 'fruit', 62.0),
-('Strawberries', 'fruit', 49.0),
-('Blueberries', 'fruit', 84.0),
-('Grapes', 'fruit', 104.0),
-('Watermelon', 'fruit', 86.0),
-('Mango', 'fruit', 135.0),
+('Apple', 'fruit', 95.0, 0.3, 4.4, 0.5),
+('Banana', 'fruit', 105.0, 0.4, 3.1, 1.3),
+('Orange', 'fruit', 62.0, 0.2, 3.1, 1.2),
+('Strawberries', 'fruit', 49.0, 0.5, 3.0, 1.0),
+('Blueberries', 'fruit', 84.0, 0.5, 2.4, 1.1),
+('Grapes', 'fruit', 104.0, 0.2, 1.4, 1.1),
+('Watermelon', 'fruit', 86.0, 0.4, 1.1, 1.7),
+('Mango', 'fruit', 135.0, 0.6, 3.7, 1.1),
 
 -- Fats/Oils
-('Avocado', 'fat', 240.0),
-('Olive Oil', 'fat', 119.0),
-('Almonds', 'fat', 164.0),
-('Peanut Butter', 'fat', 188.0),
-('Walnuts', 'fat', 185.0),
-('Cheese', 'fat', 113.0),
-('Butter', 'fat', 102.0),
-('Cashews', 'fat', 157.0),
+('Avocado', 'fat', 240.0, 22.0, 10.0, 3.0),
+('Olive Oil', 'fat', 119.0, 13.5, 0.0, 0.0),
+('Almonds', 'fat', 164.0, 14.0, 3.5, 6.0),
+('Peanut Butter', 'fat', 188.0, 16.0, 1.9, 8.0),
+('Walnuts', 'fat', 185.0, 18.5, 1.9, 4.3),
+('Cheese', 'fat', 113.0, 9.0, 0.0, 7.0),
+('Butter', 'fat', 102.0, 11.5, 0.0, 0.1),
+('Cashews', 'fat', 157.0, 12.0, 0.9, 5.2),
 
 -- Snacks
-('Granola Bar', 'snack', 140.0),
-('Protein Bar', 'snack', 200.0),
-('Trail Mix', 'snack', 173.0),
-('Popcorn', 'snack', 55.0),
-('Rice Cakes', 'snack', 35.0),
-('Crackers', 'snack', 120.0),
-('Chips', 'snack', 152.0),
-('Pretzels', 'snack', 108.0);
+('Granola Bar', 'snack', 140.0, 5.0, 2.0, 3.0),
+('Protein Bar', 'snack', 200.0, 7.0, 3.0, 20.0),
+('Trail Mix', 'snack', 173.0, 11.0, 2.0, 5.0),
+('Popcorn', 'snack', 55.0, 0.6, 2.0, 1.8),
+('Rice Cakes', 'snack', 35.0, 0.3, 0.4, 0.7),
+('Crackers', 'snack', 120.0, 4.0, 1.0, 2.5),
+('Chips', 'snack', 152.0, 10.0, 1.0, 2.0),
+('Pretzels', 'snack', 108.0, 1.0, 0.9, 2.6),
+
+-- Additional Proteins / Legumes / Seafood
+('Shrimp', 'protein', 99.0, 0.3, 0.0, 24.0),
+('Lentils', 'protein', 116.0, 0.4, 7.9, 9.0),
+('Chickpeas', 'protein', 164.0, 2.6, 7.6, 8.9),
+('Black Beans', 'protein', 132.0, 0.5, 8.7, 8.9),
+('Edamame', 'protein', 121.0, 5.2, 5.2, 11.0),
+('Tempeh', 'protein', 193.0, 11.0, 0.0, 19.0),
+('Seitan', 'protein', 143.0, 1.9, 0.6, 25.0),
+('Sardines', 'protein', 208.0, 11.5, 0.0, 25.0),
+('Herring', 'protein', 158.0, 9.0, 0.0, 18.0),
+('Venison', 'protein', 158.0, 3.2, 0.0, 30.0),
+('Lamb', 'protein', 294.0, 21.0, 0.0, 25.0),
+
+-- Additional Carbs
+('Barley', 'carbs', 354.0, 2.3, 17.3, 12.5),
+('Millet', 'carbs', 378.0, 4.2, 8.5, 11.0),
+('Buckwheat', 'carbs', 343.0, 3.4, 10.0, 13.3),
+('Polenta', 'carbs', 70.0, 0.4, 1.0, 1.5),
+('Soba Noodles', 'carbs', 99.0, 0.1, 0.0, 5.1),
+
+-- Additional Vegetables
+('Brussels Sprouts', 'vegetable', 43.0, 0.3, 3.8, 3.4),
+('Eggplant', 'vegetable', 25.0, 0.2, 3.0, 1.0),
+('Zucchini', 'vegetable', 17.0, 0.3, 1.0, 1.2),
+('Asparagus', 'vegetable', 20.0, 0.1, 2.1, 2.2),
+
+-- Additional Fruits
+('Pineapple', 'fruit', 50.0, 0.1, 1.4, 0.5),
+('Pear', 'fruit', 101.0, 0.2, 5.5, 0.6),
+('Papaya', 'fruit', 43.0, 0.3, 1.7, 0.5),
+('Kiwi', 'fruit', 61.0, 0.5, 3.0, 1.1),
+
+-- Additional Fats / Oils / Seeds
+('Flaxseed', 'fat', 534.0, 42.0, 27.0, 18.0),
+('Chia Seeds', 'fat', 486.0, 31.0, 34.0, 17.0),
+('Sunflower Seeds', 'fat', 584.0, 51.0, 8.6, 21.0),
+('Ghee', 'fat', 900.0, 100.0, 0.0, 0.0),
+
+-- Additional Snacks
+('Beef Jerky', 'snack', 116.0, 3.0, 0.5, 9.4),
+('Dark Chocolate', 'snack', 546.0, 31.0, 7.0, 5.0),
+('Energy Ball', 'snack', 120.0, 6.0, 2.0, 4.0);
 
 INSERT INTO collection_foods (collection_id, food_id) 
 SELECT 1, food_id FROM food 

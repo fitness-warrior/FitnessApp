@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fitness_app_flutter/services/recommendation_storage.dart';
 import 'package:fitness_app_flutter/widgets/questionnaire/questionnaire_widget.dart';
 import 'package:fitness_app_flutter/views/workout_page.dart';
+import 'package:fitness_app_flutter/views/meal_plan_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,8 +16,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Fitness App',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const QuestionnaireLauncher(),
+      routes: {
+        '/my_workout': (_) => const WorkoutPage(),
+        '/my_meal': (_) => const MealPlanPage(),
+      },
     );
   }
 }
@@ -42,24 +48,37 @@ class _QuestionnaireLauncherState extends State<QuestionnaireLauncher> {
     if (_started) return;
     _started = true;
 
-    // Always show questionnaire first. If you want to skip when profile exists,
-    // load RecommendationStorage.loadProfile() and conditionally navigate.
-    final dynamic recResult =
-        await Navigator.of(context).push<Map<String, dynamic>>(
-      MaterialPageRoute(builder: (_) => const QuestionnairePage()),
-    );
+    // Check if a recommendation profile already exists in local storage.
+    final existingProfile = await RecommendationStorage.loadProfile();
 
-    // Expect recResult to be a Map with 'tags' (List<String>) or null.
     List<String>? tags;
-    try {
-      if (recResult is Map && recResult['tags'] is List) {
-        tags = (recResult['tags'] as List).cast<String>();
+
+    if (existingProfile != null) {
+      // Profile found — skip questionnaire and derive tags from saved profile.
+      tags = [
+        existingProfile.goal,
+        existingProfile.experience,
+        ...existingProfile.equipment,
+      ];
+    } else {
+      // No profile yet — show the questionnaire so the user can set one up.
+      final dynamic recResult =
+          await Navigator.of(context).push<Map<String, dynamic>>(
+        MaterialPageRoute(builder: (_) => const QuestionnairePage()),
+      );
+
+      // Expect recResult to be a Map with 'tags' (List<String>) or null.
+      try {
+        if (recResult is Map && recResult['tags'] is List) {
+          tags = (recResult['tags'] as List).cast<String>();
+        }
+      } catch (_) {
+        tags = null;
       }
-    } catch (_) {
-      tags = null;
     }
 
     // Replace launcher with the main workout page, passing recommendation tags.
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => WorkoutPage(initialRecommendationTags: tags),

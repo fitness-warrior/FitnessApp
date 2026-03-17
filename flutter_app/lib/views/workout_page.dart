@@ -5,7 +5,8 @@ import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
-import '../widgets/common/footer.dart';
+import '../widgets/common/finish_button.dart';
+import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -184,7 +185,32 @@ class _WorkoutPageState extends State<WorkoutPage> {
       builder: (context) => FinishWorkoutDialog(
         exercises: _workoutExercises,
         setControllers: _setControllers,
-        onSuccess: (result) {
+        onSuccess: (result) async {
+          // Submit the completed workout to the backend
+          try {
+            final exercisesWithSets = List.generate(
+              _workoutExercises.length,
+              (i) {
+                final sets = _setControllers[i] ?? [];
+                return {
+                  ..._workoutExercises[i],
+                  'sets': List.generate(
+                      sets.length,
+                      (s) => {
+                            'kg': double.tryParse(sets[s]['kg']!.text) ?? 0,
+                            'reps': int.tryParse(sets[s]['reps']!.text) ?? 0,
+                          }),
+                };
+              },
+            );
+            await WorkoutService.submitWorkout(exercisesWithSets);
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Warning: Could not save workout: $e')),
+              );
+            }
+          }
           setState(() {
             _workoutExercises.clear();
             _setControllers.clear();
@@ -209,17 +235,42 @@ class _WorkoutPageState extends State<WorkoutPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Workout'),
+        title: HeaderWithDropdown(
+          title: 'My Workout',
+          onMenuSelected: (value) {
+            final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
+            final routes = {'/my_workout', '/my_meal'};
+            if (routes.contains(route)) {
+              Navigator.of(context).pushReplacementNamed(route);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('$value coming soon')),
+              );
+            }
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: _openSearchDialog,
+            onPressed: _isLoadingPlaceholder ? null : _openSearchDialog,
             tooltip: 'Search Exercises',
           ),
           IconButton(
             icon: const Icon(Icons.auto_awesome),
-            onPressed: _openGenerateDialog,
+            onPressed: _isLoadingPlaceholder ? null : _openGenerateDialog,
             tooltip: 'Generate Workout',
+          ),
+          IconButton(
+            icon: const CircleAvatar(
+              radius: 14,
+              child: Icon(Icons.person, size: 18),
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
+            },
+            tooltip: 'Profile',
           ),
         ],
       ),
@@ -341,26 +392,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     },
                   ),
           ),
-          if (_workoutExercises.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                onPressed: _openFinishDialog,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                child: const Text('Finish Workout'),
-              ),
-            ),
-          const ResponsiveFooter(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _openSearchDialog,
-        child: const Icon(Icons.add),
-        tooltip: 'Add Exercise',
+        icon: const Icon(Icons.add),
+        label: const Text('Add Exercise'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      bottomNavigationBar: FinishButton(
+        onPressed: _openFinishDialog,
+      ),
     );
   }
 }

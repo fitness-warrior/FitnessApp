@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 
 class ExerciseService {
   // Update baseUrl if your API runs elsewhere
-  static const String baseUrl = 'http://10.0.2.2:5001/api';
+  static const String baseUrl =
+      'http://localhost:5001/api'; // Change from 10.0.2.2 to localhost
 
   static Future<List<Map<String, dynamic>>> listExercises({
     String? name,
@@ -65,7 +66,8 @@ class ExerciseService {
     final res = await http.get(Uri.parse('$baseUrl/exercises/$id'));
     if (res.statusCode == 404) throw Exception('Exercise not found');
     if (res.statusCode != 200) throw Exception('Failed to load exercise');
-    final Map<String, dynamic> m = Map<String, dynamic>.from(json.decode(res.body) as Map);
+    final Map<String, dynamic> m =
+        Map<String, dynamic>.from(json.decode(res.body) as Map);
     m['exer_id'] = m['exer_id'] ?? m['id'];
     m['exer_name'] = m['exer_name'] ?? m['name'] ?? m['title'];
     m['exer_body_area'] = m['exer_body_area'] ?? m['body_area'] ?? m['area'];

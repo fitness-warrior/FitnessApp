@@ -8,8 +8,16 @@ class ExerciseListWidget extends StatefulWidget {
   /// a "Recommended for you" section and to score items.
   final List<String>? recommendationTags;
 
-  const ExerciseListWidget({Key? key, this.recommendationTags})
-      : super(key: key);
+  /// Optional full recommendation profile. When provided and
+  /// [recommendationTags] is null, tags are derived from the profile's
+  /// goal, experience and equipment fields.
+  final RecommendationProfile? recommendationProfile;
+
+  const ExerciseListWidget({
+    Key? key,
+    this.recommendationTags,
+    this.recommendationProfile,
+  }) : super(key: key);
 
   @override
   State<ExerciseListWidget> createState() => _ExerciseListWidgetState();
@@ -54,6 +62,19 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     _loadRecommendationsIfNeeded();
   }
 
+  /// Resolves the effective recommendation tags — uses [widget.recommendationTags]
+  /// if provided, otherwise derives them from [widget.recommendationProfile].
+  List<String>? get _effectiveTags {
+    if (widget.recommendationTags != null) return widget.recommendationTags;
+    final profile = widget.recommendationProfile;
+    if (profile == null) return null;
+    return [
+      profile.goal,
+      profile.experience,
+      ...profile.equipment,
+    ];
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -74,7 +95,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
         area: _selectedArea,
         type: _selectedType,
         equipment: _selectedEquipment.isEmpty ? null : _selectedEquipment,
-        recommendationTags: widget.recommendationTags,
+        recommendationTags: _effectiveTags,
         forceRefresh: forceRefresh,
       );
       setState(() {
@@ -110,14 +131,13 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   }
 
   Future<void> _loadRecommendationsIfNeeded() async {
-    if (widget.recommendationTags == null || widget.recommendationTags!.isEmpty)
-      return;
+    if (_effectiveTags == null || _effectiveTags!.isEmpty) return;
     setState(() {
       _loadingRecommendations = true;
     });
     try {
       final recs = await ExerciseRepository.listExercises(
-        recommendationTags: widget.recommendationTags,
+        recommendationTags: _effectiveTags,
         // limit could be added to repo later
       );
       setState(() {
@@ -213,7 +233,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
                           equipment: _selectedEquipment.isEmpty
                               ? null
                               : _selectedEquipment,
-                          recommendationTags: widget.recommendationTags,
+                          recommendationTags: _effectiveTags,
                         );
                         await _loadExercises(forceRefresh: true);
                         await _loadRecommendationsIfNeeded();
@@ -394,8 +414,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
                 ),
               ),
             ),
-          if (widget.recommendationTags != null &&
-              widget.recommendationTags!.isNotEmpty)
+          if (_effectiveTags != null && _effectiveTags!.isNotEmpty)
             _buildRecommendedSection(),
           ..._exercises.map((e) => _buildExerciseCard(e)).toList(),
         ],

@@ -5,6 +5,7 @@ import 'package:fitness_app_flutter/services/recommendation_service.dart';
 void main() {
   test('RecommendationService maps profile to expected tags', () async {
     final profile = RecommendationProfile(
+      age: 25,
       goal: 'strength',
       experience: 'beginner',
       equipment: ['Dumbbells'],
