@@ -5,7 +5,7 @@ import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
-import '../widgets/common/finish_button.dart';
+import '../widgets/common/navbar.dart';
 import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
@@ -402,9 +402,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         foregroundColor: Colors.white,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      bottomNavigationBar: FinishButton(
-        onPressed: _openFinishDialog,
-      ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 0),
     );
   }
 }

@@ -3,6 +3,9 @@ import 'package:fitness_app_flutter/services/recommendation_storage.dart';
 import 'package:fitness_app_flutter/widgets/questionnaire/questionnaire_widget.dart';
 import 'package:fitness_app_flutter/views/workout_page.dart';
 import 'package:fitness_app_flutter/views/meal_plan_page.dart';
+import 'package:fitness_app_flutter/views/game_page.dart';
+import 'package:fitness_app_flutter/views/edit_avatar_page.dart';
+import 'package:fitness_app_flutter/views/dashboard_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +25,9 @@ class MyApp extends StatelessWidget {
       routes: {
         '/my_workout': (_) => const WorkoutPage(),
         '/my_meal': (_) => const MealPlanPage(),
+        '/game': (_) => const GamePage(),
+        '/edit_avatar': (_) => const EditAvatarPage(),
+        '/dashboard': (_) => const DashboardPage(),
       },
     );
   }

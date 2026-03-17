@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/daily_meal_plan.dart';
 import '../models/meal_item.dart';
 import '../widgets/common/header.dart';
+import '../widgets/common/navbar.dart';
 import 'recipe_list_page.dart';
 
 class MealPlanPage extends StatelessWidget {
@@ -10,23 +11,40 @@ class MealPlanPage extends StatelessWidget {
   // ── Static demo data ────────────────────────────────────────────────────
   static final Map<MealSlot, List<MealItem>> _demoSlots = {
     MealSlot.breakfast: [
-      const MealItem(id: 8,  name: 'Oats (40 g dry)',          type: 'Carb',      calories: 150),
-      const MealItem(id: 2,  name: 'Egg (1 large)',             type: 'Protein',   calories: 72),
-      const MealItem(id: 23, name: 'Blueberries (100 g)',       type: 'Fruit',     calories: 57),
+      const MealItem(
+          id: 8, name: 'Oats (40 g dry)', type: 'Carb', calories: 150),
+      const MealItem(
+          id: 2, name: 'Egg (1 large)', type: 'Protein', calories: 72),
+      const MealItem(
+          id: 23, name: 'Blueberries (100 g)', type: 'Fruit', calories: 57),
     ],
     MealSlot.lunch: [
-      const MealItem(id: 1,  name: 'Chicken Breast (100 g)',    type: 'Protein',   calories: 165),
-      const MealItem(id: 7,  name: 'Brown Rice (100 g cooked)', type: 'Carb',      calories: 112),
-      const MealItem(id: 16, name: 'Broccoli (100 g)',          type: 'Vegetable', calories: 34),
+      const MealItem(
+          id: 1,
+          name: 'Chicken Breast (100 g)',
+          type: 'Protein',
+          calories: 165),
+      const MealItem(
+          id: 7,
+          name: 'Brown Rice (100 g cooked)',
+          type: 'Carb',
+          calories: 112),
+      const MealItem(
+          id: 16, name: 'Broccoli (100 g)', type: 'Vegetable', calories: 34),
     ],
     MealSlot.dinner: [
-      const MealItem(id: 6,  name: 'Salmon Fillet (100 g)',     type: 'Protein',   calories: 208),
-      const MealItem(id: 9,  name: 'Sweet Potato (100 g)',      type: 'Carb',      calories: 86),
-      const MealItem(id: 17, name: 'Spinach (100 g)',           type: 'Vegetable', calories: 23),
+      const MealItem(
+          id: 6, name: 'Salmon Fillet (100 g)', type: 'Protein', calories: 208),
+      const MealItem(
+          id: 9, name: 'Sweet Potato (100 g)', type: 'Carb', calories: 86),
+      const MealItem(
+          id: 17, name: 'Spinach (100 g)', type: 'Vegetable', calories: 23),
     ],
     MealSlot.snack: [
-      const MealItem(id: 13, name: 'Almonds (30 g)',            type: 'Fat',       calories: 170),
-      const MealItem(id: 22, name: 'Apple (1 medium)',          type: 'Fruit',     calories: 95),
+      const MealItem(
+          id: 13, name: 'Almonds (30 g)', type: 'Fat', calories: 170),
+      const MealItem(
+          id: 22, name: 'Apple (1 medium)', type: 'Fruit', calories: 95),
     ],
   };
 
@@ -95,6 +113,7 @@ class MealPlanPage extends StatelessWidget {
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 }
@@ -129,14 +148,12 @@ class _DateAndCalorieHeader extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const IconButton(
-                    icon: Icon(Icons.chevron_left),
-                    onPressed: null),
+                    icon: Icon(Icons.chevron_left), onPressed: null),
                 Text(label,
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.bold)),
                 const IconButton(
-                    icon: Icon(Icons.chevron_right),
-                    onPressed: null),
+                    icon: Icon(Icons.chevron_right), onPressed: null),
               ],
             ),
             const SizedBox(height: 6),
@@ -245,8 +262,8 @@ class _MealSlotCard extends StatelessWidget {
                             color: _typeColor(food.type)),
                       ),
                     ),
-                    title: Text(food.name,
-                        style: const TextStyle(fontSize: 14)),
+                    title:
+                        Text(food.name, style: const TextStyle(fontSize: 14)),
                     subtitle: Text(food.type,
                         style:
                             TextStyle(fontSize: 12, color: Colors.grey[500])),
