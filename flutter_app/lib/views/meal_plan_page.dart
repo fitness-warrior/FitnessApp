@@ -70,6 +70,12 @@ class _MealPlanPageState extends State<MealPlanPage> {
   double get _carbCalories => _caloriesForType('Carb');
   double get _fatCalories => _caloriesForType('Fat');
 
+  void _deleteFood(MealSlot slot, int index) {
+    setState(() {
+      _demoSlots[slot]?.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,6 +139,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
               child: MealSlotCard(
                 slot: slot,
                 items: _demoSlots[slot] ?? [],
+                onDeleteFood: (index) => _deleteFood(slot, index),
               ),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),

@@ -5,11 +5,13 @@ import '../../models/meal_item.dart';
 class MealSlotCard extends StatelessWidget {
   final MealSlot slot;
   final List<MealItem> items;
+  final void Function(int index)? onDeleteFood;
 
   const MealSlotCard({
     Key? key,
     required this.slot,
     required this.items,
+    this.onDeleteFood,
   }) : super(key: key);
 
   @override
@@ -153,7 +155,9 @@ class MealSlotCard extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.delete_outline, size: 18),
             color: Colors.red[200],
-            onPressed: null,
+            onPressed: onDeleteFood != null 
+                ? () => onDeleteFood!(items.indexOf(food))
+                : null,
             visualDensity: VisualDensity.compact,
           ),
         ],
