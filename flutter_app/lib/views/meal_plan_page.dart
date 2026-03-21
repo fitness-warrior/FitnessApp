@@ -5,11 +5,17 @@ import '../widgets/common/header.dart';
 import '../widgets/common/navbar.dart';
 import 'recipe_list_page.dart';
 
-class MealPlanPage extends StatelessWidget {
+class MealPlanPage extends StatefulWidget {
   const MealPlanPage({Key? key}) : super(key: key);
 
+  @override
+  State<MealPlanPage> createState() => _MealPlanPageState();
+}
+
+class _MealPlanPageState extends State<MealPlanPage> {
+
   // ── Static demo data ────────────────────────────────────────────────────
-  static final Map<MealSlot, List<MealItem>> _demoSlots = {
+  final Map<MealSlot, List<MealItem>> _demoSlots = {
     MealSlot.breakfast: [
       const MealItem(
           id: 8, name: 'Oats (40 g dry)', type: 'Carb', calories: 150),
@@ -619,3 +625,4 @@ class _MealSlotCard extends StatelessWidget {
     }
   }
 }
+  
