@@ -18,6 +18,8 @@ class MealPlanPage extends StatefulWidget {
 
 class _MealPlanPageState extends State<MealPlanPage> {
 
+  DateTime _selectedDate = DateTime.now();
+
   // ── Static demo data ────────────────────────────────────────────────────
   final Map<MealSlot, List<MealItem>> _demoSlots = {
     MealSlot.breakfast: [
@@ -100,6 +102,38 @@ class _MealPlanPageState extends State<MealPlanPage> {
   }
 }
 
+void _previousDay() {
+  setState(() {
+    _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+  });
+}
+
+void _nextDay() {
+  setState(() {
+    _selectedDate = _selectedDate.add(const Duration(days: 1));
+  });
+}
+
+String _getDateLabel() {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final selected = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+  
+  final difference = selected.difference(today).inDays;
+  
+  if (difference == 0) return 'Today';
+  if (difference == -1) return 'Yesterday';
+  if (difference == 1) return 'Tomorrow';
+  
+  final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  final weekday = days[_selectedDate.weekday - 1];
+  final month = months[_selectedDate.month - 1];
+  
+  return '$weekday, $month ${_selectedDate.day}';
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,11 +185,13 @@ class _MealPlanPageState extends State<MealPlanPage> {
         slivers: [
           SliverToBoxAdapter(
             child: DateAndCalorieHeader(
-              label: 'Today',
+              label: _getDateLabel(),
               totalCalories: _totalCalories,
               proteinCalories: _proteinCalories,
               carbCalories: _carbCalories,
               fatCalories: _fatCalories,
+              onPreviousDay: _previousDay,
+              onNextDay: _nextDay,
             ),
           ),
           for (final slot in MealSlot.values)

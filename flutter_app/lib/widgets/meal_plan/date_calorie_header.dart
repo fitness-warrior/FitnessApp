@@ -6,6 +6,8 @@ class DateAndCalorieHeader extends StatelessWidget {
   final double proteinCalories;
   final double carbCalories;
   final double fatCalories;
+  final VoidCallback? onPreviousDay;
+  final VoidCallback? onNextDay;
 
   const DateAndCalorieHeader({
     Key? key,
@@ -14,6 +16,8 @@ class DateAndCalorieHeader extends StatelessWidget {
     required this.proteinCalories,
     required this.carbCalories,
     required this.fatCalories,
+    this.onPreviousDay,
+    this.onNextDay,
   }) : super(key: key);
 
   @override
@@ -43,16 +47,16 @@ class DateAndCalorieHeader extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const Row(
+                Row(
                   children: [
                     IconButton(
-                      icon: Icon(Icons.chevron_left),
-                      onPressed: null,
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: onPreviousDay,
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
-                      icon: Icon(Icons.chevron_right),
-                      onPressed: null,
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: onNextDay,
                       visualDensity: VisualDensity.compact,
                     ),
                   ],
