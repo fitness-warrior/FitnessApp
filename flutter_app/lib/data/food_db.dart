@@ -74,7 +74,9 @@ class FoodDb {
       if (query.isNotEmpty &&
           !(m['name'] as String)
               .toLowerCase()
-              .contains(query.toLowerCase())) return false;
+              .contains(query.toLowerCase())) {
+        return false;
+      }
       if (maxCalories != null && (m['calories'] as num) > maxCalories) {
         return false;
       }

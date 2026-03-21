@@ -174,15 +174,15 @@ class _DateAndCalorieHeader extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                Row(
+                const Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.chevron_left),
+                      icon: Icon(Icons.chevron_left),
                       onPressed: null,
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.chevron_right),
+                      icon: Icon(Icons.chevron_right),
                       onPressed: null,
                       visualDensity: VisualDensity.compact,
                     ),
