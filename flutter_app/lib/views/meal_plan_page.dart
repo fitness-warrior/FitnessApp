@@ -76,6 +76,14 @@ class _MealPlanPageState extends State<MealPlanPage> {
     });
   }
 
+  void _clearDay() {
+    setState(() {
+      for (final slot in MealSlot.values) {
+        _demoSlots[slot]?.clear();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,10 +112,10 @@ class _MealPlanPageState extends State<MealPlanPage> {
               );
             },
           ),
-          const IconButton(
-            icon: Icon(Icons.delete_sweep),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep),
             tooltip: 'Clear day',
-            onPressed: null,
+            onPressed: _clearDay,
           ),
           IconButton(
             icon: const CircleAvatar(
