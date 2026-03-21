@@ -100,7 +100,7 @@ class _FoodPickerDialogState extends State<FoodPickerDialog> {
                     // Collection dropdown
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _collection,
+                        initialValue: _collection,
                         decoration: const InputDecoration(
                           labelText: 'Collection',
                           border: OutlineInputBorder(),

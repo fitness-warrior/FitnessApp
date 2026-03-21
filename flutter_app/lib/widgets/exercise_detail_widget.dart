@@ -43,7 +43,7 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not open video URL')));
+          .showSnackBar(const SnackBar(content: Text('Could not open video URL')));
     }
   }
 

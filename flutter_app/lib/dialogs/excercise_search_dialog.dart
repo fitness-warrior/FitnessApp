@@ -188,7 +188,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedArea,
+                      initialValue: _selectedArea,
                       isDense: true,
                       decoration: const InputDecoration(
                         labelText: 'Body Area',
@@ -210,7 +210,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedType,
+                      initialValue: _selectedType,
                       isDense: true,
                       decoration: const InputDecoration(
                         labelText: 'Type',
