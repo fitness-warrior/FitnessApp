@@ -56,6 +56,12 @@
       "languageVersion": "3.8"
     },
     {
+      "name": "flutter_driver",
+      "rootUri": "file:///C:/projects/flutter/packages/flutter_driver",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
       "name": "flutter_lints",
       "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-2.0.3",
       "packageUri": "lib/",
@@ -74,6 +80,12 @@
       "languageVersion": "3.8"
     },
     {
+      "name": "fuchsia_remote_debug_protocol",
+      "rootUri": "file:///C:/projects/flutter/packages/fuchsia_remote_debug_protocol",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
       "name": "http",
       "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/http-1.6.0",
       "packageUri": "lib/",
@@ -84,6 +96,12 @@
       "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/http_parser-4.1.2",
       "packageUri": "lib/",
       "languageVersion": "3.4"
+    },
+    {
+      "name": "integration_test",
+      "rootUri": "file:///C:/projects/flutter/packages/integration_test",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
     },
     {
       "name": "leak_tracker",
@@ -162,6 +180,12 @@
       "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/plugin_platform_interface-2.1.8",
       "packageUri": "lib/",
       "languageVersion": "3.0"
+    },
+    {
+      "name": "process",
+      "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/process-5.0.5",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
     },
     {
       "name": "shared_preferences",
@@ -266,6 +290,12 @@
       "languageVersion": "3.1"
     },
     {
+      "name": "sync_http",
+      "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/sync_http-0.3.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "synchronized",
       "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/synchronized-3.4.0",
       "packageUri": "lib/",
@@ -354,6 +384,12 @@
       "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/web-1.1.1",
       "packageUri": "lib/",
       "languageVersion": "3.4"
+    },
+    {
+      "name": "webdriver",
+      "rootUri": "file:///C:/Users/belaz/AppData/Local/Pub/Cache/hosted/pub.dev/webdriver-3.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
     },
     {
       "name": "xdg_directories",
