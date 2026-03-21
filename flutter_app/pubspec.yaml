@@ -19,6 +19,7 @@ flutter:
 
   assets:
     - assets/images/
+    - images/game_costume/game_chars/
 
 dev_dependencies:
   flutter_test:
