@@ -6,12 +6,14 @@ class MealSlotCard extends StatelessWidget {
   final MealSlot slot;
   final List<MealItem> items;
   final void Function(int index)? onDeleteFood;
+  final VoidCallback? onAddFood;
 
   const MealSlotCard({
     Key? key,
     required this.slot,
     required this.items,
     this.onDeleteFood,
+    this.onAddFood,
   }) : super(key: key);
 
   @override
@@ -44,7 +46,7 @@ class MealSlotCard extends StatelessWidget {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: null,
+                  onPressed: onAddFood,
                   icon: const Icon(Icons.add_circle_outline, size: 18),
                   label: const Text('Add Food'),
                   style: TextButton.styleFrom(

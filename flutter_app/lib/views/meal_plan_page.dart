@@ -7,6 +7,7 @@ import 'sign_up.dart';
 import 'recipe_list_page.dart';
 import '../widgets/meal_plan/date_calorie_header.dart';
 import '../widgets/meal_plan/meal_slot_card.dart';
+import 'food_browser_page.dart';
 
 class MealPlanPage extends StatefulWidget {
   const MealPlanPage({Key? key}) : super(key: key);
@@ -84,6 +85,21 @@ class _MealPlanPageState extends State<MealPlanPage> {
     });
   }
 
+  Future<void> _addFood(MealSlot slot) async {
+  final selectedFood = await Navigator.push<MealItem>(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const FoodBrowserPage(),
+    ),
+  );
+
+  if (selectedFood != null) {
+    setState(() {
+      _demoSlots[slot]?.add(selectedFood);
+    });
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -148,6 +164,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
                 slot: slot,
                 items: _demoSlots[slot] ?? [],
                 onDeleteFood: (index) => _deleteFood(slot, index),
+                onAddFood: () => _addFood(slot),
               ),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
