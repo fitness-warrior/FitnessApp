@@ -14,7 +14,7 @@ load_dotenv(ROOT_ENV)
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/fitnessapp",  # safe dev default only
+    "postgresql://postgres:postgres@localhost:5432/fitapp",  # fallback only
 )
 
 
@@ -31,7 +31,16 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:60107",  # current Flutter web port
+        "http://localhost:5000",
+        "http://localhost:3000",
+        "http://127.0.0.1:60107",
+        "http://127.0.0.1:5000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
