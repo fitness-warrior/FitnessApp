@@ -41,7 +41,7 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
 
     try {
       final res = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/exercises'),
+        Uri.parse('${ApiConfig.baseUrl}/api/exercises'),
         headers: {
           'Content-Type': 'application/json',
           'X-Admin': 'true',

@@ -21,7 +21,7 @@ class WorkoutService {
       };
 
       final response = await http.post(
-        Uri.parse('$baseUrl/workouts'),
+        Uri.parse('$baseUrl/api/workouts'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );

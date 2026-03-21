@@ -19,7 +19,7 @@ class ExerciseService {
         if (type != null && type.isNotEmpty) 'type': type,
       },
     );
-    
+
     final queryParts = <String>[];
     void addParam(String key, String value) {
       if (value.trim().isEmpty) return;
