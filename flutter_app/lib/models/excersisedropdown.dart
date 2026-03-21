@@ -58,7 +58,7 @@ class _ExerciseDropdownState extends State<ExerciseDropdown> {
     }
 
     return DropdownButtonFormField<Map<String, dynamic>>(
-      value: _selectedExercise,
+      initialValue: _selectedExercise,
       decoration: InputDecoration(
         labelText: 'Select Exercise',
         border: OutlineInputBorder(
