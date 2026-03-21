@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class ExerciseService {
-  // Update baseUrl if your API runs elsewhere
-  static const String baseUrl =
-      'http://localhost:5001/api'; // Change from 10.0.2.2 to localhost
+  static String get baseUrl => ApiConfig.baseUrl;
 
   static Future<List<Map<String, dynamic>>> listExercises({
     String? name,

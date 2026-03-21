@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class WorkoutService {
-  static const String baseUrl = 'http://localhost:5001/api';
+  static String get baseUrl => ApiConfig.baseUrl;
 
   static Future<Map<String, dynamic>> submitWorkout(
     List<Map<String, dynamic>> exercises,
