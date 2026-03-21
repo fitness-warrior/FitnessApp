@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
-import '../dialogs/finish_workout_dialog.dart';
-import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/navbar.dart';
-import 'profile_page.dart';
+import 'sign_up.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -177,48 +175,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  void _openFinishDialog() {
-    if (_workoutExercises.isEmpty) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => FinishWorkoutDialog(
-        exercises: _workoutExercises,
-        setControllers: _setControllers,
-        onSuccess: (result) async {
-          // Submit the completed workout to the backend
-          try {
-            final exercisesWithSets = List.generate(
-              _workoutExercises.length,
-              (i) {
-                final sets = _setControllers[i] ?? [];
-                return {
-                  ..._workoutExercises[i],
-                  'sets': List.generate(
-                      sets.length,
-                      (s) => {
-                            'kg': double.tryParse(sets[s]['kg']!.text) ?? 0,
-                            'reps': int.tryParse(sets[s]['reps']!.text) ?? 0,
-                          }),
-                };
-              },
-            );
-            await WorkoutService.submitWorkout(exercisesWithSets);
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Warning: Could not save workout: $e')),
-              );
-            }
-          }
-          setState(() {
-            _workoutExercises.clear();
-            _setControllers.clear();
-          });
-        },
-      ),
-    );
-  }
+  // You can add a "finish workout" dialog here later if needed.
 
   @override
   void dispose() {
@@ -267,7 +224,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
             ),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
+                MaterialPageRoute(builder: (_) => const SignUpPage()),
               );
             },
             tooltip: 'Profile',

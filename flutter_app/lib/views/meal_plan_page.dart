@@ -3,6 +3,7 @@ import '../models/daily_meal_plan.dart';
 import '../models/meal_item.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/navbar.dart';
+import 'sign_up.dart';
 import 'recipe_list_page.dart';
 import '../widgets/meal_plan/date_calorie_header.dart';
 
@@ -59,14 +60,14 @@ class _MealPlanPageState extends State<MealPlanPage> {
       .expand((items) => items)
       .fold(0, (s, i) => s + i.calories);
 
-    double _caloriesForType(String type) => _demoSlots.values
+  double _caloriesForType(String type) => _demoSlots.values
       .expand((items) => items)
       .where((item) => item.type == type)
       .fold(0, (sum, item) => sum + item.calories);
 
-    double get _proteinCalories => _caloriesForType('Protein');
-    double get _carbCalories => _caloriesForType('Carb');
-    double get _fatCalories => _caloriesForType('Fat');
+  double get _proteinCalories => _caloriesForType('Protein');
+  double get _carbCalories => _caloriesForType('Carb');
+  double get _fatCalories => _caloriesForType('Fat');
 
   @override
   Widget build(BuildContext context) {
@@ -101,12 +102,16 @@ class _MealPlanPageState extends State<MealPlanPage> {
             tooltip: 'Clear day',
             onPressed: null,
           ),
-          const IconButton(
-            icon: CircleAvatar(
+          IconButton(
+            icon: const CircleAvatar(
               radius: 14,
               child: Icon(Icons.person, size: 18),
             ),
-            onPressed: null,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SignUpPage()),
+              );
+            },
             tooltip: 'Profile',
           ),
         ],
@@ -161,7 +166,8 @@ class _MealSlotCard extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: Colors.grey[100],
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(14)),
             ),
             padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
             child: Row(
@@ -208,7 +214,8 @@ class _MealSlotCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(14)),
             ),
             child: Row(
               children: [
@@ -268,7 +275,8 @@ class _MealSlotCard extends StatelessWidget {
               children: [
                 Text(
                   food.name,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 Text(
                   food.type,
