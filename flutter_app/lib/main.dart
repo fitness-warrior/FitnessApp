@@ -6,6 +6,7 @@ import 'package:fitness_app_flutter/views/meal_plan_page.dart';
 import 'package:fitness_app_flutter/views/game_page.dart';
 import 'package:fitness_app_flutter/views/edit_avatar_page.dart';
 import 'package:fitness_app_flutter/views/dashboard_page.dart';
+import 'package:fitness_app_flutter/views/shop_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
         '/game': (_) => const GamePage(),
         '/edit_avatar': (_) => const EditAvatarPage(),
         '/dashboard': (_) => const DashboardPage(),
+        '/shop': (_) => const ShopPage(),
       },
     );
   }
