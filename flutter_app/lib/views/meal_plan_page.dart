@@ -70,7 +70,7 @@ class MealPlanPage extends StatelessWidget {
           title: 'My Meal',
           onMenuSelected: (value) {
             final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
-            const routes = {'/my_workout', '/my_meal'};
+            const routes = {'/my_workout', '/my_meal', '/shop'};
             if (routes.contains(route)) {
               Navigator.of(context).pushReplacementNamed(route);
             }

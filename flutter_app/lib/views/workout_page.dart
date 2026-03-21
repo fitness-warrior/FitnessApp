@@ -239,7 +239,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
           title: 'My Workout',
           onMenuSelected: (value) {
             final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
-            final routes = {'/my_workout', '/my_meal'};
+            final routes = {'/my_workout', '/my_meal', '/shop'};
             if (routes.contains(route)) {
               Navigator.of(context).pushReplacementNamed(route);
             } else {
