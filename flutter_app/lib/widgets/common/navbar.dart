@@ -11,10 +11,9 @@ class AppBottomNavBar extends StatelessWidget {
         route: '/my_workout',
         icon: Icons.fitness_center,
         tooltip: 'My Workout'),
-    _NavItem(
-        route: '/my_meal', icon: Icons.restaurant_menu, tooltip: 'My Meal'),
+    _NavItem(route: '/shop', icon: Icons.store, tooltip: 'Shop'),
     _NavItem(route: '/game', icon: Icons.sports_esports, tooltip: 'Game'),
-    _NavItem(route: '/edit_avatar', icon: Icons.face, tooltip: 'Edit Avatar'),
+    _NavItem(route: '/edit_avatar', icon: Icons.face, tooltip: 'Wardrobe'),
     _NavItem(
         route: '/dashboard',
         icon: Icons.dashboard_customize,
