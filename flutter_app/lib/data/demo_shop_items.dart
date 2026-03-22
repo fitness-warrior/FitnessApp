@@ -1,29 +1,30 @@
 import 'package:flutter/material.dart';
 import '../models/shop_item.dart';
 
+// --- Step 13.1: Actual Gameplay Upgrades ---
 final demoShopItems = [
   const ShopItem(
-    name: 'Power Sword',
-    price: 500,
+    id: 'dmg_up',
+    name: 'Tap Damage Up',
+    description: '+5 Damage per Tap',
+    price: 100,
     icon: Icons.sports_martial_arts,
     color: Colors.red,
   ),
   const ShopItem(
-    name: 'Shield of Strength',
-    price: 750,
-    icon: Icons.shield,
+    id: 'time_up',
+    name: 'Extra Time',
+    description: '+10 Seconds to Clock',
+    price: 150,
+    icon: Icons.timer,
     color: Colors.blue,
   ),
   const ShopItem(
-    name: 'Speed Boots',
-    price: 600,
-    icon: Icons.directions_run,
+    id: 'auto_click',
+    name: 'Auto Clicker',
+    description: 'Deals 5 damage every second',
+    price: 300,
+    icon: Icons.touch_app,
     color: Colors.green,
-  ),
-  const ShopItem(
-    name: 'Health Potion',
-    price: 250,
-    icon: Icons.local_drink,
-    color: Colors.purple,
   ),
 ];

@@ -40,16 +40,23 @@ class GameStorage {
 
     final equipped = prefs.getString(_keyEquipped); // null if not set - that's fine
 
-    final boostsRaw = prefs.getString(_keyBoosts) ?? '';
-    final boosts = boostsRaw.isEmpty
-        ? <String>[]
-        : boostsRaw.split(',').toList();
+    // Stored as "dmg_up:2,time_up:1"
+    final upgRaw = prefs.getString(_keyBoosts) ?? '';
+    final upgrades = <String, int>{};
+    if (upgRaw.isNotEmpty) {
+      for (final pair in upgRaw.split(',')) {
+        final parts = pair.split(':');
+        if (parts.length == 2) {
+          upgrades[parts[0]] = int.tryParse(parts[1]) ?? 0;
+        }
+      }
+    }
 
     return GameState(
       coins: coins,
       ownedCostumes: owned,
       equippedCostume: equipped,
-      activeBoosts: boosts,
+      upgrades: upgrades,
     );
   }
 
@@ -62,6 +69,9 @@ class GameStorage {
     await prefs.setString(_keyOwned, state.ownedCostumes.join(','));
     // If nothing is equipped, save an empty string (can't store null in prefs)
     await prefs.setString(_keyEquipped, state.equippedCostume ?? '');
-    await prefs.setString(_keyBoosts, state.activeBoosts.join(','));
+    
+    // Map{"dmg_up": 2, "time_up": 1} => "dmg_up:2,time_up:1"
+    final upgString = state.upgrades.entries.map((e) => '${e.key}:${e.value}').join(',');
+    await prefs.setString(_keyBoosts, upgString);
   }
 }
