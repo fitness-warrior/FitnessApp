@@ -8,6 +8,8 @@ import 'dart:async'; // Need this for the Timer
 import 'dart:math';  // Step 8.2: Need this for the sine wave shake math
 import '../widgets/common/navbar.dart';
 import '../data/demo_bosses.dart';
+import '../models/game_state.dart';      // Step 11
+import '../services/game_storage.dart';  // Step 11
 
 class GamePage extends StatefulWidget {
   const GamePage({Key? key}) : super(key: key);
@@ -17,8 +19,11 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin {
-  // Hardcoded for now just to build the UI
-  final int _bossIndex = 0;
+  // --- Step 11: Game State & Progression ---
+  GameState _state = GameState(); // Player's inventory/coins
+  int _bossIndex = 0;             // Which boss we're fighting
+  bool _showVictory = false;      // Should we show the "You Win" overlay?
+  bool _allDefeated = false;      // Did they beat the final boss?
   
   // --- Step 8.1: Health tracking ---
   int _bossHp = 0; // Will be set to max health when round starts
@@ -44,6 +49,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    _loadState(); // Step 11: Load player save data
     
     // The controller runs for a split second (150ms)
     _shakeCtrl = AnimationController(
@@ -52,6 +58,15 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     // A simple 0 -> 1 curve we'll use to drive a sine wave offset
     _shake = Tween<double>(begin: 0.0, end: 1.0)
         .animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeOut));
+  }
+
+  // --- Step 11: Loading Save Data ---
+  Future<void> _loadState() async {
+    final state = await GameStorage.load();
+    if (!mounted) return;
+    setState(() {
+      _state = state;
+    });
   }
 
   // Cleanup: Important to cancel timers when leaving the page!
@@ -151,8 +166,21 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
         _bossHp = 0;
         _isRoundRunning = false;
         _roundTimer?.cancel();
-        // TODO: Victory Logic
-        print("Boss Defeated!");
+        
+        // --- Step 11: Boss Defeated Reward Logic ---
+        _showVictory = true;
+        final boss = demoBosses[_bossIndex];
+        _state.coins += boss.coinReward;
+        _state.ownedCostumes.add(boss.rewardCostume);
+
+        // Check if they just beat the final boss (Index 2 is Fry King)
+        if (_bossIndex == demoBosses.length - 1) {
+          _allDefeated = true;
+          _state.ownedCostumes.add(windCostumeKey); // Bonus reward!
+        }
+        
+        // Save the game so they don't lose that hard-earned unlock
+        GameStorage.save(_state);
       }
     });
   }
@@ -160,7 +188,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     // Grab the current boss from our demo list
-    final boss = demoBosses[_bossIndex];
+    // (If they beat all bosses, just keep showing the last one)
+    final boss = demoBosses[_bossIndex.clamp(0, demoBosses.length - 1)];
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1117), // Dark fallback color
@@ -198,7 +227,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
           SafeArea(
             child: Column(
               children: [
-                // Top HUD: Coins placeholder
+                // Top HUD: Coins and Boosts (wired to state!)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Row(
@@ -206,7 +235,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                       const Icon(Icons.monetization_on, color: Colors.amber, size: 20),
                       const SizedBox(width: 8),
                       // Hardcoded coin value for now
-                      const Text('0', style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('${_state.coins}', style: const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold)),
                       const Spacer(),
                       // Boost badges will go here later
                     ],
@@ -339,10 +368,71 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
               damage: d['dmg'] as int,
               onDone: () => setState(() => _damages.remove(d)),
             )),
+            
+        // --- Step 11: Victory Screen Overlay ---
+        if (_showVictory) _buildVictoryOverlay(),
       ],
       ),
       // Keeping the standard app bottom nav bar
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+    );
+  }
+
+  // --- Step 11: Victory UI Widget ---
+  Widget _buildVictoryOverlay() {
+    final boss = demoBosses[_bossIndex.clamp(0, demoBosses.length - 1)];
+
+    return Container(
+      color: Colors.black87, // Dim the background
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.blueGrey[900],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.greenAccent, width: 2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🎉 BOSS DEFEATED! 🎉', style: TextStyle(color: Colors.greenAccent, fontSize: 24, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 16),
+              
+              Text('+${boss.coinReward} Coins', style: const TextStyle(color: Colors.amber, fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              
+              const Text('Unlocked Costume:', style: TextStyle(color: Colors.white70)),
+              const SizedBox(height: 8),
+              Image.asset(boss.rewardImagePath, height: 60, width: 60),
+              
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _showVictory = false;
+                    _damages.clear(); // clean up any leftover floating text
+                    
+                    if (!_allDefeated) {
+                      _bossIndex++; // Move to next boss
+                    } else {
+                      _bossIndex = 0; // Reset game if they won everything
+                      _allDefeated = false;
+                    }
+                    _startRound();
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.greenAccent,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+                child: Text(_allDefeated ? 'Play Again 🏆' : 'Next Boss ➔', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
