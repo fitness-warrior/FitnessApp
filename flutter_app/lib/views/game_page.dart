@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'dart:async'; // Need this for the Timer
+import 'dart:math';  // Step 8.2: Need this for the sine wave shake math
 import '../widgets/common/navbar.dart';
 import '../data/demo_bosses.dart';
 
@@ -15,7 +16,7 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-class _GamePageState extends State<GamePage> {
+class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin {
   // Hardcoded for now just to build the UI
   final int _bossIndex = 0;
   
@@ -30,10 +31,29 @@ class _GamePageState extends State<GamePage> {
   bool _isRoundRunning = false;
   Timer? _roundTimer;
 
+  // --- Step 8.2: Boss Shake Animation ---
+  // Using 'late' because we need 'this' (the TickerProvider) to initialize them in initState.
+  late AnimationController _shakeCtrl;
+  late Animation<double> _shake;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // The controller runs for a split second (150ms)
+    _shakeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 150));
+        
+    // A simple 0 -> 1 curve we'll use to drive a sine wave offset
+    _shake = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeOut));
+  }
+
   // Cleanup: Important to cancel timers when leaving the page!
   @override
   void dispose() {
     _roundTimer?.cancel();
+    _shakeCtrl.dispose(); // Don't forget to clean up controllers too!
     super.dispose();
   }
 
@@ -70,6 +90,9 @@ class _GamePageState extends State<GamePage> {
 
     setState(() {
       _bossHp -= 10; // 10 damage per tap for now
+      
+      // Step 8.2: Trigger the shake animation from the beginning whenever hit
+      _shakeCtrl.forward(from: 0.0);
       
       if (_bossHp <= 0) {
         _bossHp = 0;
@@ -203,14 +226,27 @@ class _GamePageState extends State<GamePage> {
                           Positioned(
                             right: 20,
                             bottom: 60, // same bottom value = same ground level!
-                            child: Image.asset(
-                              boss.imagePath,
-                              width: charSize,
-                              height: charSize,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.none,
-                              // If we don't have the boss image yet, show a fallback icon
-                              errorBuilder: (_, __, ___) => Icon(Icons.fastfood, size: charSize, color: Colors.redAccent),
+                            // Step 8.2: Wrap the image in an AnimatedBuilder
+                            child: AnimatedBuilder(
+                              animation: _shake,
+                              builder: (context, child) {
+                                // Translate pushes the widget left/right using a sine wave
+                                // Notice the dart:math pi import at the top!
+                                return Transform.translate(
+                                  // Shake gets smaller as the animation reaches 1.0
+                                  offset: Offset((1 - _shake.value) * 15 * sin(_shake.value * pi * 4), 0),
+                                  child: child,
+                                );
+                              },
+                              child: Image.asset(
+                                boss.imagePath,
+                                width: charSize,
+                                height: charSize,
+                                fit: BoxFit.contain,
+                                filterQuality: FilterQuality.none,
+                                // If we don't have the boss image yet, show a fallback icon
+                                errorBuilder: (_, __, ___) => Icon(Icons.fastfood, size: charSize, color: Colors.redAccent),
+                              ),
                             ),
                           ),
 
