@@ -81,7 +81,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   // Starts the countdown
   void _startRound() {
     setState(() {
-      _timeLeft = 120;
+      // Step 14: Apply Extra Time Upgrade!
+      _timeLeft = 120 + _state.timeBonus;
       _isRoundRunning = true;
       _bossHp = demoBosses[_bossIndex].maxHealth; // Reset HP to full!
     });
@@ -93,6 +94,26 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
       setState(() {
         if (_timeLeft > 0) {
           _timeLeft--;
+          
+          // --- Step 14: Auto Clicker Logic ---
+          if (_state.hasAutoClick && _bossHp > 0) {
+            final autoDmg = 5; // As defined in the shop
+            _bossHp -= autoDmg;
+            
+            // Trigger animation & damage popup just like a real tap
+            _triggerAttackAnimation();
+            _shakeCtrl.forward(from: 0.0);
+            
+            final rnd = Random();
+            _damages.add({
+              'id': ValueKey(_dmgCounter++),
+              'pos': Offset(220.0 + rnd.nextInt(60), 350.0 + rnd.nextInt(40)),
+              'dmg': autoDmg,
+            });
+            
+            _checkVictory(); // check if the auto clicker killed the boss
+          }
+          
         } else {
           // --- Step 12: Time ran out, Game Over ---
           _isRoundRunning = false;
@@ -141,7 +162,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     _triggerAttackAnimation(); // Play the player swing animation!
 
     setState(() {
-      final dmg = 10; // Hardcoded for now
+      // Step 14: Use the player's true tapped damage
+      final dmg = _state.tapDamage; 
       _bossHp -= dmg; 
       
       // Step 8.2: Trigger the shake animation from the beginning whenever hit
@@ -162,27 +184,33 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
         'dmg': dmg,
       });
       
-      if (_bossHp <= 0) {
-        _bossHp = 0;
-        _isRoundRunning = false;
-        _roundTimer?.cancel();
-        
-        // --- Step 11: Boss Defeated Reward Logic ---
-        _showVictory = true;
-        final boss = demoBosses[_bossIndex];
-        _state.coins += boss.coinReward;
-        _state.ownedCostumes.add(boss.rewardCostume);
-
-        // Check if they just beat the final boss (Index 2 is Fry King)
-        if (_bossIndex == demoBosses.length - 1) {
-          _allDefeated = true;
-          _state.ownedCostumes.add(windCostumeKey); // Bonus reward!
-        }
-        
-        // Save the game so they don't lose that hard-earned unlock
-        GameStorage.save(_state);
-      }
+      _checkVictory();
     });
+  }
+
+  // Extracted this into a helper method because we need to call it from
+  // both _onTap and the AutoClicker timer.
+  void _checkVictory() {
+    if (_bossHp <= 0) {
+      _bossHp = 0;
+      _isRoundRunning = false;
+      _roundTimer?.cancel();
+      
+      // --- Step 11: Boss Defeated Reward Logic ---
+      _showVictory = true;
+      final boss = demoBosses[_bossIndex];
+      _state.coins += boss.coinReward;
+      _state.ownedCostumes.add(boss.rewardCostume);
+
+      // Check if they just beat the final boss (Index 2 is Fry King)
+      if (_bossIndex == demoBosses.length - 1) {
+        _allDefeated = true;
+        _state.ownedCostumes.add(windCostumeKey); // Bonus reward!
+      }
+      
+      // Save the game so they don't lose that hard-earned unlock
+      GameStorage.save(_state);
+    }
   }
 
   @override
