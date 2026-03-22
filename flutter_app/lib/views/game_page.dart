@@ -55,13 +55,35 @@ class _GamePageState extends State<GamePage> {
             ),
           ),
 
-          // 3. The actual UI layout will go here (SafeArea)
-          const SafeArea(
-            child: Center(
-              child: Text(
-                'Background added!',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
+          // 3. The actual UI layout
+          SafeArea(
+            child: Column(
+              children: [
+                // Top HUD: Coins placeholder
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.monetization_on, color: Colors.amber, size: 20),
+                      const SizedBox(width: 8),
+                      // Hardcoded coin value for now
+                      const Text('0', style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      // Boost badges will go here later
+                    ],
+                  ),
+                ),
+
+                // Boss Name
+                const SizedBox(height: 10),
+                Text(
+                  '⚔️ ${boss.name}',
+                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                
+                // The rest of the screen (HP, Timer, Battle Scene) will go below here
+                const Spacer(),
+              ],
             ),
           ),
         ],
