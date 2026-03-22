@@ -29,8 +29,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   // --- Step 8.1: Health tracking ---
   int _bossHp = 0; // Will be set to max health when round starts
   
-  // --- Step 9: Player Animation ---
-  String _playerFrame = 'images/game_costume/game_chars/player_stances/character_idle.png';
+  // --- Step 9 & 16: Player Animation & Costumes ---
+  String _playerFrame = ''; // Set dynamically in _loadState
   bool _isAnimating = false; // prevents animation from glitching if clicked too fast
 
   // --- Step 10: Floating Damage Numbers ---
@@ -61,13 +61,24 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
         .animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeOut));
   }
 
-  // --- Step 11: Loading Save Data ---
+  // --- Step 11 & 16: Loading Save Data ---
   Future<void> _loadState() async {
     final state = await GameStorage.load();
     if (!mounted) return;
     setState(() {
       _state = state;
+      _playerFrame = _getFramePath('idle'); // Set their equipped costume on load!
     });
+  }
+
+  // --- Step 16: Dynamic Costume Path Generator ---
+  String _getFramePath(String action) {
+    // If they have nothing equipped (or ""), use the default 'character' prefix.
+    // Otherwise, use the costume key (e.g. 'earth', 'water').
+    final prefix = (_state.equippedCostume?.isNotEmpty == true) 
+        ? _state.equippedCostume! 
+        : 'character';
+    return 'images/game_costume/game_chars/player_stances/${prefix}_$action.png';
   }
 
   // Cleanup: Important to cancel timers when leaving the page!
@@ -124,32 +135,30 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     });
   }
 
-  // --- Step 9: Stop Motion Animation ---
+  // --- Step 9 & 16: Stop Motion Animation ---
   Future<void> _triggerAttackAnimation() async {
     // Don't interrupt an animation that's already playing
     if (_isAnimating) return;
     _isAnimating = true;
-
-    final basePath = 'images/game_costume/game_chars/player_stances';
     
     // Frame 1: Wind up
-    setState(() => _playerFrame = '$basePath/character_3.png');
+    setState(() => _playerFrame = _getFramePath('3'));
     await Future.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
 
     // Frame 2: Swing
-    setState(() => _playerFrame = '$basePath/character_2.png');
+    setState(() => _playerFrame = _getFramePath('2'));
     await Future.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
 
     // Frame 3: Follow through
-    setState(() => _playerFrame = '$basePath/character_1.png');
+    setState(() => _playerFrame = _getFramePath('1'));
     await Future.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
 
     // Back to Idle
     setState(() {
-      _playerFrame = '$basePath/character_idle.png';
+      _playerFrame = _getFramePath('idle');
       _isAnimating = false;
     });
   }
@@ -323,13 +332,17 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                           Positioned(
                             left: 20,
                             bottom: 60, // floating a bit above the start button
-                            child: Image.asset(
-                              _playerFrame,
-                              width: charSize,
-                              height: charSize,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.none, // keeps pixel art crisp!
-                            ),
+                            child: _playerFrame.isEmpty 
+                              ? const SizedBox.shrink() // Hide until state loads
+                              : Image.asset(
+                                  _playerFrame,
+                                  width: charSize,
+                                  height: charSize,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.none, // keeps pixel art crisp!
+                                  // Step 16: Add fallback if the player hasn't added the sprite files yet
+                                  errorBuilder: (_, __, ___) => Icon(Icons.person_outline, size: charSize, color: Colors.white54),
+                                ),
                           ),
 
                           // Boss (bottom right)
