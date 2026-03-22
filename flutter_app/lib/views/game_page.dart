@@ -89,11 +89,20 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-  // Starts the countdown
-  void _startRound() {
+  // Starts a completely fresh 120-second arcade run
+  void _startRun() {
     setState(() {
-      // Step 14: Apply Extra Time Upgrade!
+      // Step 18: Timer only resets when explicitly starting a new run
       _timeLeft = 120 + _state.timeBonus;
+      _bossIndex = 0;
+      _allDefeated = false;
+    });
+    _startBoss();
+  }
+
+  // Starts/Resumes the timer for the current boss without resetting the clock
+  void _startBoss() {
+    setState(() {
       _isRoundRunning = true;
       _bossHp = demoBosses[_bossIndex].maxHealth; // Reset HP to full!
     });
@@ -379,15 +388,15 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                             right: 20,
                             bottom: 10,
                             child: ElevatedButton(
-                              // Only allow starting if the round isn't already running
-                              onPressed: _isRoundRunning ? null : _startRound,
+                              // Start a completely fresh run if not running
+                              onPressed: _isRoundRunning ? null : _startRun,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _isRoundRunning ? Colors.grey : Colors.greenAccent,
                                 foregroundColor: Colors.black,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
                               child: Text(
-                                _isRoundRunning ? 'Round in progress...' : 'Start Round',
+                                _isRoundRunning ? 'Run in progress...' : 'Start Run',
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                             ),
@@ -504,10 +513,11 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                     if (!_allDefeated) {
                       _bossIndex++; // Move to next boss
                     } else {
-                      _bossIndex = 0; // Reset game if they won everything
+                      _bossIndex = 0; // Reset loop if they won everything
                       _allDefeated = false;
                     }
-                    _startRound();
+                    // Step 18: Resume the timer instead of completely resetting it
+                    _startBoss();
                   });
                 },
                 style: ElevatedButton.styleFrom(
