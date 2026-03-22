@@ -19,6 +19,9 @@ class _GamePageState extends State<GamePage> {
   // Hardcoded for now just to build the UI
   final int _bossIndex = 0;
   
+  // --- Step 8.1: Health tracking ---
+  int _bossHp = 0; // Will be set to max health when round starts
+  
   // Default idle frame for the player
   final String _playerFrame = 'images/game_costume/game_chars/player_stances/character_idle.png';
 
@@ -39,6 +42,7 @@ class _GamePageState extends State<GamePage> {
     setState(() {
       _timeLeft = 120;
       _isRoundRunning = true;
+      _bossHp = demoBosses[_bossIndex].maxHealth; // Reset HP to full!
     });
 
     _roundTimer?.cancel(); // cancel any old timer just in case
@@ -56,6 +60,24 @@ class _GamePageState extends State<GamePage> {
           print("Time's up!");
         }
       });
+    });
+  }
+
+  // --- Step 8.1: Tap logic ---
+  void _onTap() {
+    // Only deal damage if the round is actually running and boss is alive
+    if (!_isRoundRunning || _bossHp <= 0) return;
+
+    setState(() {
+      _bossHp -= 10; // 10 damage per tap for now
+      
+      if (_bossHp <= 0) {
+        _bossHp = 0;
+        _isRoundRunning = false;
+        _roundTimer?.cancel();
+        // TODO: Victory Logic
+        print("Boss Defeated!");
+      }
     });
   }
 
@@ -122,7 +144,7 @@ class _GamePageState extends State<GamePage> {
                   style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 
-                // HP Bar Placeholder
+                // HP Bar Placeholder (now wired to state!)
                 const SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -130,15 +152,15 @@ class _GamePageState extends State<GamePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('HP', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                      // Note: using hardcoded 100 for current HP for now
-                      Text('100 / ${boss.maxHealth}', style: const TextStyle(color: Colors.white)),
+                      Text('$_bossHp / ${boss.maxHealth}', style: const TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                   child: LinearProgressIndicator(
-                    value: 100 / boss.maxHealth, // hardcoded value for the UI skeleton
+                    // Protect against division by zero just in case
+                    value: boss.maxHealth > 0 ? (_bossHp / boss.maxHealth).clamp(0.0, 1.0) : 0.0, 
                     color: Colors.greenAccent,
                     backgroundColor: Colors.white24,
                     minHeight: 12,
@@ -152,10 +174,13 @@ class _GamePageState extends State<GamePage> {
                   style: const TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
 
-                // Main Battle Scene (Boss and Player standing side-by-side)
+                // Main Battle Scene
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
+                  child: GestureDetector(
+                    onTap: _onTap, // Tapping anywhere in here damages the boss!
+                    behavior: HitTestBehavior.opaque, // Ensures taps register anywhere in the box
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
                       // Make characters take up a good chunk of the screen height
                       final charSize = (constraints.maxHeight * 0.45).clamp(120.0, 250.0);
                       
@@ -212,11 +237,12 @@ class _GamePageState extends State<GamePage> {
                       );
                     },
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
+                ), // Close GestureDetector
+              ), // Close Expanded
+            ],
+          ), // Close Column
+        ), // Close SafeArea
+      ],
       ),
       // Keeping the standard app bottom nav bar
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
