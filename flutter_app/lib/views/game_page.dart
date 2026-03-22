@@ -25,11 +25,46 @@ class _GamePageState extends State<GamePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D1117), // Dark fallback color
-      body: Center(
-        child: Text(
-          'Fighting ${boss.name}...',
-          style: const TextStyle(color: Colors.white, fontSize: 24),
-        ),
+      body: Stack(
+        children: [
+          // 1. Full-screen background for the current boss
+          Positioned.fill(
+            child: Image.asset(
+              boss.background,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(color: Colors.grey[900]),
+            ),
+          ),
+          
+          // 2. A dark gradient overlay so the white text/HUD is readable 
+          // against busy backgrounds, especially at the top and bottom.
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xCC000000), // Darker at top for HUD
+                    Color(0x44000000), // Mostly clear in the middle
+                    Color(0x99000000), // Darker at bottom for player
+                  ],
+                  stops: [0.0, 0.45, 1.0],
+                ),
+              ),
+            ),
+          ),
+
+          // 3. The actual UI layout will go here (SafeArea)
+          const SafeArea(
+            child: Center(
+              child: Text(
+                'Background added!',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+          ),
+        ],
       ),
       // Keeping the standard app bottom nav bar
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
