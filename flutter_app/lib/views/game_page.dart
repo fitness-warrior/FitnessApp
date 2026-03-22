@@ -27,6 +27,10 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   String _playerFrame = 'images/game_costume/game_chars/player_stances/character_idle.png';
   bool _isAnimating = false; // prevents animation from glitching if clicked too fast
 
+  // --- Step 10: Floating Damage Numbers ---
+  final List<Map<String, dynamic>> _damages = [];
+  int _dmgCounter = 0; // used to give each damage text a unique Key
+
   // --- Step 7.1: Timer Variables ---
   int _timeLeft = 120; // 2 minutes (120 seconds) default
   bool _isRoundRunning = false;
@@ -122,10 +126,26 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     _triggerAttackAnimation(); // Play the player swing animation!
 
     setState(() {
-      _bossHp -= 10; // 10 damage per tap for now
+      final dmg = 10; // Hardcoded for now
+      _bossHp -= dmg; 
       
       // Step 8.2: Trigger the shake animation from the beginning whenever hit
       _shakeCtrl.forward(from: 0.0);
+
+      // Step 10: Spawn a floating damage number
+      // Generate some light randomness so they don't all stack perfectly on top of each other
+      final rnd = Random();
+      // Roughly placing it on the right side of the screen over the boss
+      final startPos = Offset(
+        220.0 + rnd.nextInt(60), // X coordinate
+        350.0 + rnd.nextInt(40), // Y coordinate
+      );
+      
+      _damages.add({
+        'id': ValueKey(_dmgCounter++),
+        'pos': startPos,
+        'dmg': dmg,
+      });
       
       if (_bossHp <= 0) {
         _bossHp = 0;
@@ -311,10 +331,96 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
             ],
           ), // Close Column
         ), // Close SafeArea
+
+        // --- Step 10: Draw all active damage numbers on top ---
+        ..._damages.map((d) => _FloatingDamage(
+              key: d['id'] as Key,
+              position: d['pos'] as Offset,
+              damage: d['dmg'] as int,
+              onDone: () => setState(() => _damages.remove(d)),
+            )),
       ],
       ),
       // Keeping the standard app bottom nav bar
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+    );
+  }
+}
+
+// --- Step 10: Floating Damage Number Widget ---
+// A small widget that animates floating upwards and fading out, then
+// calls a callback (onDone) so we can remove it from the list.
+class _FloatingDamage extends StatefulWidget {
+  final Offset position;
+  final int damage;
+  final VoidCallback onDone;
+
+  const _FloatingDamage({
+    Key? key,
+    required this.position,
+    required this.damage,
+    required this.onDone,
+  }) : super(key: key);
+
+  @override
+  State<_FloatingDamage> createState() => _FloatingDamageState();
+}
+
+class _FloatingDamageState extends State<_FloatingDamage> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _opacity;
+  late Animation<double> _dy;
+
+  @override
+  void initState() {
+    super.initState();
+    // It exists for 600 milliseconds
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+
+    // Fades out from 1.0 to 0.0
+    _opacity = Tween<double>(begin: 1.0, end: 0.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
+
+    // Floats upward by 60 pixels
+    _dy = Tween<double>(begin: 0.0, end: -60.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+    // Tell the parent to delete this when it's done animating
+    _ctrl.forward().then((_) => widget.onDone());
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: widget.position.dx,
+      top: widget.position.dy,
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, child) {
+          return Opacity(
+            opacity: _opacity.value,
+            child: Transform.translate(
+              offset: Offset(0, _dy.value),
+              child: child,
+            ),
+          );
+        },
+        child: Text(
+          '-${widget.damage}',
+          style: const TextStyle(
+            color: Colors.redAccent,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            shadows: [Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1))],
+          ),
+        ),
+      ),
     );
   }
 }
