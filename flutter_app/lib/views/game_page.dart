@@ -81,7 +81,37 @@ class _GamePageState extends State<GamePage> {
                   style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 
-                // The rest of the screen (HP, Timer, Battle Scene) will go below here
+                // HP Bar Placeholder
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('HP', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      // Note: using hardcoded 100 for current HP for now
+                      Text('100 / ${boss.maxHealth}', style: const TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                  child: LinearProgressIndicator(
+                    value: 100 / boss.maxHealth, // hardcoded value for the UI skeleton
+                    color: Colors.greenAccent,
+                    backgroundColor: Colors.white24,
+                    minHeight: 12,
+                  ),
+                ),
+
+                // Timer Placeholder
+                const SizedBox(height: 10),
+                const Text(
+                  '⏱️ 120 seconds left', // hardcoded to 120
+                  style: TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+
+                // The Battle Scene (Player and Boss) will go below here
                 const Spacer(),
               ],
             ),
