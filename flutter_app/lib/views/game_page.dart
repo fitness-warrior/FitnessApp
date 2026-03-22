@@ -19,10 +19,11 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin {
-  // --- Step 11: Game State & Progression ---
+  // --- Step 11 & 12: Game State & Progression ---
   GameState _state = GameState(); // Player's inventory/coins
   int _bossIndex = 0;             // Which boss we're fighting
   bool _showVictory = false;      // Should we show the "You Win" overlay?
+  bool _showGameOver = false;     // Step 12: Time ran out!
   bool _allDefeated = false;      // Did they beat the final boss?
   
   // --- Step 8.1: Health tracking ---
@@ -93,11 +94,10 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
         if (_timeLeft > 0) {
           _timeLeft--;
         } else {
-          // Time ran out!
+          // --- Step 12: Time ran out, Game Over ---
           _isRoundRunning = false;
+          _showGameOver = true;
           _roundTimer?.cancel();
-          // TODO: Game Over Logic
-          print("Time's up!");
         }
       });
     });
@@ -371,10 +371,57 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
             
         // --- Step 11: Victory Screen Overlay ---
         if (_showVictory) _buildVictoryOverlay(),
+
+        // --- Step 12: Game Over Overlay ---
+        if (_showGameOver) _buildGameOverOverlay(),
       ],
       ),
       // Keeping the standard app bottom nav bar
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+    );
+  }
+
+  // --- Step 12: Game Over UI Widget ---
+  Widget _buildGameOverOverlay() {
+    return Container(
+      color: Colors.black87, // Dim the background
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.blueGrey[900],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.redAccent, width: 2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('TIME IS UP', style: TextStyle(color: Colors.redAccent, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              const SizedBox(height: 16),
+              const Text('The boss was too strong this time...', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              const Text('Buy upgrades in the Shop and try again!', style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+              
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _showGameOver = false;
+                    _damages.clear(); // cleanup the floating damage numbers
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+                child: const Text('Try Again', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
