@@ -17,6 +17,9 @@ class GamePage extends StatefulWidget {
 class _GamePageState extends State<GamePage> {
   // Hardcoded for now just to build the UI
   final int _bossIndex = 0;
+  
+  // Default idle frame for the player
+  final String _playerFrame = 'images/game_costume/game_chars/player_stances/character_idle.png';
 
   @override
   Widget build(BuildContext context) {
@@ -111,8 +114,66 @@ class _GamePageState extends State<GamePage> {
                   style: TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
 
-                // The Battle Scene (Player and Boss) will go below here
-                const Spacer(),
+                // Main Battle Scene (Boss and Player standing side-by-side)
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Make characters take up a good chunk of the screen height
+                      final charSize = (constraints.maxHeight * 0.45).clamp(120.0, 250.0);
+                      
+                      return Stack(
+                        children: [
+                          // Player (bottom left)
+                          Positioned(
+                            left: 20,
+                            bottom: 60, // floating a bit above the start button
+                            child: Image.asset(
+                              _playerFrame,
+                              width: charSize,
+                              height: charSize,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.none, // keeps pixel art crisp!
+                            ),
+                          ),
+
+                          // Boss (bottom right)
+                          Positioned(
+                            right: 20,
+                            bottom: 60, // same bottom value = same ground level!
+                            child: Image.asset(
+                              boss.imagePath,
+                              width: charSize,
+                              height: charSize,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.none,
+                              // If we don't have the boss image yet, show a fallback icon
+                              errorBuilder: (_, __, ___) => Icon(Icons.fastfood, size: charSize, color: Colors.redAccent),
+                            ),
+                          ),
+
+                          // Start Button
+                          Positioned(
+                            left: 20,
+                            right: 20,
+                            bottom: 10,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // TODO: Add round start logic later
+                                print("Start round clicked!");
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.greenAccent,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Start Round', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
           ),
