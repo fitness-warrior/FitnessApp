@@ -23,8 +23,9 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   // --- Step 8.1: Health tracking ---
   int _bossHp = 0; // Will be set to max health when round starts
   
-  // Default idle frame for the player
-  final String _playerFrame = 'images/game_costume/game_chars/player_stances/character_idle.png';
+  // --- Step 9: Player Animation ---
+  String _playerFrame = 'images/game_costume/game_chars/player_stances/character_idle.png';
+  bool _isAnimating = false; // prevents animation from glitching if clicked too fast
 
   // --- Step 7.1: Timer Variables ---
   int _timeLeft = 120; // 2 minutes (120 seconds) default
@@ -83,10 +84,42 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     });
   }
 
-  // --- Step 8.1: Tap logic ---
+  // --- Step 9: Stop Motion Animation ---
+  Future<void> _triggerAttackAnimation() async {
+    // Don't interrupt an animation that's already playing
+    if (_isAnimating) return;
+    _isAnimating = true;
+
+    final basePath = 'images/game_costume/game_chars/player_stances';
+    
+    // Frame 1: Wind up
+    setState(() => _playerFrame = '$basePath/character_3.png');
+    await Future.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
+
+    // Frame 2: Swing
+    setState(() => _playerFrame = '$basePath/character_2.png');
+    await Future.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
+
+    // Frame 3: Follow through
+    setState(() => _playerFrame = '$basePath/character_1.png');
+    await Future.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
+
+    // Back to Idle
+    setState(() {
+      _playerFrame = '$basePath/character_idle.png';
+      _isAnimating = false;
+    });
+  }
+
+  // --- Step 8.1 & 9: Tap logic ---
   void _onTap() {
     // Only deal damage if the round is actually running and boss is alive
     if (!_isRoundRunning || _bossHp <= 0) return;
+
+    _triggerAttackAnimation(); // Play the player swing animation!
 
     setState(() {
       _bossHp -= 10; // 10 damage per tap for now
