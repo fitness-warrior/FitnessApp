@@ -4,6 +4,7 @@
 // Step 6.1: Setting up the barebones structure with an empty Scaffold.
 
 import 'package:flutter/material.dart';
+import 'dart:async'; // Need this for the Timer
 import '../widgets/common/navbar.dart';
 import '../data/demo_bosses.dart';
 
@@ -20,6 +21,43 @@ class _GamePageState extends State<GamePage> {
   
   // Default idle frame for the player
   final String _playerFrame = 'images/game_costume/game_chars/player_stances/character_idle.png';
+
+  // --- Step 7.1: Timer Variables ---
+  int _timeLeft = 120; // 2 minutes (120 seconds) default
+  bool _isRoundRunning = false;
+  Timer? _roundTimer;
+
+  // Cleanup: Important to cancel timers when leaving the page!
+  @override
+  void dispose() {
+    _roundTimer?.cancel();
+    super.dispose();
+  }
+
+  // Starts the countdown
+  void _startRound() {
+    setState(() {
+      _timeLeft = 120;
+      _isRoundRunning = true;
+    });
+
+    _roundTimer?.cancel(); // cancel any old timer just in case
+    _roundTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      
+      setState(() {
+        if (_timeLeft > 0) {
+          _timeLeft--;
+        } else {
+          // Time ran out!
+          _isRoundRunning = false;
+          _roundTimer?.cancel();
+          // TODO: Game Over Logic
+          print("Time's up!");
+        }
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
