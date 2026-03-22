@@ -145,11 +145,11 @@ class _GamePageState extends State<GamePage> {
                   ),
                 ),
 
-                // Timer Placeholder
+                // Timer text (now wired to state!)
                 const SizedBox(height: 10),
-                const Text(
-                  '⏱️ 120 seconds left', // hardcoded to 120
-                  style: TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold),
+                Text(
+                  '⏱️ $_timeLeft seconds left',
+                  style: const TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
 
                 // Main Battle Scene (Boss and Player standing side-by-side)
@@ -195,16 +195,17 @@ class _GamePageState extends State<GamePage> {
                             right: 20,
                             bottom: 10,
                             child: ElevatedButton(
-                              onPressed: () {
-                                // TODO: Add round start logic later
-                                print("Start round clicked!");
-                              },
+                              // Only allow starting if the round isn't already running
+                              onPressed: _isRoundRunning ? null : _startRound,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.greenAccent,
+                                backgroundColor: _isRoundRunning ? Colors.grey : Colors.greenAccent,
                                 foregroundColor: Colors.black,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                              child: const Text('Start Round', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              child: Text(
+                                _isRoundRunning ? 'Round in progress...' : 'Start Round',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                         ],
