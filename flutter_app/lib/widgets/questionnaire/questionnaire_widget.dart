@@ -274,9 +274,9 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       final res = <String>[];
       for (final i in inj) {
         final s = i.toLowerCase();
-        if (s.contains('knee'))
+        if (s.contains('knee')) {
           res.add('knee');
-        else if (s.contains('back'))
+        } else if (s.contains('back'))
           res.add('back');
         else if (s.contains('shoulder'))
           res.add('shoulder');

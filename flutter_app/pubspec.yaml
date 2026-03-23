@@ -19,8 +19,11 @@ flutter:
 
   assets:
     - assets/images/
+    - images/game_costume/game_chars/
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^2.0.0

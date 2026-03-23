@@ -32,7 +32,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedArea;
   String? _selectedType;
-  List<String> _selectedEquipment = [];
+  final List<String> _selectedEquipment = [];
 
   final List<String> _bodyAreas = [
     'chest',
@@ -264,7 +264,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
 
   Widget _buildAreaFilter() {
     return DropdownButtonFormField<String>(
-      value: _selectedArea,
+      initialValue: _selectedArea,
       decoration: const InputDecoration(
         labelText: 'Body Area',
         border: OutlineInputBorder(),
@@ -289,7 +289,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
 
   Widget _buildTypeFilter() {
     return DropdownButtonFormField<String>(
-      value: _selectedType,
+      initialValue: _selectedType,
       decoration: const InputDecoration(
         labelText: 'Type',
         border: OutlineInputBorder(),

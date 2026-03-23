@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../models/recipe.dart';
 import '../data/demo_recipes.dart';
 import 'recipe_detail_page.dart';
 
