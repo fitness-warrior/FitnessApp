@@ -84,7 +84,7 @@ class _DashboardPage extends State<DashboardPage> {
           const SizedBox(height: 12),
           SizedBox(
             height: 200,
-            child: MyBarGraph(dataInt: weight),
+            child: MyBarGraph(dataInt: weight,start: start,),
           ),
         ],
       ),

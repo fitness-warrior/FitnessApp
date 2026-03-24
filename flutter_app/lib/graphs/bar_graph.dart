@@ -4,8 +4,11 @@ import 'package:fl_chart/fl_chart.dart';
 
 class MyBarGraph extends StatelessWidget{
   final List<double> dataInt;
+  final double start;
+
   const MyBarGraph({super.key,
-  required this.dataInt
+  required this.dataInt,
+  required this.start
   });
   
   @override
@@ -26,9 +29,19 @@ class MyBarGraph extends StatelessWidget{
 
     return BarChart(
       BarChartData(
-        maxY: 100,
-        minY: 80,
+        maxY: start + 10,
+        minY: start - 10,
         gridData: const FlGridData(show: false),
+        extraLinesData: ExtraLinesData(
+          horizontalLines: [
+            HorizontalLine(
+              y: start,
+              color: const Color.fromARGB(255, 46, 64, 83),
+              strokeWidth: 2,
+              dashArray: [6, 4],
+            ),
+          ],
+        ),
         barGroups: myBarData.barData.map(
           (data) => BarChartGroupData(
             x: data.x,
