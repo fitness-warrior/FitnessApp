@@ -1,4 +1,4 @@
-import 'package:fitness_app_flutter/graphs/bar_data.dart';
+import 'package:fitness_app_flutter/graphs/graph_data.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -14,14 +14,14 @@ class MyBarGraph extends StatelessWidget{
   @override
   Widget build(BuildContext context) {
     final BarData myBarData = BarData(
-      week7amount: dataInt[0], 
-      week6amount: dataInt[1], 
-      week5amount: dataInt[2], 
-      week4amount: dataInt[3], 
-      week3amount: dataInt[4], 
-      week2amount: dataInt[5], 
-      week1amount: dataInt[6], 
-      week0amount: dataInt[7]
+      data7: dataInt[0], 
+      data6: dataInt[1], 
+      data5: dataInt[2], 
+      data4: dataInt[3], 
+      data3: dataInt[4], 
+      data2: dataInt[5], 
+      data1: dataInt[6], 
+      data0: dataInt[7]
     );
 
     // Populate the list used by barGroups.
