@@ -1,4 +1,5 @@
 import 'package:fitness_app_flutter/graphs/bar_graph.dart';
+import 'package:fitness_app_flutter/graphs/pie_chart.dart';
 import 'package:fitness_app_flutter/views/recipe_list_page.dart';
 import 'package:fitness_app_flutter/views/sign_up.dart';
 import 'package:fitness_app_flutter/widgets/common/header.dart';
@@ -50,6 +51,21 @@ class _DashboardPage extends State<DashboardPage> {
   ];
   late double maxCalDeviation;
 
+  final String title = "target";
+  List<double> target = [
+    20.5,
+    28.9,
+    17.4,
+    24.1
+  ];
+
+  List<String> order = [
+    "legs",
+    "back",
+    "core",
+    "arms",
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -99,28 +115,40 @@ class _DashboardPage extends State<DashboardPage> {
         ],
       ),
 
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 200,
-            child: MyBarGraph(
-              dataInt: weight,
-              start: start,
-              range: range,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 200,
+              child: MyBarGraph(
+                dataInt: weight,
+                start: start,
+                range: range,
+              ),
             ),
-          ),
 
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 300,
-            child: MyBarGraph(
-              dataInt: cal,
-              start: calStart,
-              range: maxCalDeviation,
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 300,
+              child: MyBarGraph(
+                dataInt: cal,
+                start: calStart,
+                range: maxCalDeviation,
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 300,
+              child: MyPieChart(
+                num: target,
+                title: title,
+                order: order,
+              ),
+            ),
+          ],
+        ),
       ),
       
 
