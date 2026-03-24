@@ -13,13 +13,17 @@ dependencies:
   http: ^1.1.0
   url_launcher: ^6.2.0
   shared_preferences: ^2.2.2
+  fl_chart: ^1.2.0
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
-    - images/game_costume/game_chars/
+    - images/game_costume/           # costume reward images (earth, fire, etc.)
+    - images/game_costume/game_chars/ # boss sprites (will add later)
+    - images/game_costume/backgrounds/          # City1-4 background PNGs
+    - images/game_costume/game_chars/player_stances/ # idle + attack frames
 
 dev_dependencies:
   flutter_test:
