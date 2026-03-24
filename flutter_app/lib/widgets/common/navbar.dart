@@ -18,7 +18,7 @@ class AppBottomNavBar extends StatelessWidget {
     _NavItem(
         route: '/dashboard',
         icon: Icons.dashboard_customize,
-        tooltip: 'Dashboard'),
+        tooltip: 'My Chart'),
   ];
 
   @override

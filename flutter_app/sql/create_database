@@ -126,7 +126,7 @@ CREATE TABLE food (
     food_calories FLOAT NOT NULL,
     food_fat FLOAT NOT NULL,
     food_fibre Float NOT NULL,
-    food_protein Float NOT NULL,
+    food_protein Float NOT NULL
 );
 
 CREATE TABLE food_plan (
