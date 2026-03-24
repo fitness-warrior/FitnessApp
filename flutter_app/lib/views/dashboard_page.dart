@@ -1,3 +1,4 @@
+import 'package:fitness_app_flutter/graphs/bar_graph.dart';
 import 'package:fitness_app_flutter/views/recipe_list_page.dart';
 import 'package:fitness_app_flutter/views/sign_up.dart';
 import 'package:fitness_app_flutter/widgets/common/header.dart';
@@ -22,8 +23,8 @@ class DashboardPage extends StatefulWidget{
   State<DashboardPage> createState() => _DashboardPage();
 }
 class _DashboardPage extends State<DashboardPage> {
-  
   //example 
+  final double start = 92.1;  
   List<double> weight = [
     92.8,
     92.3,
@@ -78,14 +79,14 @@ class _DashboardPage extends State<DashboardPage> {
         ],
       ),
 
-
-
-      body: const Center(
-        child: Text(
-          'Dashboard screen',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-        ),
-        
+      body: Column(
+        children: [
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 200,
+            child: MyBarGraph(dataInt: weight),
+          ),
+        ],
       ),
       
 
