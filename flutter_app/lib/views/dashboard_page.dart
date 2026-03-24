@@ -23,8 +23,9 @@ class DashboardPage extends StatefulWidget{
   State<DashboardPage> createState() => _DashboardPage();
 }
 class _DashboardPage extends State<DashboardPage> {
-  //example 
+  //examples 
   final double start = 92.1;  
+  final double range = 10;
   List<double> weight = [
     92.8,
     92.3,
@@ -35,6 +36,25 @@ class _DashboardPage extends State<DashboardPage> {
     94.2,
     93.4,
   ];
+
+  final double calStart = 0;
+  List<double> cal = [
+    240.1,
+    110.54,
+    -170.3,
+    -220.5,
+    91.7,
+    -70.8,
+    -330.2,
+    -230.1,
+  ];
+  late double maxCalDeviation;
+
+  @override
+  void initState() {
+    super.initState();
+    maxCalDeviation = cal.reduce((a, b) => a.abs() > b.abs() ? a : b).abs();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +104,21 @@ class _DashboardPage extends State<DashboardPage> {
           const SizedBox(height: 12),
           SizedBox(
             height: 200,
-            child: MyBarGraph(dataInt: weight,start: start,),
+            child: MyBarGraph(
+              dataInt: weight,
+              start: start,
+              range: range,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 300,
+            child: MyBarGraph(
+              dataInt: cal,
+              start: calStart,
+              range: maxCalDeviation,
+            ),
           ),
         ],
       ),
