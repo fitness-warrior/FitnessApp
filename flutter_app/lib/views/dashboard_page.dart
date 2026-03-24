@@ -4,8 +4,36 @@ import 'package:fitness_app_flutter/widgets/common/header.dart';
 import 'package:flutter/material.dart';
 import '../widgets/common/navbar.dart';
 
-class DashboardPage extends StatelessWidget {
-  const DashboardPage({Key? key}) : super(key: key);
+/*
+for weight
+inputs type (week/month)
+
+gets last 8 weeks or months of data 
+
+line grath of weight +-10 of current 
+if above 7 of the start, 5 in the direction of the graph headed 
+
+*/
+
+class DashboardPage extends StatefulWidget{
+  const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPage();
+}
+class _DashboardPage extends State<DashboardPage> {
+  
+  //example 
+  List<double> weight = [
+    92.8,
+    92.3,
+    93.4,
+    91.9,
+    91.7,
+    92.3,
+    94.2,
+    93.4,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +77,9 @@ class DashboardPage extends StatelessWidget {
           ),
         ],
       ),
+
+
+
       body: const Center(
         child: Text(
           'Dashboard screen',
