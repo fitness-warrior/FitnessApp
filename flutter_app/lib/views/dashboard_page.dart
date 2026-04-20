@@ -110,6 +110,7 @@ class _DashboardPage extends State<DashboardPage> {
         ],
       ),
 
+    // start of making pages :)
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Column(
@@ -138,7 +139,6 @@ class _DashboardPage extends State<DashboardPage> {
               height: 300,
               child: MyPieChart(
                 num: target,
-                title: title,
                 order: order,
               ),
             ),
