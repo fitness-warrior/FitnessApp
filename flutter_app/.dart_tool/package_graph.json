@@ -258,7 +258,7 @@
     },
     {
       "name": "meta",
-      "version": "1.17.0",
+      "version": "1.16.0",
       "dependencies": []
     },
     {
@@ -305,20 +305,6 @@
         "file",
         "path",
         "string_scanner"
-      ]
-    },
-    {
-      "name": "dart_style",
-      "version": "3.1.7",
-      "dependencies": [
-        "analyzer",
-        "args",
-        "collection",
-        "package_config",
-        "path",
-        "pub_semver",
-        "source_span",
-        "yaml"
       ]
     },
     {
@@ -439,7 +425,7 @@
     },
     {
       "name": "test_api",
-      "version": "0.7.7",
+      "version": "0.7.6",
       "dependencies": [
         "async",
         "boolean_selector",
@@ -897,6 +883,20 @@
       "dependencies": [
         "meta",
         "path"
+      ]
+    },
+    {
+      "name": "dart_style",
+      "version": "3.1.5",
+      "dependencies": [
+        "analyzer",
+        "args",
+        "collection",
+        "package_config",
+        "path",
+        "pub_semver",
+        "source_span",
+        "yaml"
       ]
     }
   ],
