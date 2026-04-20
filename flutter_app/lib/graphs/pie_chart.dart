@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 
 class MyPieChart extends StatelessWidget {
   final List<double> num;
-  final String title;
   final List<String> order;
 
   const MyPieChart({
     super.key,
     required this.num,
-    required this.title,
     required this.order,
   })  : assert(num.length >= 4, 'num must contain at least 4 values'),
         assert(order.length >= 4, 'order must contain at least 4 labels');
@@ -27,7 +25,6 @@ class MyPieChart extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(title),
         const SizedBox(height: 8),
         SizedBox(
           height: 180,
