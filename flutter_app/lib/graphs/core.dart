@@ -50,9 +50,6 @@ class Core extends StatefulWidget {
 class _CoreState extends State<Core> {
   @override
   Widget build(BuildContext context) {
-    // Choose a sensible default height per chart type, but allow the caller to
-    // override by passing `height` or constraining the widget with a
-    // `SizedBox`/`Expanded`.
     final defaultHeight = widget.tableType == 'bar' ? 220.0 : 340.0;
     final containerHeight = widget.height ?? defaultHeight;
 
@@ -67,10 +64,19 @@ class _CoreState extends State<Core> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(widget.name, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
+          Text(
+            widget.name, 
+            style: const TextStyle(
+              fontSize: 20,
+              color: Color.fromARGB(255, 142, 202, 132)
+            ),
+            textAlign: TextAlign.left,
+            ),
+
+          const SizedBox(height: 20),
           Expanded(
             child: Builder(builder: (ctx) {
+
               if (widget.tableType == 'bar') {
                 return MyBarGraph(
                   dataInt: widget.dataValues ?? <double>[],
