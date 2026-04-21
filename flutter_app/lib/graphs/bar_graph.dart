@@ -31,8 +31,8 @@ class MyBarGraph extends StatelessWidget{
 
     return BarChart(
       BarChartData(
-        maxY: start + range,
-        minY: start - range,
+        maxY: (start + range).ceilToDouble(),
+        minY: (start - range).ceilToDouble(),
         gridData: const FlGridData(show: false),
         extraLinesData: ExtraLinesData(
           horizontalLines: [
