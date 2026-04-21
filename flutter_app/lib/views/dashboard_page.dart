@@ -1,5 +1,4 @@
-import 'package:fitness_app_flutter/graphs/bar_graph.dart';
-import 'package:fitness_app_flutter/graphs/pie_chart.dart';
+import 'package:fitness_app_flutter/graphs/core.dart';
 import 'package:fitness_app_flutter/views/recipe_list_page.dart';
 import 'package:fitness_app_flutter/widgets/common/header.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +49,6 @@ class _DashboardPage extends State<DashboardPage> {
   ];
   late double maxCalDeviation;
 
-  final String title = "target";
   List<double> target = [
     20.5,
     28.9,
@@ -117,8 +115,9 @@ class _DashboardPage extends State<DashboardPage> {
           children: [
             SizedBox(
               height: 200,
-              child: MyBarGraph(
-                dataInt: weight,
+              child: Core.bar(
+                name: 'Weight',
+                dataValues: weight,
                 start: start,
                 range: range,
               ),
@@ -127,8 +126,9 @@ class _DashboardPage extends State<DashboardPage> {
             const SizedBox(height: 12),
             SizedBox(
               height: 300,
-              child: MyBarGraph(
-                dataInt: cal,
+              child: Core.bar(
+                name: 'Calories',
+                dataValues: cal,
                 start: calStart,
                 range: maxCalDeviation,
               ),
@@ -137,9 +137,10 @@ class _DashboardPage extends State<DashboardPage> {
             const SizedBox(height: 12),
             SizedBox(
               height: 300,
-              child: MyPieChart(
-                num: target,
-                order: order,
+              child: Core.pie(
+                name: 'Targets',
+                dataValues: target,
+                labels: order,
               ),
             ),
           ],
