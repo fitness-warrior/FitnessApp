@@ -1,0 +1,15 @@
+site_name: FitnessWarrior Documentation
+site_description: Documentation for the FitnessWarrior app
+theme:
+  name: material
+  palette:
+    primary: green
+
+nav:
+  - Home: index.md
+  - Introduction: introduction.md
+  - Setup Guide: setup.md
+  - Features: features.md
+  - Requirements: requirements.md
+  - Testing: testing.md
+  - Architecture: architecture.md
