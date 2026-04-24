@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16
+    container_name: fitnessapp-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fitnessapp
+      POSTGRES_USER: fitness
+      POSTGRES_PASSWORD: fitness
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./flutter_app/sql/create_database:/docker-entrypoint-initdb.d/init.sql:ro
+
+  backend:
+    build:
+      context: ./backend
+    container_name: fitnessapp-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://fitness:fitness@db:5432/fitnessapp
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

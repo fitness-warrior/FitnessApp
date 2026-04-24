@@ -46,7 +46,7 @@ void main() {
     testWidgets('CustomIconButton is disabled when onPressed is null',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CustomIconButton(
               icon: Icons.close,

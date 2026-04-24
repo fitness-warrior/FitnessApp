@@ -2,6 +2,10 @@
 # Environment variables
 # ──────────────────────────────────────────────
 .env
+<<<<<<< HEAD
+.env.local
+*.env
+=======
 .env.*
 !.env.example
 
@@ -48,3 +52,4 @@ Desktop.ini
 *.swo
 *.suo
 *.user
+>>>>>>> 9326dc281da2fbeb64810ab98f4064f8cb3d66c4
