@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config/api_config.dart';
 
 class AdminAddExercise extends StatefulWidget {
   const AdminAddExercise({Key? key}) : super(key: key);
@@ -40,7 +41,7 @@ class _AdminAddExerciseState extends State<AdminAddExercise> {
 
     try {
       final res = await http.post(
-        Uri.parse('http://localhost:5001/api/exercises'),
+        Uri.parse('${ApiConfig.baseUrl}/api/exercises'),
         headers: {
           'Content-Type': 'application/json',
           'X-Admin': 'true',

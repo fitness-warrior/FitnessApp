@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
+import '../dialogs/finish_workout_dialog.dart';
+import '../services/workout_service.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/navbar.dart';
-import 'sign_up.dart';
+import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -175,7 +177,48 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  // You can add a "finish workout" dialog here later if needed.
+  void _openFinishDialog() {
+    if (_workoutExercises.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => FinishWorkoutDialog(
+        exercises: _workoutExercises,
+        setControllers: _setControllers,
+        onSuccess: (result) async {
+          // Submit the completed workout to the backend
+          try {
+            final exercisesWithSets = List.generate(
+              _workoutExercises.length,
+              (i) {
+                final sets = _setControllers[i] ?? [];
+                return {
+                  ..._workoutExercises[i],
+                  'sets': List.generate(
+                      sets.length,
+                      (s) => {
+                            'kg': double.tryParse(sets[s]['kg']!.text) ?? 0,
+                            'reps': int.tryParse(sets[s]['reps']!.text) ?? 0,
+                          }),
+                };
+              },
+            );
+            await WorkoutService.submitWorkout(exercisesWithSets);
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Warning: Could not save workout: $e')),
+              );
+            }
+          }
+          setState(() {
+            _workoutExercises.clear();
+            _setControllers.clear();
+          });
+        },
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -196,7 +239,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
           title: 'My Workout',
           onMenuSelected: (value) {
             final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
-            final routes = {'/my_workout', '/my_meal', '/shop'};
+            final routes = {'/my_workout', '/my_meal'};
             if (routes.contains(route)) {
               Navigator.of(context).pushReplacementNamed(route);
             } else {
@@ -224,7 +267,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
             ),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SignUpPage()),
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
               );
             },
             tooltip: 'Profile',

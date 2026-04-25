@@ -64,13 +64,6 @@ class HeaderWithDropdown extends StatelessWidget {
                 title: Text('Edit Avater'),
               ),
             ),
-            const PopupMenuItem(
-              value: 'Shop',
-              child: ListTile(
-                leading: Icon(Icons.shopping_bag),
-                title: Text('Shop'),
-              ),
-            ),
           ],
         ),
         const SizedBox(width: 8),
