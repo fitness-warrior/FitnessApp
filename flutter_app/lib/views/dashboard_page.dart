@@ -1,5 +1,6 @@
 import 'package:fitness_app_flutter/graphs/core.dart';
 import 'package:fitness_app_flutter/views/recipe_list_page.dart';
+import 'package:fitness_app_flutter/views/profile_page.dart';
 import 'package:fitness_app_flutter/widgets/common/header.dart';
 import 'package:flutter/material.dart';
 import '../widgets/common/navbar.dart';
@@ -97,12 +98,16 @@ class _DashboardPage extends State<DashboardPage> {
               );
             },
           ),
-          const IconButton(
-            icon: CircleAvatar(
+          IconButton(
+            icon: const CircleAvatar(
               radius: 14,
               child: Icon(Icons.person, size: 18),
             ),
-            onPressed: null,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
+            },
             tooltip: 'Profile',
           ),
         ],

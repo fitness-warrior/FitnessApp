@@ -3,8 +3,8 @@ import '../models/daily_meal_plan.dart';
 import '../models/meal_item.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/navbar.dart';
-import 'sign_up.dart';
 import 'recipe_list_page.dart';
+import 'profile_page.dart';
 import '../widgets/meal_plan/date_calorie_header.dart';
 import '../widgets/meal_plan/meal_slot_card.dart';
 import 'food_browser_page.dart';
@@ -174,7 +174,7 @@ String _getDateLabel() {
             ),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SignUpPage()),
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
               );
             },
             tooltip: 'Profile',
