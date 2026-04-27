@@ -29,6 +29,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
   void initState() {
     super.initState();
     _loadPlaceholderExercise();
+    // Add test exercise for video feature
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _addTestExercise();
+    });
     // If launched with recommendation tags, open the search dialog after build
     if (widget.initialRecommendationTags != null &&
         widget.initialRecommendationTags!.isNotEmpty) {
@@ -36,6 +40,24 @@ class _WorkoutPageState extends State<WorkoutPage> {
         _openSearchDialogWithTags(widget.initialRecommendationTags!);
       });
     }
+  }
+
+  void _addTestExercise() {
+    setState(() {
+      _workoutExercises.add({
+        'exer_id': 999,
+        'exer_name': 'Push-up (Test)',
+        'exer_descrip': 'Start in plank position with hands shoulder-width apart. Lower your body until your chest nearly touches the floor. Push yourself back up to the starting position. Keep your elbows at a 45-degree angle. Repeat for desired reps.',
+        'exer_body_area': 'Chest',
+        'exer_type': 'Strength',
+        'exer_equip': 'Bodyweight',
+        'exer_vid': 'https://www.youtube.com/watch?v=IODxDxX7oi4',
+      });
+      // Start with one empty set
+      _setControllers[_workoutExercises.length - 1] = [
+        {'kg': TextEditingController(), 'reps': TextEditingController()},
+      ];
+    });
   }
 
   Future<void> _loadPlaceholderExercise() async {
