@@ -59,17 +59,26 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   Future<void> _loadRecommendations() async {
     try {
       final RecommendationProfile? profile =
-          await RecommendationStorage.loadProfile();
+          await RecommendationStorage.loadProfile().timeout(
+            const Duration(seconds: 5),
+          );
       if (profile == null) return;
-      final rec = await RecommendationService.getRecommendations(profile);
+      final rec = await RecommendationService.getRecommendations(profile).timeout(
+            const Duration(seconds: 5),
+          );
       final tags =
           (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
       if (tags.isEmpty) return;
-      final recResults =
-          await ExerciseRepository.listExercises(recommendationTags: tags);
-      setState(() {
-        _recommended = recResults;
-      });
+      final recResults = await ExerciseRepository.listExercises(
+              recommendationTags: tags)
+          .timeout(
+            const Duration(seconds: 10),
+          );
+      if (mounted) {
+        setState(() {
+          _recommended = recResults;
+        });
+      }
     } catch (_) {
       // ignore errors; recommendations are optional
     }
@@ -96,16 +105,25 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
         name: query.trim().isEmpty ? null : query.trim(),
         area: _selectedArea,
         type: _selectedType,
-      );
-      setState(() {
-        _searchResults = results;
-        _isLoading = false;
-      });
+      ).timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw Exception('Search timed out - please try again');
+            },
+          );
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

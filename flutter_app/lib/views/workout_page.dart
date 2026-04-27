@@ -29,10 +29,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   void initState() {
     super.initState();
     _loadPlaceholderExercise();
-    // Add test exercise for video feature
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _addTestExercise();
-    });
     // If launched with recommendation tags, open the search dialog after build
     if (widget.initialRecommendationTags != null &&
         widget.initialRecommendationTags!.isNotEmpty) {
@@ -42,53 +38,45 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  void _addTestExercise() {
-    setState(() {
-      _workoutExercises.add({
-        'exer_id': 999,
-        'exer_name': 'Push-up (Test)',
-        'exer_descrip': 'Start in plank position with hands shoulder-width apart. Lower your body until your chest nearly touches the floor. Push yourself back up to the starting position. Keep your elbows at a 45-degree angle. Repeat for desired reps.',
-        'exer_body_area': 'Chest',
-        'exer_type': 'Strength',
-        'exer_equip': 'Bodyweight',
-        'exer_vid': 'https://www.youtube.com/watch?v=IODxDxX7oi4',
-      });
-      // Start with one empty set
-      _setControllers[_workoutExercises.length - 1] = [
-        {'kg': TextEditingController(), 'reps': TextEditingController()},
-      ];
-    });
-  }
-
   Future<void> _loadPlaceholderExercise() async {
     try {
-      final exercises = await ExerciseDb.instance.listExercises();
-      setState(() {
-        _placeholderExercise = exercises.isNotEmpty
-            ? exercises.first
-            : {
-                'exer_name': 'Sample Exercise',
-                'exer_descrip': 'No exercises available',
-                'exer_vid': '',
-              };
-        _isLoadingPlaceholder = false;
-      });
+      final exercises = await ExerciseDb.instance.listExercises().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception('Exercise loading timed out');
+            },
+          );
+      if (mounted) {
+        setState(() {
+          _placeholderExercise = exercises.isNotEmpty
+              ? exercises.first
+              : {
+                  'exer_name': 'Sample Exercise',
+                  'exer_descrip': 'No exercises available',
+                  'exer_vid': '',
+                };
+          _isLoadingPlaceholder = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _placeholderExercise = {
-          'exer_name': 'Sample Exercise',
-          'exer_descrip': 'Error loading exercises: $e',
-          'exer_vid': '',
-        };
-        _isLoadingPlaceholder = false;
-      });
+      if (mounted) {
+        setState(() {
+          _placeholderExercise = {
+            'exer_name': 'Error Loading Exercises',
+            'exer_descrip': 'Tap the search button to browse exercises manually',
+            'exer_vid': '',
+          };
+          _isLoadingPlaceholder = false;
+        });
+      }
     }
   }
 
   void _addExercise() {
     if (_placeholderExercise == null) return;
     setState(() {
-      _workoutExercises.add(Map.from(_placeholderExercise!));
+      final normalizedExercise = _normalizeExercise(_placeholderExercise!);
+      _workoutExercises.add(normalizedExercise);
       // Start each exercise with one empty set
       _setControllers[_workoutExercises.length - 1] = [
         {'kg': TextEditingController(), 'reps': TextEditingController()},
@@ -101,6 +89,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  Map<String, dynamic> _normalizeExercise(Map<String, dynamic> exercise) {
+    final normalized = Map<String, dynamic>.from(exercise);
+    // Ensure all fields have defaults
+    normalized['exer_id'] = normalized['exer_id'] ?? 0;
+    normalized['exer_name'] = normalized['exer_name']?.toString() ?? 'Unknown Exercise';
+    normalized['exer_descrip'] = normalized['exer_descrip']?.toString() ?? '';
+    normalized['exer_body_area'] = normalized['exer_body_area']?.toString() ?? 'Unknown';
+    normalized['exer_type'] = normalized['exer_type']?.toString() ?? 'General';
+    normalized['exer_equip'] = normalized['exer_equip']?.toString() ?? 'None';
+    normalized['exer_vid'] = normalized['exer_vid']?.toString() ?? '';
+    return normalized;
   }
 
   void _removeExercise(int index) {
@@ -134,41 +135,37 @@ class _WorkoutPageState extends State<WorkoutPage> {
     });
   }
 
-  void _openSearchDialog() async {
-    final selectedExercise = await showDialog(
+  void _openSearchDialog() {
+    showDialog(
       context: context,
       builder: (context) => ExerciseSearchDialog(
         onExerciseSelected: (exercise) {
-          Navigator.pop(context, exercise);
+          if (mounted) {
+            setState(() {
+              _placeholderExercise = exercise;
+            });
+            _addExercise();
+          }
         },
       ),
     );
-
-    if (selectedExercise != null) {
-      setState(() {
-        _placeholderExercise = selectedExercise;
-      });
-      _addExercise();
-    }
   }
 
-  void _openSearchDialogWithTags(List<String> tags) async {
-    final selectedExercise = await showDialog(
+  void _openSearchDialogWithTags(List<String> tags) {
+    showDialog(
       context: context,
       builder: (context) => ExerciseSearchDialog(
         onExerciseSelected: (exercise) {
-          Navigator.pop(context, exercise);
+          if (mounted) {
+            setState(() {
+              _placeholderExercise = exercise;
+            });
+            _addExercise();
+          }
         },
         initialTags: tags,
       ),
     );
-
-    if (selectedExercise != null) {
-      setState(() {
-        _placeholderExercise = selectedExercise;
-      });
-      _addExercise();
-    }
   }
 
   void _openGenerateDialog() async {
@@ -370,36 +367,37 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     padding: const EdgeInsets.all(16),
                     itemCount: _workoutExercises.length,
                     itemBuilder: (context, index) {
-                      final exercise = _workoutExercises[index];
-                      final sets = _setControllers[index] ?? [];
+                      try {
+                        final exercise = _workoutExercises[index];
+                        final sets = _setControllers[index] ?? [];
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      exercise['exer_name'] ?? 'Unknown',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        exercise['exer_name']?.toString() ?? 'Unknown Exercise',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete),
-                                    onPressed: () => _removeExercise(index),
-                                    color: Colors.red,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              ...List.generate(sets.length, (setIndex) {
+                                    IconButton(
+                                      icon: const Icon(Icons.delete),
+                                      onPressed: () => _removeExercise(index),
+                                      color: Colors.red,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ...List.generate(sets.length, (setIndex) {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Row(
@@ -473,6 +471,36 @@ class _WorkoutPageState extends State<WorkoutPage> {
                           ),
                         ),
                       );
+                      } catch (e) {
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Error displaying exercise',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.red[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  e.toString(),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: () => _removeExercise(index),
+                                  child: const Text('Remove Exercise'),
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                     },
                   ),
           ),
