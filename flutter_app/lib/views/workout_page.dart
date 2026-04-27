@@ -168,33 +168,28 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
-  void _openGenerateDialog() async {
-    final result = await showDialog(
+  void _openGenerateDialog() {
+    showDialog(
       context: context,
       builder: (context) => GenerateWorkoutDialog(
         onGenerate: (count, exercises) {
-          Navigator.pop(context, {'count': count, 'exercises': exercises});
+          if (mounted) {
+            for (final exercise in exercises) {
+              setState(() {
+                _placeholderExercise = exercise;
+              });
+              _addExercise();
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Generated ${exercises.length} exercises!'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         },
       ),
     );
-
-    if (result != null) {
-      final exercises = result['exercises'] as List<Map<String, dynamic>>;
-      for (final exercise in exercises) {
-        setState(() {
-          _placeholderExercise = exercise;
-        });
-        _addExercise();
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Generated ${exercises.length} exercises!'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
   }
 
   Future<void> _openExerciseVideo(String? videoUrl) async {
