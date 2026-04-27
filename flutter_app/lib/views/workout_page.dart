@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
@@ -174,6 +175,43 @@ class _WorkoutPageState extends State<WorkoutPage> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _openExerciseVideo(String? videoUrl) async {
+    if (videoUrl == null || videoUrl.trim().isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No video available for this exercise.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(videoUrl);
+    if (uri == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid video URL.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open the exercise video.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -384,6 +422,30 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 onPressed: () => _addSet(index),
                                 icon: const Icon(Icons.add),
                                 label: const Text('Add Set'),
+                              ),
+                              const SizedBox(height: 12),
+                              const Divider(),
+                              const SizedBox(height: 8),
+                              Text(
+                                'How To Do It',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.blueGrey[800],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton.icon(
+                                onPressed: () => _openExerciseVideo(
+                                  exercise['exer_vid'] as String?,
+                                ),
+                                icon: const Icon(Icons.play_circle_outline),
+                                label: const Text('Watch Exercise Video'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size(double.infinity, 44),
+                                ),
                               ),
                             ],
                           ),
