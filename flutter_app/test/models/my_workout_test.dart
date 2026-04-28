@@ -46,5 +46,26 @@ void main() {
       // The FAB should have an add icon.
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
+    // ── TEST 3 ──────────────────────────────────────────────────────────────
+    testWidgets(
+        'WorkoutPage AppBar shows search and generate-workout action icons',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: WorkoutPage(),
+        ),
+      );
+
+      await tester.pump(const Duration(seconds: 1));
+
+      // Search icon button should be in the AppBar actions.
+      expect(find.byIcon(Icons.search), findsOneWidget);
+
+      // Auto-awesome icon (generate workout) should be in the AppBar actions.
+      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+
+      // Profile icon button should also be present.
+      expect(find.byIcon(Icons.person), findsOneWidget);
+    });
   });
 }
