@@ -67,5 +67,19 @@ void main() {
       // Profile icon button should also be present.
       expect(find.byIcon(Icons.person), findsOneWidget);
     });
+    // ── TEST 4 ──────────────────────────────────────────────────────────────
+    testWidgets('WorkoutPage AppBar title shows "My Workout"',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: WorkoutPage(),
+        ),
+      );
+
+      await tester.pump(const Duration(seconds: 1));
+
+      // The AppBar title widget text should be 'My Workout'.
+      expect(find.text('My Workout'), findsOneWidget);
+    });
   });
 }
