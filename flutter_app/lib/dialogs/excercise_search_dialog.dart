@@ -103,8 +103,8 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
       // Use ExerciseService directly for fast name/area/type searches in the dialog
       final results = await ExerciseService.listExercises(
         name: query.trim().isEmpty ? null : query.trim(),
-        area: _selectedArea,
-        type: _selectedType,
+        area: _selectedArea?.toLowerCase(),
+        type: _selectedType?.toLowerCase(),
       ).timeout(
             const Duration(seconds: 15),
             onTimeout: () {
