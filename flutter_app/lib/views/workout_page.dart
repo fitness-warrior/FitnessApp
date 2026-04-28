@@ -5,8 +5,10 @@ import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_service.dart';
+import '../services/workout_storage.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/navbar.dart';
+import '../widgets/common/finish_button.dart';
 import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
@@ -29,12 +31,81 @@ class _WorkoutPageState extends State<WorkoutPage> {
   void initState() {
     super.initState();
     _loadPlaceholderExercise();
+    _loadSavedWorkoutSession();
     // If launched with recommendation tags, open the search dialog after build
     if (widget.initialRecommendationTags != null &&
         widget.initialRecommendationTags!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openSearchDialogWithTags(widget.initialRecommendationTags!);
       });
+    }
+  }
+
+  /// Load previously saved workout session (exercises and their set data)
+  Future<void> _loadSavedWorkoutSession() async {
+    try {
+      final session = await WorkoutStorage.loadCurrentWorkoutSession();
+      if (session == null) return;
+
+      if (!mounted) return;
+      setState(() {
+        // Restore exercises
+        final exercises = session['exercises'];
+        if (exercises is List) {
+          _workoutExercises.addAll(
+            exercises.cast<Map<String, dynamic>>().map((e) {
+              return Map<String, dynamic>.from(e);
+            }),
+          );
+        }
+
+        // Restore set controllers with saved values
+        final savedSets = session['setControllers'];
+        if (savedSets is Map) {
+          savedSets.forEach((indexStr, sets) {
+            final index = int.tryParse(indexStr.toString()) ?? 0;
+            if (sets is List) {
+              _setControllers[index] = [];
+              for (final set in sets) {
+                final setMap = set is Map ? Map<String, dynamic>.from(set) : {};
+                _setControllers[index]!.add({
+                  'kg': TextEditingController(
+                    text: setMap['kg']?.toString() ?? '',
+                  ),
+                  'reps': TextEditingController(
+                    text: setMap['reps']?.toString() ?? '',
+                  ),
+                });
+              }
+            }
+          });
+        }
+      });
+    } catch (e) {
+      print('Error loading workout session: $e');
+    }
+  }
+
+  /// Save current workout session to persistent storage
+  Future<void> _saveCurrentWorkoutSession() async {
+    try {
+      // Build serializable set data (convert TextEditingController values to strings)
+      final serializableSets = <int, List<Map<String, String>>>{};
+      _setControllers.forEach((index, sets) {
+        serializableSets[index] = sets
+            .map((set) => {
+                  'kg': set['kg']!.text,
+                  'reps': set['reps']!.text,
+                })
+            .toList();
+      });
+
+      await WorkoutStorage.saveCurrentWorkoutSession(
+        _workoutExercises,
+        serializableSets,
+      );
+    } catch (e) {
+      print('Error saving workout session: $e');
     }
   }
 
@@ -89,6 +160,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         duration: const Duration(seconds: 2),
       ),
     );
+    _saveCurrentWorkoutSession();
   }
 
   Map<String, dynamic> _normalizeExercise(Map<String, dynamic> exercise) {
@@ -116,6 +188,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
     setState(() {
       _workoutExercises.removeAt(index);
     });
+    _saveCurrentWorkoutSession();
   }
 
   void _addSet(int exerciseIndex) {
@@ -124,6 +197,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         {'kg': TextEditingController(), 'reps': TextEditingController()},
       );
     });
+    _saveCurrentWorkoutSession();
   }
 
   void _removeSet(int exerciseIndex, int setIndex) {
@@ -133,6 +207,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       set['kg']!.dispose();
       set['reps']!.dispose();
     });
+    _saveCurrentWorkoutSession();
   }
 
   void _openSearchDialog() {
@@ -267,6 +342,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
             _workoutExercises.clear();
             _setControllers.clear();
           });
+          // Clear the saved session after completing workout
+          await WorkoutStorage.clearCurrentWorkoutSession();
         },
       ),
     );
@@ -509,7 +586,20 @@ class _WorkoutPageState extends State<WorkoutPage> {
         foregroundColor: Colors.white,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 0),
+      bottomNavigationBar: _workoutExercises.isNotEmpty
+          ? Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                const AppBottomNavBar(currentIndex: 0),
+                Positioned(
+                  bottom: 80,
+                  left: 0,
+                  right: 0,
+                  child: FinishButton(onPressed: _openFinishDialog),
+                ),
+              ],
+            )
+          : const AppBottomNavBar(currentIndex: 0),
     );
   }
 }
