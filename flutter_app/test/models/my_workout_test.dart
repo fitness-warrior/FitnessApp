@@ -28,5 +28,23 @@ void main() {
       // use findsWidgets because the icon may also appear elsewhere on the page.
       expect(find.byIcon(Icons.fitness_center), findsWidgets);
     });
+    // ── TEST 2 ──────────────────────────────────────────────────────────────
+    testWidgets(
+        'WorkoutPage shows an "Add Exercise" floating action button',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: WorkoutPage(),
+        ),
+      );
+
+      await tester.pump(const Duration(seconds: 1));
+
+      // The FAB should display the label 'Add Exercise'.
+      expect(find.text('Add Exercise'), findsOneWidget);
+
+      // The FAB should have an add icon.
+      expect(find.byIcon(Icons.add), findsOneWidget);
+    });
   });
 }
