@@ -65,6 +65,20 @@ CREATE TABLE exercise (
     exer_equip equip NOT NULL
 );
 
+CREATE TABLE training (
+    train_id SERIAL PRIMARY KEY,
+    train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    train_mins INT,
+    train_reps INT,
+    train_effort decimal NOT NULL,
+);
+
+CREATE TABLE training_exercise (
+    training_exercise_id SERIAL PRIMARY KEY,
+    train_id INT REFERENCES training(train_id),
+    exer_id INT REFERENCES exercise(exer_id)
+);
+
 ---------------- WORK PLAN ----------------
 
 CREATE TABLE work_plan (
