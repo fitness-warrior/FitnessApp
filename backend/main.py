@@ -69,8 +69,8 @@ async def get_exercises(name: str = None, area: str = None, type: str = None, eq
         values.append(f"%{area}%")
         filters.append(f"exer_body_area ILIKE ${len(values)}")
     if type:
-        values.append(type)
-        filters.append(f"exer_type::text = ${len(values)}")
+        values.append(f"%{type}%")
+        filters.append(f"exer_type::text ILIKE ${len(values)}")
     if equipment:
         values.append(equipment)
         filters.append(f"exer_equip::text = ${len(values)}")
