@@ -69,11 +69,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
               for (final set in sets) {
                 final setMap = set is Map ? Map<String, dynamic>.from(set) : {};
                 _setControllers[index]!.add({
-                  'kg': TextEditingController(
-                    text: setMap['kg']?.toString() ?? '',
+                  'kg': _createAutoSaveController(
+                    initialText: setMap['kg']?.toString() ?? '',
                   ),
-                  'reps': TextEditingController(
-                    text: setMap['reps']?.toString() ?? '',
+                  'reps': _createAutoSaveController(
+                    initialText: setMap['reps']?.toString() ?? '',
                   ),
                 });
               }
@@ -87,6 +87,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   /// Save current workout session to persistent storage
+  /// Helper method to create a TextEditingController with auto-save listener
+  TextEditingController _createAutoSaveController({String initialText = ''}) {
+    final controller = TextEditingController(text: initialText);
+    controller.addListener(_saveCurrentWorkoutSession);
+    return controller;
+  }
+
   Future<void> _saveCurrentWorkoutSession() async {
     try {
       // Build serializable set data (convert TextEditingController values to strings)
@@ -150,7 +157,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
       _workoutExercises.add(normalizedExercise);
       // Start each exercise with one empty set
       _setControllers[_workoutExercises.length - 1] = [
-        {'kg': TextEditingController(), 'reps': TextEditingController()},
+        {
+          'kg': _createAutoSaveController(),
+          'reps': _createAutoSaveController(),
+        },
       ];
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -194,7 +204,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
   void _addSet(int exerciseIndex) {
     setState(() {
       _setControllers[exerciseIndex]?.add(
-        {'kg': TextEditingController(), 'reps': TextEditingController()},
+        {
+          'kg': _createAutoSaveController(),
+          'reps': _createAutoSaveController(),
+        },
       );
     });
     _saveCurrentWorkoutSession();
