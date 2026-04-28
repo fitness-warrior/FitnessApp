@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
@@ -26,17 +25,37 @@ class _WorkoutPageState extends State<WorkoutPage> {
   final Map<int, List<Map<String, TextEditingController>>> _setControllers = {};
   Map<String, dynamic>? _placeholderExercise;
   bool _isLoadingPlaceholder = true;
+  List<Map<String, dynamic>> _savedWorkouts = [];
+  bool _loadingSavedWorkouts = true;
 
   @override
   void initState() {
     super.initState();
     _loadPlaceholderExercise();
     _loadSavedWorkoutSession();
+    _loadSavedWorkouts();
     // If launched with recommendation tags, open the search dialog after build
     if (widget.initialRecommendationTags != null &&
         widget.initialRecommendationTags!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openSearchDialogWithTags(widget.initialRecommendationTags!);
+      });
+    }
+  }
+
+  Future<void> _loadSavedWorkouts() async {
+    try {
+      final workouts = await WorkoutStorage.getWorkouts();
+      if (!mounted) return;
+      setState(() {
+        _savedWorkouts = workouts;
+        _loadingSavedWorkouts = false;
+      });
+    } catch (e) {
+      print('Error loading saved workouts: $e');
+      if (!mounted) return;
+      setState(() {
+        _loadingSavedWorkouts = false;
       });
     }
   }
@@ -280,43 +299,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
-  Future<void> _openExerciseVideo(String? videoUrl) async {
-    if (videoUrl == null || videoUrl.trim().isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No video available for this exercise.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    final uri = Uri.tryParse(videoUrl);
-    if (uri == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid video URL.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open the exercise video.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
   void _openFinishDialog() {
     if (_workoutExercises.isEmpty) return;
 
@@ -416,180 +398,338 @@ class _WorkoutPageState extends State<WorkoutPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _workoutExercises.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.fitness_center,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No exercises added yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tap the search icon to add exercises',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
+      body: RefreshIndicator(
+        onRefresh: _loadSavedWorkouts,
+        child: ListView(
+          children: [
+            // Current/In-Progress Workout Section
+            if (_workoutExercises.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18)),
+                  child: Padding(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _workoutExercises.length,
-                    itemBuilder: (context, index) {
-                      try {
-                        final exercise = _workoutExercises[index];
-                        final sets = _setControllers[index] ?? [];
-
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        exercise['exer_name']?.toString() ?? 'Unknown Exercise',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete),
-                                      onPressed: () => _removeExercise(index),
-                                      color: Colors.red,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ...List.generate(sets.length, (setIndex) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    children: [
-                                      Text('Set ${setIndex + 1}:'),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: sets[setIndex]['kg'],
-                                          decoration: const InputDecoration(
-                                            labelText: 'Weight (kg)',
-                                            border: OutlineInputBorder(),
-                                            isDense: true,
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: sets[setIndex]['reps'],
-                                          decoration: const InputDecoration(
-                                            labelText: 'Reps',
-                                            border: OutlineInputBorder(),
-                                            isDense: true,
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.remove_circle),
-                                        onPressed: sets.length > 1
-                                            ? () => _removeSet(index, setIndex)
-                                            : null,
-                                        color: Colors.red,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }),
-                              TextButton.icon(
-                                onPressed: () => _addSet(index),
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add Set'),
-                              ),
-                              const SizedBox(height: 12),
-                              const Divider(),
-                              const SizedBox(height: 8),
-                              Text(
-                                'How To Do It',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.blueGrey[800],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ElevatedButton.icon(
-                                onPressed: () => _openExerciseVideo(
-                                  exercise['exer_vid'] as String?,
-                                ),
-                                icon: const Icon(Icons.play_circle_outline),
-                                label: const Text('Watch Exercise Video'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(double.infinity, 44),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                      } catch (e) {
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
                                 Text(
-                                  'Error displaying exercise',
+                                  'Current Workout',
                                   style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.red[700],
+                                    fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 4),
                                 Text(
-                                  e.toString(),
-                                  style: const TextStyle(fontSize: 12),
+                                  'Add exercises and set your reps/weight',
+                                  style: TextStyle(fontSize: 12),
                                 ),
-                                const SizedBox(height: 8),
-                                ElevatedButton(
-                                  onPressed: () => _removeExercise(index),
-                                  child: const Text('Remove Exercise'),
-                                )
                               ],
                             ),
-                          ),
-                        );
-                      }
-                    },
+                            CircleAvatar(
+                              backgroundColor:
+                                  Colors.orange.withValues(alpha: 0.12),
+                              child: Text(
+                                '${_workoutExercises.length}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        ..._workoutExercises.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final exercise = entry.value;
+                          final sets = _setControllers[index] ?? [];
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            color: Colors.grey.shade50,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          exercise['exer_name']
+                                                  ?.toString() ??
+                                              'Unknown',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete,
+                                            size: 18),
+                                        onPressed: () =>
+                                            _removeExercise(index),
+                                        color: Colors.red,
+                                        constraints: const BoxConstraints(),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...List.generate(sets.length, (setIndex) {
+                                    return Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 8),
+                                      child: Row(
+                                        children: [
+                                          Text('Set ${setIndex + 1}:',
+                                              style: const TextStyle(
+                                                  fontSize: 12)),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: sets[setIndex]
+                                                  ['kg'],
+                                              decoration: InputDecoration(
+                                                labelText: 'kg',
+                                                border:
+                                                    OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8),
+                                                ),
+                                                isDense: true,
+                                                contentPadding:
+                                                    const EdgeInsets.all(8),
+                                              ),
+                                              keyboardType:
+                                                  TextInputType.number,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: sets[setIndex]
+                                                  ['reps'],
+                                              decoration: InputDecoration(
+                                                labelText: 'reps',
+                                                border:
+                                                    OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8),
+                                                ),
+                                                isDense: true,
+                                                contentPadding:
+                                                    const EdgeInsets.all(8),
+                                              ),
+                                              keyboardType:
+                                                  TextInputType.number,
+                                            ),
+                                          ),
+                                          if (sets.length > 1)
+                                            IconButton(
+                                              icon: const Icon(
+                                                  Icons.remove_circle,
+                                                  size: 18),
+                                              onPressed: () => _removeSet(
+                                                  index, setIndex),
+                                              color: Colors.red,
+                                              constraints:
+                                                  const BoxConstraints(),
+                                              padding: EdgeInsets.zero,
+                                            ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                  TextButton.icon(
+                                    onPressed: () => _addSet(index),
+                                    icon: const Icon(Icons.add, size: 16),
+                                    label: const Text('Add Set',
+                                        style: TextStyle(fontSize: 12)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _openFinishDialog,
+                                icon: const Icon(Icons.check),
+                                label: const Text('Finish & Save'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-          ),
-        ],
+                ),
+              ),
+            ],
+            // Saved Workouts History Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Workout History',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+            if (_loadingSavedWorkouts)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              )
+            else if (_savedWorkouts.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(Icons.history, size: 48, color: Colors.grey.shade400),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No saved workouts yet',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: _savedWorkouts.asMap().entries.map((entry) {
+                    final workout = entry.value;
+                    final index = entry.key;
+                    final dateText = workout['date']?.toString() ?? 'Unknown';
+                    final exercises = workout['exercises'];
+                    final exerciseList =
+                        exercises is List ? exercises : const [];
+
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        childrenPadding:
+                            const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        title: Text(
+                          'Workout ${_savedWorkouts.length - index}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        subtitle: Text(dateText, style: const TextStyle(fontSize: 12)),
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              Colors.blue.withValues(alpha: 0.12),
+                          child: Text(
+                            '${exerciseList.length}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        children: [
+                          if (exerciseList.isEmpty)
+                            const Text('No exercises recorded')
+                          else
+                            ...exerciseList.map((exercise) {
+                              final exerciseMap = exercise is Map
+                                  ? Map<String, dynamic>.from(exercise)
+                                  : <String, dynamic>{};
+                              final name = exerciseMap['exer_name']
+                                      ?.toString() ??
+                                  'Exercise';
+                              final sets = exerciseMap['sets'];
+                              final setList =
+                                  sets is List ? sets : const [];
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        setList.isEmpty
+                                            ? 'No sets'
+                                            : setList.map((set) {
+                                                final setMap = set is Map
+                                                    ? Map<String, dynamic>
+                                                        .from(set)
+                                                    : <String, dynamic>{};
+                                                return '${setMap['reps'] ?? '-'} reps x ${setMap['kg'] ?? '-'} kg';
+                                              }).join(' | '),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            const SizedBox(height: 100),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openSearchDialog,
