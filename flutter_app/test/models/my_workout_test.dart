@@ -100,5 +100,25 @@ void main() {
       expect(find.byIcon(Icons.restaurant_menu), findsOneWidget); // My Meal
       expect(find.byIcon(Icons.dashboard_customize), findsOneWidget); // My Chart
     });
+    // ── TEST 6 ──────────────────────────────────────────────────────────────
+    testWidgets(
+        'WorkoutPage accepts initialRecommendationTags without crashing',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: WorkoutPage(
+            initialRecommendationTags: ['chest', 'strength'],
+          ),
+        ),
+      );
+
+      // The post-frame callback opens ExerciseSearchDialog which has a 5s timer.
+      // Pump well past it so no pending timers remain after the test.
+      await tester.pump(const Duration(seconds: 1)); // initial frame
+      await tester.pump(const Duration(seconds: 6)); // drain the dialog timer
+
+      // The page should still render the scaffold with the AppBar title.
+      expect(find.text('My Workout'), findsOneWidget);
+    });
   });
 }
