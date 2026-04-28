@@ -6,7 +6,7 @@ class DataPoint {
 
     DataPoint({
         required this.x,
-        required this.y
+        required this.y 
     });
 }
 
