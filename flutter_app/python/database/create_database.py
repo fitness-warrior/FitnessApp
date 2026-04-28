@@ -78,6 +78,12 @@ CREATE TABLE training_exercise (
     train_id INT REFERENCES training(train_id),
     exer_id INT REFERENCES exercise(exer_id)
 );
+                         
+                         CREATE TABLE training_body (
+    training_body_id SERIAL PRIMARY KEY,
+    train_id INT REFERENCES training(train_id),
+    body_id INT REFERENCES body_metrics(body_id)
+);
 
 ---------------- WORK PLAN ----------------
 
