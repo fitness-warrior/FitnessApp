@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
@@ -39,33 +40,43 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Future<void> _loadPlaceholderExercise() async {
     try {
-      final exercises = await ExerciseDb.instance.listExercises();
-      setState(() {
-        _placeholderExercise = exercises.isNotEmpty
-            ? exercises.first
-            : {
-                'exer_name': 'Sample Exercise',
-                'exer_descrip': 'No exercises available',
-                'exer_vid': '',
-              };
-        _isLoadingPlaceholder = false;
-      });
+      final exercises = await ExerciseDb.instance.listExercises().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception('Exercise loading timed out');
+            },
+          );
+      if (mounted) {
+        setState(() {
+          _placeholderExercise = exercises.isNotEmpty
+              ? exercises.first
+              : {
+                  'exer_name': 'Sample Exercise',
+                  'exer_descrip': 'No exercises available',
+                  'exer_vid': '',
+                };
+          _isLoadingPlaceholder = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _placeholderExercise = {
-          'exer_name': 'Sample Exercise',
-          'exer_descrip': 'Error loading exercises: $e',
-          'exer_vid': '',
-        };
-        _isLoadingPlaceholder = false;
-      });
+      if (mounted) {
+        setState(() {
+          _placeholderExercise = {
+            'exer_name': 'Error Loading Exercises',
+            'exer_descrip': 'Tap the search button to browse exercises manually',
+            'exer_vid': '',
+          };
+          _isLoadingPlaceholder = false;
+        });
+      }
     }
   }
 
   void _addExercise() {
     if (_placeholderExercise == null) return;
     setState(() {
-      _workoutExercises.add(Map.from(_placeholderExercise!));
+      final normalizedExercise = _normalizeExercise(_placeholderExercise!);
+      _workoutExercises.add(normalizedExercise);
       // Start each exercise with one empty set
       _setControllers[_workoutExercises.length - 1] = [
         {'kg': TextEditingController(), 'reps': TextEditingController()},
@@ -78,6 +89,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  Map<String, dynamic> _normalizeExercise(Map<String, dynamic> exercise) {
+    final normalized = Map<String, dynamic>.from(exercise);
+    // Ensure all fields have defaults
+    normalized['exer_id'] = normalized['exer_id'] ?? 0;
+    normalized['exer_name'] = normalized['exer_name']?.toString() ?? 'Unknown Exercise';
+    normalized['exer_descrip'] = normalized['exer_descrip']?.toString() ?? '';
+    normalized['exer_body_area'] = normalized['exer_body_area']?.toString() ?? 'Unknown';
+    normalized['exer_type'] = normalized['exer_type']?.toString() ?? 'General';
+    normalized['exer_equip'] = normalized['exer_equip']?.toString() ?? 'None';
+    normalized['exer_vid'] = normalized['exer_vid']?.toString() ?? '';
+    return normalized;
   }
 
   void _removeExercise(int index) {
@@ -111,69 +135,97 @@ class _WorkoutPageState extends State<WorkoutPage> {
     });
   }
 
-  void _openSearchDialog() async {
-    final selectedExercise = await showDialog(
+  void _openSearchDialog() {
+    showDialog(
       context: context,
       builder: (context) => ExerciseSearchDialog(
         onExerciseSelected: (exercise) {
-          Navigator.pop(context, exercise);
+          if (mounted) {
+            setState(() {
+              _placeholderExercise = exercise;
+            });
+            _addExercise();
+          }
         },
       ),
     );
-
-    if (selectedExercise != null) {
-      setState(() {
-        _placeholderExercise = selectedExercise;
-      });
-      _addExercise();
-    }
   }
 
-  void _openSearchDialogWithTags(List<String> tags) async {
-    final selectedExercise = await showDialog(
+  void _openSearchDialogWithTags(List<String> tags) {
+    showDialog(
       context: context,
       builder: (context) => ExerciseSearchDialog(
         onExerciseSelected: (exercise) {
-          Navigator.pop(context, exercise);
+          if (mounted) {
+            setState(() {
+              _placeholderExercise = exercise;
+            });
+            _addExercise();
+          }
         },
         initialTags: tags,
       ),
     );
-
-    if (selectedExercise != null) {
-      setState(() {
-        _placeholderExercise = selectedExercise;
-      });
-      _addExercise();
-    }
   }
 
-  void _openGenerateDialog() async {
-    final result = await showDialog(
+  void _openGenerateDialog() {
+    showDialog(
       context: context,
       builder: (context) => GenerateWorkoutDialog(
         onGenerate: (count, exercises) {
-          Navigator.pop(context, {'count': count, 'exercises': exercises});
+          if (mounted) {
+            for (final exercise in exercises) {
+              setState(() {
+                _placeholderExercise = exercise;
+              });
+              _addExercise();
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Generated ${exercises.length} exercises!'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         },
       ),
     );
+  }
 
-    if (result != null) {
-      final exercises = result['exercises'] as List<Map<String, dynamic>>;
-      for (final exercise in exercises) {
-        setState(() {
-          _placeholderExercise = exercise;
-        });
-        _addExercise();
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Generated ${exercises.length} exercises!'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+  Future<void> _openExerciseVideo(String? videoUrl) async {
+    if (videoUrl == null || videoUrl.trim().isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No video available for this exercise.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(videoUrl);
+    if (uri == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid video URL.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open the exercise video.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -310,36 +362,37 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     padding: const EdgeInsets.all(16),
                     itemCount: _workoutExercises.length,
                     itemBuilder: (context, index) {
-                      final exercise = _workoutExercises[index];
-                      final sets = _setControllers[index] ?? [];
+                      try {
+                        final exercise = _workoutExercises[index];
+                        final sets = _setControllers[index] ?? [];
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      exercise['exer_name'] ?? 'Unknown',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        exercise['exer_name']?.toString() ?? 'Unknown Exercise',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete),
-                                    onPressed: () => _removeExercise(index),
-                                    color: Colors.red,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              ...List.generate(sets.length, (setIndex) {
+                                    IconButton(
+                                      icon: const Icon(Icons.delete),
+                                      onPressed: () => _removeExercise(index),
+                                      color: Colors.red,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ...List.generate(sets.length, (setIndex) {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Row(
@@ -385,10 +438,64 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 icon: const Icon(Icons.add),
                                 label: const Text('Add Set'),
                               ),
+                              const SizedBox(height: 12),
+                              const Divider(),
+                              const SizedBox(height: 8),
+                              Text(
+                                'How To Do It',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.blueGrey[800],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton.icon(
+                                onPressed: () => _openExerciseVideo(
+                                  exercise['exer_vid'] as String?,
+                                ),
+                                icon: const Icon(Icons.play_circle_outline),
+                                label: const Text('Watch Exercise Video'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size(double.infinity, 44),
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       );
+                      } catch (e) {
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Error displaying exercise',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.red[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  e.toString(),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: () => _removeExercise(index),
+                                  child: const Text('Remove Exercise'),
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                     },
                   ),
           ),

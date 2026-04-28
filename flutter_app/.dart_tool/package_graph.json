@@ -25,7 +25,7 @@
     },
     {
       "name": "build_runner",
-      "version": "2.13.1",
+      "version": "2.14.1",
       "dependencies": [
         "analyzer",
         "args",
@@ -35,7 +35,6 @@
         "build_daemon",
         "built_collection",
         "built_value",
-        "code_builder",
         "collection",
         "convert",
         "crypto",
@@ -117,7 +116,7 @@
     },
     {
       "name": "shared_preferences",
-      "version": "2.5.4",
+      "version": "2.5.5",
       "dependencies": [
         "flutter",
         "shared_preferences_android",
@@ -342,17 +341,6 @@
       ]
     },
     {
-      "name": "code_builder",
-      "version": "4.11.1",
-      "dependencies": [
-        "built_collection",
-        "built_value",
-        "collection",
-        "matcher",
-        "meta"
-      ]
-    },
-    {
       "name": "built_value",
       "version": "8.12.5",
       "dependencies": [
@@ -409,7 +397,7 @@
     },
     {
       "name": "async",
-      "version": "2.13.0",
+      "version": "2.13.1",
       "dependencies": [
         "collection",
         "meta"
@@ -477,6 +465,17 @@
         "stack_trace",
         "term_glyph",
         "test_api"
+      ]
+    },
+    {
+      "name": "code_builder",
+      "version": "4.11.1",
+      "dependencies": [
+        "built_collection",
+        "built_value",
+        "collection",
+        "matcher",
+        "meta"
       ]
     },
     {
@@ -559,7 +558,7 @@
     },
     {
       "name": "shared_preferences_platform_interface",
-      "version": "2.4.1",
+      "version": "2.4.2",
       "dependencies": [
         "flutter",
         "plugin_platform_interface"
@@ -587,7 +586,7 @@
     },
     {
       "name": "shared_preferences_android",
-      "version": "2.4.21",
+      "version": "2.4.23",
       "dependencies": [
         "flutter",
         "shared_preferences_platform_interface"
@@ -645,7 +644,7 @@
     },
     {
       "name": "url_launcher_android",
-      "version": "6.3.28",
+      "version": "6.3.29",
       "dependencies": [
         "flutter",
         "url_launcher_platform_interface"
@@ -884,7 +883,7 @@
     },
     {
       "name": "vm_service",
-      "version": "15.0.2",
+      "version": "15.1.0",
       "dependencies": []
     },
     {

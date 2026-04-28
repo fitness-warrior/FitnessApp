@@ -48,13 +48,20 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     });
 
     try {
-      final allExercises = await ExerciseService.listExercises();
+      final allExercises = await ExerciseService.listExercises().timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw Exception('Loading exercises timed out');
+            },
+          );
 
       if (allExercises.isEmpty) {
-        setState(() {
-          _error = 'No exercises available';
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _error = 'No exercises available';
+            _isLoading = false;
+          });
+        }
         return;
       }
 
@@ -76,12 +83,16 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
       }
 
       widget.onGenerate(selectedCount, selectedExercises);
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
