@@ -12,35 +12,24 @@ class ExerciseService {
     String? type,
     List<String>? equipment,
   }) async {
+    final queryParameters = <String, String>{};
+    
+    if (name != null && name.trim().isNotEmpty) {
+      queryParameters['name'] = name.trim();
+    }
+    if (area != null && area.trim().isNotEmpty) {
+      queryParameters['area'] = area.trim();
+    }
+    if (type != null && type.trim().isNotEmpty) {
+      queryParameters['type'] = type.trim();
+    }
+
     final uri = Uri.parse('$baseUrl/exercises').replace(
-      queryParameters: {
-        if (name != null && name.isNotEmpty) 'name': name,
-        if (area != null && area.isNotEmpty) 'area': area,
-        if (type != null && type.isNotEmpty) 'type': type,
-      },
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
     );
 
-    final queryParts = <String>[];
-    void addParam(String key, String value) {
-      if (value.trim().isEmpty) return;
-      queryParts.add(
-        '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent(value)}',
-      );
-    }
-
-    if (name != null) addParam('name', name);
-    if (area != null) addParam('area', area);
-    if (type != null) addParam('type', type);
-    if (equipment != null) {
-      for (final e in equipment) {
-        addParam('equipment', e); // repeated key supported by FastAPI
-      }
-    }
-
-    final finalUri = uri.replace(query: queryParts.join('&'));
-
-    debugPrint('GET => $finalUri'); // paste here
-    final res = await http.get(finalUri);
+    debugPrint('GET => $uri');
+    final res = await http.get(uri);
     if (res.statusCode != 200) {
       throw Exception('Failed to load exercises: ${res.statusCode}');
     }
