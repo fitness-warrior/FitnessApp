@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fitness_app_flutter/views/workout_page.dart';
+import 'package:fitness_app_flutter/widgets/common/navbar.dart';
 
 void main() {
   group('WorkoutPage Tests', () {
@@ -80,6 +81,24 @@ void main() {
 
       // The AppBar title widget text should be 'My Workout'.
       expect(find.text('My Workout'), findsOneWidget);
+    });
+    // ── TEST 5 ──────────────────────────────────────────────────────────────
+    testWidgets('WorkoutPage renders a bottom navigation bar',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: WorkoutPage(),
+        ),
+      );
+
+      await tester.pump(const Duration(seconds: 1));
+
+      // The custom AppBottomNavBar widget should be present on the page.
+      expect(find.byType(AppBottomNavBar), findsOneWidget);
+
+      // Key nav icons inside the bar should be visible.
+      expect(find.byIcon(Icons.restaurant_menu), findsOneWidget); // My Meal
+      expect(find.byIcon(Icons.dashboard_customize), findsOneWidget); // My Chart
     });
   });
 }
