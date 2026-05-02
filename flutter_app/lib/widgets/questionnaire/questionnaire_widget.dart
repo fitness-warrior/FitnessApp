@@ -221,11 +221,13 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       final wTxt = _textControllers['${q.id}_weight']!.text.trim();
       final hVal = double.tryParse(hTxt) ?? 0;
       final wVal = double.tryParse(wTxt) ?? 0;
+      final bmi = _calculateBmi(hVal, wVal, _useMetricBmi);
       _responses[q.id] = {
         'unit': _useMetricBmi ? 'metric' : 'imperial',
         'height': hVal,
         'weight': wVal,
-        'bmi': _calculateBmi(hVal, wVal, _useMetricBmi),
+        'bmi': bmi,
+        'bmiClass': _bmiClassification(bmi),
       };
     }
 
@@ -256,11 +258,13 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       final wTxt = _textControllers['${last.id}_weight']!.text.trim();
       final hVal = double.tryParse(hTxt) ?? 0;
       final wVal = double.tryParse(wTxt) ?? 0;
+      final bmi = _calculateBmi(hVal, wVal, _useMetricBmi);
       _responses[last.id] = {
         'unit': _useMetricBmi ? 'metric' : 'imperial',
         'height': hVal,
         'weight': wVal,
-        'bmi': _calculateBmi(hVal, wVal, _useMetricBmi),
+        'bmi': bmi,
+        'bmiClass': _bmiClassification(bmi),
       };
     }
 
@@ -461,6 +465,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         final bmi = _calculateBmi(hVal, wVal, _useMetricBmi);
         final bmiLabel =
             bmi == null ? 'BMI: --' : 'BMI: ${bmi.toStringAsFixed(1)}';
+        final bmiClass = _bmiClassification(bmi) ?? '--';
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -503,6 +508,8 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
             ),
             const SizedBox(height: 12),
             Text(bmiLabel),
+            const SizedBox(height: 4),
+            Text('Classification: $bmiClass'),
           ],
         );
     }
@@ -516,6 +523,14 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       return weight / (meters * meters);
     }
     return (703 * weight) / (height * height);
+  }
+
+  String? _bmiClassification(double? bmi) {
+    if (bmi == null) return null;
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25.0) return 'Normal';
+    if (bmi < 30.0) return 'Overweight';
+    return 'Obese';
   }
 
   String _validateNumberFeedback(Question q) {
