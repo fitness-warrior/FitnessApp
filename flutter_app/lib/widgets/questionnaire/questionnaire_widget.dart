@@ -114,7 +114,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       prompt: 'Diet preference',
       type: QuestionType.singleChoice,
       mandatory: true,
-          options: ['Veg', 'Non-veg'],
+      options: ['Veg', 'Non-veg'],
     ),
     Question(
       id: 'Q011',
@@ -271,7 +271,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     final locationRaw = (_responses['Q005'] ?? '').toString();
     final durationRaw = (_responses['Q007'] ?? '').toString();
     final injuriesRaw =
-      (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+        (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
 
     // Normalize mappings
     String mapGoal(String g) {
