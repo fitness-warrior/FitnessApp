@@ -93,6 +93,44 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       mandatory: true,
       options: ['20 mins', '30 mins', '60 mins'],
     ),
+    Question(
+      id: 'Q008',
+      prompt: 'Any injuries?',
+      type: QuestionType.multiSelect,
+      mandatory: false,
+      options: [
+        'None',
+        'Knee',
+        'Back',
+        'Shoulder',
+        'Elbow',
+        'Wrist',
+        'Hip',
+        'Ankle',
+      ],
+    ),
+    Question(
+      id: 'Q010',
+      prompt: 'Diet preference',
+      type: QuestionType.singleChoice,
+      mandatory: true,
+          options: ['Veg', 'Non-veg'],
+    ),
+    Question(
+      id: 'Q011',
+      prompt: 'Any allergies?',
+      type: QuestionType.multiSelect,
+      mandatory: false,
+      options: [
+        'None',
+        'Milk',
+        'Nuts',
+        'Eggs',
+        'Soy',
+        'Wheat',
+        'Shellfish',
+      ],
+    ),
   ];
 
   int _index = 0;
@@ -232,6 +270,8 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     final fitnessLevelRaw = (_responses['Q004'] ?? '').toString();
     final locationRaw = (_responses['Q005'] ?? '').toString();
     final durationRaw = (_responses['Q007'] ?? '').toString();
+    final injuriesRaw =
+      (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
 
     // Normalize mappings
     String mapGoal(String g) {
@@ -265,13 +305,30 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       return <String>[];
     }
 
+    List<String> mapInjuries(List<String> inj) {
+      final res = <String>[];
+      for (final i in inj) {
+        final s = i.toLowerCase();
+        if (s.contains('none')) continue;
+        if (s.contains('knee')) res.add('knee');
+        if (s.contains('back')) res.add('back');
+        if (s.contains('shoulder')) res.add('shoulder');
+        if (s.contains('elbow')) res.add('elbow');
+        if (s.contains('wrist')) res.add('wrist');
+        if (s.contains('hip')) res.add('hip');
+        if (s.contains('ankle')) res.add('ankle');
+        if (s.contains('other')) res.add('other');
+      }
+      return res;
+    }
+
     final profile = RecommendationProfile(
       age: age,
       goal: mapGoal(fitnessGoalRaw),
       experience: mapExperience(fitnessLevelRaw),
       equipment: mapEquipmentFromLocation(locationRaw),
       workoutLengthMinutes: mapDuration(durationRaw),
-      injuredAreas: <String>[],
+      injuredAreas: mapInjuries(injuriesRaw),
     );
 
     // Persist profile locally
@@ -279,10 +336,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
 
     // Call recommendation service
     RecommendationService.getRecommendations(profile).then((rec) {
-      final jsonStr = const JsonEncoder.withIndent('  ').convert({
-        'profile': profile.toJson(),
-        'recommendation': rec,
-      });
+      final jsonStr = const JsonEncoder.withIndent('  ').convert(_responses);
 
       showDialog<void>(
         context: context,
@@ -374,24 +428,19 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                   onChanged: (v) {
                     setState(() {
                       if (v == true) {
-                        _multiSelections[q.id]!.add(opt);
+                        if (opt == 'None') {
+                          _multiSelections[q.id]!.clear();
+                          _multiSelections[q.id]!.add(opt);
+                        } else {
+                          _multiSelections[q.id]!.remove('None');
+                          _multiSelections[q.id]!.add(opt);
+                        }
                       } else {
                         _multiSelections[q.id]!.remove(opt);
                       }
                     });
                   },
                 ),
-                if (opt == 'Other' && selected)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: TextField(
-                      controller: _textControllers[q.id],
-                      decoration: const InputDecoration(
-                        labelText: 'Please describe',
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
               ],
             );
           }).toList(),
