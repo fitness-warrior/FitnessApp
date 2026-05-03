@@ -23,6 +23,7 @@ class WorkoutPage extends StatefulWidget {
 class _WorkoutPageState extends State<WorkoutPage> {
   final List<Map<String, dynamic>> _workoutExercises = [];
   final Map<int, List<Map<String, TextEditingController>>> _setControllers = {};
+  int _selectedTab = 0;
   Map<String, dynamic>? _placeholderExercise;
   bool _isLoadingPlaceholder = true;
   List<Map<String, dynamic>> _savedWorkouts = [];
@@ -402,6 +403,150 @@ class _WorkoutPageState extends State<WorkoutPage> {
         onRefresh: _loadSavedWorkouts,
         child: ListView(
           children: [
+            // Top stats row + segmented tabs (Step 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade900,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const CircleAvatar(
+                                radius: 20,
+                                child: Icon(Icons.person, size: 20),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Lv.1',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 6),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: LinearProgressIndicator(
+                                        value: 0.25,
+                                        minHeight: 8,
+                                        color: const Color(0xFF4A9FFF),
+                                        backgroundColor:
+                                            Colors.blue.withOpacity(0.12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(Icons.local_fire_department,
+                                    color: Colors.orange),
+                                SizedBox(width: 6),
+                                Text('1', style: TextStyle(color: Colors.white)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: const [
+                                Icon(Icons.public, color: Color(0xFF4A9FFF)),
+                                SizedBox(width: 6),
+                                Text('200', style: TextStyle(color: Colors.white)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _selectedTab = 0),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _selectedTab == 0
+                                    ? const Color(0xFF4A9FFF)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Tracker',
+                                  style: TextStyle(
+                                    color: _selectedTab == 0
+                                        ? Colors.black
+                                        : Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _selectedTab = 1),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _selectedTab == 1
+                                    ? const Color(0xFF4A9FFF)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'My Plan',
+                                  style: TextStyle(
+                                    color: _selectedTab == 1
+                                        ? Colors.black
+                                        : Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             // Current/In-Progress Workout Section
             if (_workoutExercises.isNotEmpty) ...[
               Padding(
