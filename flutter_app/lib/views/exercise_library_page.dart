@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/exercise_db.dart';
+import 'exercise_detail_page.dart';
 
 class ExerciseLibraryPage extends StatefulWidget {
   const ExerciseLibraryPage({Key? key}) : super(key: key);
@@ -227,7 +228,12 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
 
     return GestureDetector(
       onTap: () {
-        // Will be wired to the Detail Page later
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ExerciseDetailPage(exercise: exercise),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
