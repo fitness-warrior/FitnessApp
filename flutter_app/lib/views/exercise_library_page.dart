@@ -62,8 +62,8 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filtered = _allExercises.where((ex) {
-        final name = (ex['exer_name'] ?? '').toString().toLowerCase();
-        final area = (ex['exer_body_area'] ?? '').toString();
+        final name = (ex['name'] ?? ex['exer_name'] ?? '').toString().toLowerCase();
+        final area = (ex['area'] ?? ex['exer_body_area'] ?? '').toString();
         final matchesSearch = query.isEmpty || name.contains(query);
         final matchesArea = _selectedArea == null ||
             _selectedArea == 'All' ||
@@ -220,10 +220,12 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
   }
 
   Widget _buildExerciseCard(Map<String, dynamic> exercise) {
-    final name = exercise['exer_name']?.toString() ?? 'Unknown';
-    final area = exercise['exer_body_area']?.toString() ?? '';
-    final type = exercise['exer_type']?.toString() ?? '';
-    final equipment = exercise['exer_equip']?.toString() ?? '';
+    final name = exercise['name']?.toString() ?? exercise['exer_name']?.toString() ?? 'Unknown';
+    final areaRaw = exercise['area']?.toString() ?? exercise['exer_body_area']?.toString() ?? '';
+    final area = areaRaw.isNotEmpty ? areaRaw[0].toUpperCase() + areaRaw.substring(1).toLowerCase() : '';
+    final type = exercise['type']?.toString() ?? exercise['exer_type']?.toString() ?? '';
+    final equipmentRaw = exercise['equipment'] ?? exercise['exer_equip'];
+    final equipment = equipmentRaw is List ? equipmentRaw.join(', ') : equipmentRaw?.toString() ?? '';
     final color = _areaColors[area] ?? const Color(0xFF4A9FFF);
 
     return GestureDetector(

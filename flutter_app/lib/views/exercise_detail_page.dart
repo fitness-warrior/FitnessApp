@@ -27,11 +27,13 @@ class ExerciseDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = exercise['exer_name']?.toString() ?? 'Unknown';
-    final area = exercise['exer_body_area']?.toString() ?? '';
-    final type = exercise['exer_type']?.toString() ?? '';
-    final description = exercise['exer_descrip']?.toString() ?? 'No description available.';
-    final equipment = exercise['exer_equip']?.toString() ?? 'None';
+    final name = exercise['name']?.toString() ?? exercise['exer_name']?.toString() ?? 'Unknown';
+    final areaRaw = exercise['area']?.toString() ?? exercise['exer_body_area']?.toString() ?? '';
+    final area = areaRaw.isNotEmpty ? areaRaw[0].toUpperCase() + areaRaw.substring(1).toLowerCase() : '';
+    final type = exercise['type']?.toString() ?? exercise['exer_type']?.toString() ?? '';
+    final description = exercise['description']?.toString() ?? exercise['exer_descrip']?.toString() ?? 'No description available.';
+    final equipmentRaw = exercise['equipment'] ?? exercise['exer_equip'];
+    final equipment = equipmentRaw is List ? equipmentRaw.join(', ') : equipmentRaw?.toString() ?? 'None';
     final color = _areaColors[area] ?? const Color(0xFF4A9FFF);
     final highlights = _areaHighlights[area] ?? [];
 
