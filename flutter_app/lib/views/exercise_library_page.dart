@@ -94,14 +94,96 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
               color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: Text(
-                '${_allExercises.length} exercises loaded',
-                style: const TextStyle(color: Colors.white),
+      body: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search exercises...',
+                hintStyle: TextStyle(color: Colors.grey[500]),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, color: Colors.grey[500]),
+                        onPressed: () {
+                          _searchController.clear();
+                          _applyFilter();
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color(0xFF1C1C2E),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          // Area filter chips
+          SizedBox(
+            height: 38,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _areas.length,
+              itemBuilder: (context, i) {
+                final area = _areas[i];
+                final isSelected = area == 'All'
+                    ? _selectedArea == null
+                    : _selectedArea == area;
+                final color = _areaColors[area] ?? const Color(0xFF4A9FFF);
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => _selectArea(area),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? color : const Color(0xFF1C1C2E),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? color : const Color(0xFF2A2A3E),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        area,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.grey[400],
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Center(
+                    child: Text(
+                      '${_filtered.length} exercises found',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
