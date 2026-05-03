@@ -7,6 +7,7 @@ import '../services/workout_service.dart';
 import '../services/workout_storage.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
+import 'exercise_library_page.dart';
 import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
@@ -607,7 +608,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 label: 'Exercise Library',
                 icon: Icons.fitness_center,
                 iconColor: const Color(0xFF4A9FFF),
-                onTap: _openSearchDialog,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ExerciseLibraryPage()),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 20),

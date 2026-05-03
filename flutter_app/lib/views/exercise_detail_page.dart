@@ -15,6 +15,16 @@ class ExerciseDetailPage extends StatelessWidget {
     'Cardio':    Color(0xFFEC407A),
   };
 
+  static const Map<String, List<_BodyPart>> _areaHighlights = {
+    'Chest':     [_BodyPart.chest],
+    'Back':      [_BodyPart.upperBack, _BodyPart.lowerBack],
+    'Shoulders': [_BodyPart.shoulders],
+    'Arms':      [_BodyPart.biceps, _BodyPart.triceps, _BodyPart.forearms],
+    'Legs':      [_BodyPart.quads, _BodyPart.hamstrings, _BodyPart.calves],
+    'Core':      [_BodyPart.abs],
+    'Cardio':    [_BodyPart.chest, _BodyPart.legs],
+  };
+
   @override
   Widget build(BuildContext context) {
     final name = exercise['exer_name']?.toString() ?? 'Unknown';
@@ -23,6 +33,7 @@ class ExerciseDetailPage extends StatelessWidget {
     final description = exercise['exer_descrip']?.toString() ?? 'No description available.';
     final equipment = exercise['exer_equip']?.toString() ?? 'None';
     final color = _areaColors[area] ?? const Color(0xFF4A9FFF);
+    final highlights = _areaHighlights[area] ?? [];
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D14),
@@ -72,8 +83,36 @@ class ExerciseDetailPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  // Diagram placeholder
-                  const Center(child: Text('Diagram coming...', style: TextStyle(color: Colors.white))),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1C1C2E),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(color: color.withOpacity(0.15), blurRadius: 16, offset: const Offset(0, 4)),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Text('Muscles Targeted', style: TextStyle(color: Colors.grey[400], fontSize: 13, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 260,
+                          child: _BodyDiagram(highlights: highlights, accentColor: color),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
+                            const SizedBox(width: 6),
+                            Text(area.isEmpty ? 'Primary muscle' : area, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -139,5 +178,22 @@ class ExerciseDetailPage extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+enum _BodyPart {
+  head, neck, shoulders, chest, abs, upperBack, lowerBack,
+  biceps, triceps, forearms, quads, hamstrings, calves, legs,
+}
+
+class _BodyDiagram extends StatelessWidget {
+  final List<_BodyPart> highlights;
+  final Color accentColor;
+
+  const _BodyDiagram({required this.highlights, required this.accentColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: Text('Painter coming...', style: TextStyle(color: Colors.white)));
   }
 }
