@@ -241,54 +241,70 @@ class _BodyPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    final basePaint = Paint()..color = const Color(0xFF2A2A3E);
-    final highlightPaint = Paint()..color = accentColor;
+    final basePaint = Paint()..color = const Color(0xFF2A2A3E)..style = PaintingStyle.fill;
+    final highlightPaint = Paint()..color = accentColor..style = PaintingStyle.fill;
     final outlinePaint = Paint()..color = const Color(0xFF3A3A50)..style = PaintingStyle.stroke..strokeWidth = 1.2;
 
-    void drawPart(Rect rect, {bool isHighlighted = false, double radius = 6}) {
-      final rRect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-      canvas.drawRRect(rRect, isHighlighted ? highlightPaint : basePaint);
-      canvas.drawRRect(rRect, outlinePaint);
-    }
-    void drawOval(Rect rect, {bool isHighlighted = false}) {
-      canvas.drawOval(rect, isHighlighted ? highlightPaint : basePaint);
-      canvas.drawOval(rect, outlinePaint);
+    void drawPoly(List<Offset> pts, bool hl) {
+      if (pts.isEmpty) return;
+      final path = Path()..moveTo(pts[0].dx, pts[0].dy);
+      for (int i = 1; i < pts.length; i++) path.lineTo(pts[i].dx, pts[i].dy);
+      path.close();
+      canvas.drawPath(path, hl ? highlightPaint : basePaint);
+      canvas.drawPath(path, outlinePaint);
+      
+      // Mirror to right side
+      canvas.save();
+      canvas.translate(w, 0);
+      canvas.scale(-1, 1);
+      canvas.drawPath(path, hl ? highlightPaint : basePaint);
+      canvas.drawPath(path, outlinePaint);
+      canvas.restore();
     }
 
     final cx = w / 2;
-    drawOval(Rect.fromCenter(center: Offset(cx, h * 0.06), width: w * 0.32, height: h * 0.10));
-    drawPart(Rect.fromLTWH(cx - w * 0.07, h * 0.105, w * 0.14, h * 0.05), radius: 4);
+    // Head & Neck
+    drawPoly([Offset(cx, h*0.02), Offset(cx-w*0.15, h*0.02), Offset(cx-w*0.15, h*0.1), Offset(cx-w*0.1, h*0.13), Offset(cx, h*0.13)], false);
+    drawPoly([Offset(cx, h*0.13), Offset(cx-w*0.08, h*0.13), Offset(cx-w*0.1, h*0.16), Offset(cx, h*0.16)], false);
 
     if (isFront) {
-      drawOval(Rect.fromCenter(center: Offset(cx - w * 0.35, h * 0.19), width: w * 0.24, height: h * 0.09), isHighlighted: _h(_BodyPart.shoulders));
-      drawOval(Rect.fromCenter(center: Offset(cx + w * 0.35, h * 0.19), width: w * 0.24, height: h * 0.09), isHighlighted: _h(_BodyPart.shoulders));
-      drawPart(Rect.fromLTWH(cx - w * 0.30, h * 0.155, w * 0.28, h * 0.13), isHighlighted: _h(_BodyPart.chest), radius: 8);
-      drawPart(Rect.fromLTWH(cx + w * 0.02, h * 0.155, w * 0.28, h * 0.13), isHighlighted: _h(_BodyPart.chest), radius: 8);
-      drawPart(Rect.fromLTWH(cx - w * 0.47, h * 0.265, w * 0.15, h * 0.14), isHighlighted: _h(_BodyPart.biceps), radius: 8);
-      drawPart(Rect.fromLTWH(cx + w * 0.32, h * 0.265, w * 0.15, h * 0.14), isHighlighted: _h(_BodyPart.biceps), radius: 8);
-      for (int i = 0; i < 3; i++) {
-        drawPart(Rect.fromLTWH(cx - w * 0.27, h * (0.29 + i * 0.075), w * 0.22, h * 0.06), isHighlighted: _h(_BodyPart.abs), radius: 5);
-        drawPart(Rect.fromLTWH(cx + w * 0.05, h * (0.29 + i * 0.075), w * 0.22, h * 0.06), isHighlighted: _h(_BodyPart.abs), radius: 5);
-      }
-      drawPart(Rect.fromLTWH(cx - w * 0.50, h * 0.415, w * 0.14, h * 0.13), isHighlighted: _h(_BodyPart.forearms), radius: 7);
-      drawPart(Rect.fromLTWH(cx + w * 0.36, h * 0.415, w * 0.14, h * 0.13), isHighlighted: _h(_BodyPart.forearms), radius: 7);
-      drawPart(Rect.fromLTWH(cx - w * 0.30, h * 0.57, w * 0.25, h * 0.20), isHighlighted: _h(_BodyPart.quads) || _h(_BodyPart.legs), radius: 10);
-      drawPart(Rect.fromLTWH(cx + w * 0.05, h * 0.57, w * 0.25, h * 0.20), isHighlighted: _h(_BodyPart.quads) || _h(_BodyPart.legs), radius: 10);
-      drawPart(Rect.fromLTWH(cx - w * 0.28, h * 0.79, w * 0.22, h * 0.16), isHighlighted: _h(_BodyPart.calves), radius: 8);
-      drawPart(Rect.fromLTWH(cx + w * 0.06, h * 0.79, w * 0.22, h * 0.16), isHighlighted: _h(_BodyPart.calves), radius: 8);
+      // Shoulders
+      drawPoly([Offset(cx-w*0.2, h*0.16), Offset(cx-w*0.4, h*0.18), Offset(cx-w*0.45, h*0.25), Offset(cx-w*0.3, h*0.25)], _h(_BodyPart.shoulders));
+      // Chest
+      drawPoly([Offset(cx, h*0.16), Offset(cx-w*0.25, h*0.16), Offset(cx-w*0.3, h*0.23), Offset(cx-w*0.02, h*0.25), Offset(cx, h*0.25)], _h(_BodyPart.chest));
+      // Abs (6-pack)
+      drawPoly([Offset(cx, h*0.26), Offset(cx-w*0.12, h*0.26), Offset(cx-w*0.1, h*0.30), Offset(cx, h*0.30)], _h(_BodyPart.abs));
+      drawPoly([Offset(cx, h*0.31), Offset(cx-w*0.1, h*0.31), Offset(cx-w*0.08, h*0.35), Offset(cx, h*0.35)], _h(_BodyPart.abs));
+      drawPoly([Offset(cx, h*0.36), Offset(cx-w*0.08, h*0.36), Offset(cx-w*0.05, h*0.41), Offset(cx, h*0.41)], _h(_BodyPart.abs));
+      // Obliques
+      drawPoly([Offset(cx-w*0.14, h*0.26), Offset(cx-w*0.25, h*0.26), Offset(cx-w*0.22, h*0.39), Offset(cx-w*0.08, h*0.40)], _h(_BodyPart.obliques) || _h(_BodyPart.abs));
+      // Biceps
+      drawPoly([Offset(cx-w*0.32, h*0.26), Offset(cx-w*0.45, h*0.26), Offset(cx-w*0.42, h*0.35), Offset(cx-w*0.28, h*0.35)], _h(_BodyPart.biceps));
+      // Forearms
+      drawPoly([Offset(cx-w*0.28, h*0.36), Offset(cx-w*0.42, h*0.36), Offset(cx-w*0.38, h*0.48), Offset(cx-w*0.30, h*0.48)], _h(_BodyPart.forearms));
+      // Quads
+      drawPoly([Offset(cx-w*0.05, h*0.43), Offset(cx-w*0.25, h*0.43), Offset(cx-w*0.2, h*0.65), Offset(cx-w*0.05, h*0.65)], _h(_BodyPart.quads) || _h(_BodyPart.legs));
+      // Calves
+      drawPoly([Offset(cx-w*0.05, h*0.68), Offset(cx-w*0.2, h*0.68), Offset(cx-w*0.15, h*0.85), Offset(cx-w*0.05, h*0.85)], _h(_BodyPart.calves) || _h(_BodyPart.legs));
     } else {
-      drawOval(Rect.fromCenter(center: Offset(cx - w * 0.35, h * 0.19), width: w * 0.24, height: h * 0.09), isHighlighted: _h(_BodyPart.shoulders));
-      drawOval(Rect.fromCenter(center: Offset(cx + w * 0.35, h * 0.19), width: w * 0.24, height: h * 0.09), isHighlighted: _h(_BodyPart.shoulders));
-      drawPart(Rect.fromLTWH(cx - w * 0.30, h * 0.155, w * 0.60, h * 0.14), isHighlighted: _h(_BodyPart.upperBack), radius: 8);
-      drawPart(Rect.fromLTWH(cx - w * 0.22, h * 0.30, w * 0.44, h * 0.12), isHighlighted: _h(_BodyPart.lowerBack), radius: 6);
-      drawPart(Rect.fromLTWH(cx - w * 0.47, h * 0.265, w * 0.15, h * 0.14), isHighlighted: _h(_BodyPart.triceps), radius: 8);
-      drawPart(Rect.fromLTWH(cx + w * 0.32, h * 0.265, w * 0.15, h * 0.14), isHighlighted: _h(_BodyPart.triceps), radius: 8);
-      drawPart(Rect.fromLTWH(cx - w * 0.50, h * 0.415, w * 0.14, h * 0.13), isHighlighted: _h(_BodyPart.forearms), radius: 7);
-      drawPart(Rect.fromLTWH(cx + w * 0.36, h * 0.415, w * 0.14, h * 0.13), isHighlighted: _h(_BodyPart.forearms), radius: 7);
-      drawPart(Rect.fromLTWH(cx - w * 0.30, h * 0.57, w * 0.25, h * 0.20), isHighlighted: _h(_BodyPart.hamstrings) || _h(_BodyPart.legs), radius: 10);
-      drawPart(Rect.fromLTWH(cx + w * 0.05, h * 0.57, w * 0.25, h * 0.20), isHighlighted: _h(_BodyPart.hamstrings) || _h(_BodyPart.legs), radius: 10);
-      drawPart(Rect.fromLTWH(cx - w * 0.28, h * 0.79, w * 0.22, h * 0.16), isHighlighted: _h(_BodyPart.calves), radius: 8);
-      drawPart(Rect.fromLTWH(cx + w * 0.06, h * 0.79, w * 0.22, h * 0.16), isHighlighted: _h(_BodyPart.calves), radius: 8);
+      // Shoulders (back)
+      drawPoly([Offset(cx-w*0.2, h*0.16), Offset(cx-w*0.4, h*0.18), Offset(cx-w*0.45, h*0.25), Offset(cx-w*0.3, h*0.25)], _h(_BodyPart.shoulders));
+      // Traps
+      drawPoly([Offset(cx, h*0.16), Offset(cx-w*0.2, h*0.16), Offset(cx-w*0.25, h*0.20), Offset(cx, h*0.24)], _h(_BodyPart.traps));
+      // Lats
+      drawPoly([Offset(cx, h*0.25), Offset(cx-w*0.25, h*0.21), Offset(cx-w*0.30, h*0.26), Offset(cx-w*0.22, h*0.36), Offset(cx, h*0.36)], _h(_BodyPart.lats));
+      // Lower Back
+      drawPoly([Offset(cx, h*0.37), Offset(cx-w*0.20, h*0.37), Offset(cx-w*0.22, h*0.45), Offset(cx, h*0.48)], _h(_BodyPart.lowerBack));
+      // Glutes
+      drawPoly([Offset(cx, h*0.49), Offset(cx-w*0.23, h*0.46), Offset(cx-w*0.28, h*0.55), Offset(cx, h*0.58)], _h(_BodyPart.glutes) || _h(_BodyPart.legs));
+      // Triceps
+      drawPoly([Offset(cx-w*0.32, h*0.26), Offset(cx-w*0.45, h*0.26), Offset(cx-w*0.42, h*0.35), Offset(cx-w*0.28, h*0.35)], _h(_BodyPart.triceps));
+      // Forearms
+      drawPoly([Offset(cx-w*0.28, h*0.36), Offset(cx-w*0.42, h*0.36), Offset(cx-w*0.38, h*0.48), Offset(cx-w*0.30, h*0.48)], _h(_BodyPart.forearms));
+      // Hamstrings
+      drawPoly([Offset(cx-w*0.05, h*0.59), Offset(cx-w*0.27, h*0.56), Offset(cx-w*0.22, h*0.68), Offset(cx-w*0.05, h*0.68)], _h(_BodyPart.hamstrings) || _h(_BodyPart.legs));
+      // Calves
+      drawPoly([Offset(cx-w*0.05, h*0.70), Offset(cx-w*0.2, h*0.70), Offset(cx-w*0.15, h*0.88), Offset(cx-w*0.05, h*0.88)], _h(_BodyPart.calves) || _h(_BodyPart.legs));
     }
   }
 
