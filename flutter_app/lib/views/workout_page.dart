@@ -612,157 +612,92 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 ),
               ),
             ],
-            // Saved Workouts History Section
+            // ── Action Cards ──────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: _buildActionCard(
+                label: 'Exercise Library',
+                icon: Icons.fitness_center,
+                iconColor: const Color(0xFF4A9FFF),
+                onTap: _openSearchDialog,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // ── New Workout ───────────────────────────────────
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'New Workout',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildActionCard(
+                label: 'Start Empty Workout',
+                icon: Icons.assignment_outlined,
+                iconColor: const Color(0xFFFFB74D),
+                onTap: _openSearchDialog,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildActionCard(
+                label: 'Generate Workout',
+                icon: Icons.autorenew_rounded,
+                iconColor: const Color(0xFF4CAF50),
+                onTap: _openGenerateDialog,
+              ),
+            ),
+            const SizedBox(height: 28),
+            // ── Routines ──────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Workout History',
+                    'Routines',
                     style: TextStyle(
-                      fontSize: 16,
+                      color: Colors.white,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.folder_outlined, color: Colors.grey[400], size: 22),
+                      const SizedBox(width: 14),
+                      Icon(Icons.add, color: Colors.grey[400], size: 22),
+                    ],
+                  ),
                 ],
               ),
             ),
-            if (_loadingSavedWorkouts)
-              const Padding(
-                padding: EdgeInsets.all(32),
-                child: CircularProgressIndicator(),
-              )
-            else if (_savedWorkouts.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    Icon(Icons.history, size: 48, color: Colors.grey.shade400),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No saved workouts yet',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: _savedWorkouts.asMap().entries.map((entry) {
-                    final workout = entry.value;
-                    final index = entry.key;
-                    final dateText = workout['date']?.toString() ?? 'Unknown';
-                    final exercises = workout['exercises'];
-                    final exerciseList =
-                        exercises is List ? exercises : const [];
-
-                    return Card(
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      child: ExpansionTile(
-                        tilePadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        childrenPadding:
-                            const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        title: Text(
-                          'Workout ${_savedWorkouts.length - index}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                        subtitle: Text(dateText, style: const TextStyle(fontSize: 12)),
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              Colors.blue.withValues(alpha: 0.12),
-                          child: Text(
-                            '${exerciseList.length}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        children: [
-                          if (exerciseList.isEmpty)
-                            const Text('No exercises recorded')
-                          else
-                            ...exerciseList.map((exercise) {
-                              final exerciseMap = exercise is Map
-                                  ? Map<String, dynamic>.from(exercise)
-                                  : <String, dynamic>{};
-                              final name = exerciseMap['exer_name']
-                                      ?.toString() ??
-                                  'Exercise';
-                              final sets = exerciseMap['sets'];
-                              final setList =
-                                  sets is List ? sets : const [];
-
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        setList.isEmpty
-                                            ? 'No sets'
-                                            : setList.map((set) {
-                                                final setMap = set is Map
-                                                    ? Map<String, dynamic>
-                                                        .from(set)
-                                                    : <String, dynamic>{};
-                                                return '${setMap['reps'] ?? '-'} reps x ${setMap['kg'] ?? '-'} kg';
-                                              }).join(' | '),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildRoutinesSection(),
+            ),
             const SizedBox(height: 100),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openSearchDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Exercise'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-      ),
+      floatingActionButton: _workoutExercises.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: _openSearchDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Exercise'),
+              backgroundColor: const Color(0xFF4A9FFF),
+              foregroundColor: Colors.white,
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       bottomNavigationBar: _workoutExercises.isNotEmpty
           ? Stack(
@@ -778,6 +713,156 @@ class _WorkoutPageState extends State<WorkoutPage> {
               ],
             )
           : const AppBottomNavBar(currentIndex: 0),
+    );
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  Widget _buildActionCard({
+    required String label,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C2E),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: iconColor, size: 26),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoutinesSection() {
+    if (_loadingSavedWorkouts) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C2E),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Column(
+      children: [
+        // "My Routines (N)" expandable header
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C2E),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            collapsedIconColor: Colors.white,
+            iconColor: const Color(0xFF4A9FFF),
+            title: Text(
+              'My Routines (${_savedWorkouts.length})',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
+                const SizedBox(width: 4),
+                const Icon(Icons.expand_more, color: Colors.white),
+              ],
+            ),
+            children: _savedWorkouts.isEmpty
+                ? [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'No saved routines yet.\nFinish a workout to save it here.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                      ),
+                    )
+                  ]
+                : _savedWorkouts.asMap().entries.map((entry) {
+                    final workout = entry.value;
+                    final idx = entry.key;
+                    final exercises = workout['exercises'];
+                    final exerciseList = exercises is List ? exercises : [];
+                    final dateText = workout['date']?.toString() ?? '';
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF252538),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Workout ${_savedWorkouts.length - idx}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${exerciseList.length} exercises  •  $dateText',
+                                  style: TextStyle(
+                                      color: Colors.grey[500], fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }
