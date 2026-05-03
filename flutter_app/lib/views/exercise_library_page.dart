@@ -172,18 +172,119 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
             ),
           ),
           const SizedBox(height: 12),
+          // Count
+          if (!_isLoading)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '${_filtered.length} exercises',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : Center(
-                    child: Text(
-                      '${_filtered.length} exercises found',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
+                : _filtered.isEmpty
+                    ? _buildEmpty()
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        itemCount: _filtered.length,
+                        itemBuilder: (context, index) =>
+                            _buildExerciseCard(_filtered[index]),
+                      ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 56, color: Colors.grey[700]),
+          const SizedBox(height: 12),
+          Text(
+            'No exercises found',
+            style: TextStyle(color: Colors.grey[500], fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseCard(Map<String, dynamic> exercise) {
+    final name = exercise['exer_name']?.toString() ?? 'Unknown';
+    final area = exercise['exer_body_area']?.toString() ?? '';
+    final type = exercise['exer_type']?.toString() ?? '';
+    final equipment = exercise['exer_equip']?.toString() ?? '';
+    final color = _areaColors[area] ?? const Color(0xFF4A9FFF);
+
+    return GestureDetector(
+      onTap: () {
+        // Will be wired to the Detail Page later
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C2E),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 52,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _chip(area, color),
+                      if (type.isNotEmpty) ...[const SizedBox(width: 6), _chip(type, Colors.grey[700]!)],
+                    ],
+                  ),
+                  if (equipment.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(equipment, style: TextStyle(color: Colors.grey[600], fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey[600]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: color.withOpacity(0.18), borderRadius: BorderRadius.circular(8)),
+      child: Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
   }
 }
