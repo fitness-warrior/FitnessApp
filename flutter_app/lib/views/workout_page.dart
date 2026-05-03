@@ -430,185 +430,173 @@ class _WorkoutPageState extends State<WorkoutPage> {
             // Current/In-Progress Workout Section
             if (_workoutExercises.isNotEmpty) ...[
               Padding(
-                padding: const EdgeInsets.all(16),
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Current Workout',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Add exercises and set your reps/weight',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ],
-                            ),
-                            CircleAvatar(
-                              backgroundColor:
-                                  Colors.orange.withValues(alpha: 0.12),
-                              child: Text(
-                                '${_workoutExercises.length}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange,
-                                ),
-                              ),
-                            ),
-                          ],
+                        const Text(
+                          'Current Workout',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        ..._workoutExercises.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final exercise = entry.value;
-                          final sets = _setControllers[index] ?? [];
-
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            color: Colors.grey.shade50,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          exercise['exer_name']
-                                                  ?.toString() ??
-                                              'Unknown',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            size: 18),
-                                        onPressed: () =>
-                                            _removeExercise(index),
-                                        color: Colors.red,
-                                        constraints: const BoxConstraints(),
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ...List.generate(sets.length, (setIndex) {
-                                    return Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 8),
-                                      child: Row(
-                                        children: [
-                                          Text('Set ${setIndex + 1}:',
-                                              style: const TextStyle(
-                                                  fontSize: 12)),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: TextField(
-                                              controller: sets[setIndex]
-                                                  ['kg'],
-                                              decoration: InputDecoration(
-                                                labelText: 'kg',
-                                                border:
-                                                    OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          8),
-                                                ),
-                                                isDense: true,
-                                                contentPadding:
-                                                    const EdgeInsets.all(8),
-                                              ),
-                                              keyboardType:
-                                                  TextInputType.number,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: TextField(
-                                              controller: sets[setIndex]
-                                                  ['reps'],
-                                              decoration: InputDecoration(
-                                                labelText: 'reps',
-                                                border:
-                                                    OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          8),
-                                                ),
-                                                isDense: true,
-                                                contentPadding:
-                                                    const EdgeInsets.all(8),
-                                              ),
-                                              keyboardType:
-                                                  TextInputType.number,
-                                            ),
-                                          ),
-                                          if (sets.length > 1)
-                                            IconButton(
-                                              icon: const Icon(
-                                                  Icons.remove_circle,
-                                                  size: 18),
-                                              onPressed: () => _removeSet(
-                                                  index, setIndex),
-                                              color: Colors.red,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                  TextButton.icon(
-                                    onPressed: () => _addSet(index),
-                                    icon: const Icon(Icons.add, size: 16),
-                                    label: const Text('Add Set',
-                                        style: TextStyle(fontSize: 12)),
-                                  ),
-                                ],
-                              ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${_workoutExercises.length} exercises',
+                            style: const TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
                             ),
-                          );
-                        }),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _openFinishDialog,
-                                icon: const Icon(Icons.check),
-                                label: const Text('Finish & Save'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    ..._workoutExercises.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final exercise = entry.value;
+                      final sets = _setControllers[index] ?? [];
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1C1C2E),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    exercise['exer_name']?.toString() ?? 'Unknown',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      size: 18, color: Colors.redAccent),
+                                  onPressed: () => _removeExercise(index),
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ...List.generate(sets.length, (setIndex) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Text('Set ${setIndex + 1}:',
+                                        style: TextStyle(
+                                            color: Colors.grey[400],
+                                            fontSize: 12)),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: sets[setIndex]['kg'],
+                                        style: const TextStyle(color: Colors.white),
+                                        decoration: InputDecoration(
+                                          labelText: 'kg',
+                                          labelStyle: TextStyle(color: Colors.grey[500]),
+                                          filled: true,
+                                          fillColor: const Color(0xFF252538),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                          isDense: true,
+                                          contentPadding: const EdgeInsets.all(8),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: sets[setIndex]['reps'],
+                                        style: const TextStyle(color: Colors.white),
+                                        decoration: InputDecoration(
+                                          labelText: 'reps',
+                                          labelStyle: TextStyle(color: Colors.grey[500]),
+                                          filled: true,
+                                          fillColor: const Color(0xFF252538),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                          isDense: true,
+                                          contentPadding: const EdgeInsets.all(8),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                      ),
+                                    ),
+                                    if (sets.length > 1)
+                                      IconButton(
+                                        icon: const Icon(Icons.remove_circle,
+                                            size: 18, color: Colors.redAccent),
+                                        onPressed: () => _removeSet(index, setIndex),
+                                        constraints: const BoxConstraints(),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            TextButton.icon(
+                              onPressed: () => _addSet(index),
+                              icon: const Icon(Icons.add,
+                                  size: 16, color: Color(0xFF4A9FFF)),
+                              label: const Text('Add Set',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Color(0xFF4A9FFF))),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _openFinishDialog,
+                        icon: const Icon(Icons.check),
+                        label: const Text('Finish & Save'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4CAF50),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
