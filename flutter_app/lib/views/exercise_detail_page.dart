@@ -17,11 +17,11 @@ class ExerciseDetailPage extends StatelessWidget {
 
   static const Map<String, List<_BodyPart>> _areaHighlights = {
     'Chest':     [_BodyPart.chest],
-    'Back':      [_BodyPart.upperBack, _BodyPart.lowerBack],
+    'Back':      [_BodyPart.lats, _BodyPart.traps, _BodyPart.lowerBack],
     'Shoulders': [_BodyPart.shoulders],
     'Arms':      [_BodyPart.biceps, _BodyPart.triceps, _BodyPart.forearms],
-    'Legs':      [_BodyPart.quads, _BodyPart.hamstrings, _BodyPart.calves],
-    'Core':      [_BodyPart.abs],
+    'Legs':      [_BodyPart.quads, _BodyPart.hamstrings, _BodyPart.calves, _BodyPart.glutes],
+    'Core':      [_BodyPart.abs, _BodyPart.obliques],
     'Cardio':    [_BodyPart.chest, _BodyPart.legs],
   };
 
@@ -184,7 +184,8 @@ class ExerciseDetailPage extends StatelessWidget {
 }
 
 enum _BodyPart {
-  head, neck, shoulders, chest, abs, upperBack, lowerBack,
+  head, neck, shoulders, chest, abs, obliques,
+  lats, traps, lowerBack, glutes,
   biceps, triceps, forearms, quads, hamstrings, calves, legs,
 }
 
