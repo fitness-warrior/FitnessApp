@@ -8,119 +8,96 @@ class AppBottomNavBar extends StatelessWidget {
 
   static const List<_NavItem> _items = [
     _NavItem(
-        route: '/my_workout',
-        icon: Icons.fitness_center,
-        tooltip: 'My Workout'),
+      route: '/my_workout',
+      icon: Icons.fitness_center,
+      label: 'Workout',
+      activeColor: Color(0xFF4A9FFF),
+    ),
     _NavItem(
-        route: '/my_meal', icon: Icons.restaurant_menu, tooltip: 'My Meal'),
-    _NavItem(route: '/game', icon: Icons.sports_esports, tooltip: 'Game'),
-    _NavItem(route: '/edit_avatar', icon: Icons.face, tooltip: 'Wardrobe'),
+      route: '/ranks',
+      icon: Icons.star_rounded,
+      label: 'Ranks',
+      activeColor: Color(0xFFFFC107),
+    ),
     _NavItem(
-        route: '/dashboard',
-        icon: Icons.dashboard_customize,
-        tooltip: 'My Chart'),
+      route: '/game',
+      icon: Icons.home_rounded,
+      label: 'Home',
+      activeColor: Color(0xFF4A9FFF),
+    ),
+    _NavItem(
+      route: '/my_meal',
+      icon: Icons.apple,
+      label: 'Nutrition',
+      activeColor: Color(0xFFEF5350),
+    ),
+    _NavItem(
+      route: '/dashboard',
+      icon: Icons.person_rounded,
+      label: 'Profile',
+      activeColor: Color(0xFFAB47BC),
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: SizedBox(
-        height: 92,
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.bottomCenter,
-          children: [
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 0,
-              child: Container(
-                height: 68,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 14,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    _buildNavIcon(context, _items[0], 0),
-                    _buildNavIcon(context, _items[1], 1),
-                    const SizedBox(width: 78),
-                    _buildNavIcon(context, _items[3], 3),
-                    _buildNavIcon(context, _items[4], 4),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              top: -2,
-              child: _buildGameButton(context),
+      child: Container(
+        height: 70,
+        decoration: BoxDecoration(
+          color: const Color(0xFF13131F),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, -2),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildNavIcon(BuildContext context, _NavItem item, int index) {
-    final selected = currentIndex == index;
-    final iconColor = selected ? Colors.blue[700] : Colors.grey[600];
-
-    return Expanded(
-      child: IconButton(
-        onPressed: () => _onTap(context, item.route),
-        tooltip: item.tooltip,
-        icon: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: selected ? Colors.blue.withValues(alpha: 0.10) : null,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(item.icon, size: 23, color: iconColor),
+        child: Row(
+          children: _items.asMap().entries.map((entry) {
+            return _buildNavItem(context, entry.value, entry.key);
+          }).toList(),
         ),
       ),
     );
   }
 
-  Widget _buildGameButton(BuildContext context) {
-    final selected = currentIndex == 2;
+  Widget _buildNavItem(BuildContext context, _NavItem item, int index) {
+    final selected = currentIndex == index;
+    final color = selected ? item.activeColor : const Color(0xFF6B6B80);
 
-    return Material(
-      color: Colors.transparent,
+    return Expanded(
       child: InkWell(
-        onTap: () => _onTap(context, _items[2].route),
-        borderRadius: BorderRadius.circular(36),
-        child: Ink(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: selected
-                  ? [const Color(0xFF0D47A1), const Color(0xFF1976D2)]
-                  : [const Color(0xFF1565C0), const Color(0xFF42A5F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(color: Colors.white, width: 4),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.withValues(alpha: 0.35),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
+        onTap: () => _onTap(context, item.route),
+        splashColor: item.activeColor.withOpacity(0.1),
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: selected
+                    ? item.activeColor.withOpacity(0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
-          child:
-              const Icon(Icons.sports_esports, color: Colors.white, size: 34),
+              child: Icon(item.icon, size: 24, color: color),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              item.label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight:
+                    selected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -135,11 +112,13 @@ class AppBottomNavBar extends StatelessWidget {
 class _NavItem {
   final String route;
   final IconData icon;
-  final String tooltip;
+  final String label;
+  final Color activeColor;
 
   const _NavItem({
     required this.route,
     required this.icon,
-    required this.tooltip,
+    required this.label,
+    required this.activeColor,
   });
 }
