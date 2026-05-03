@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../services/exercise_service.dart';
 
 class GenerateWorkoutDialog extends StatefulWidget {
@@ -15,29 +14,20 @@ class GenerateWorkoutDialog extends StatefulWidget {
 }
 
 class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
-  final _countController = TextEditingController();
+  String? _selectedWorkoutType; // 'Push', 'Pull', or 'Leg'
   bool _isLoading = false;
   String? _error;
 
-  @override
-  void dispose() {
-    _countController.dispose();
-    super.dispose();
-  }
+  final Map<String, List<String>> _workoutTypeMapping = {
+    'Push': ['Chest', 'Shoulders', 'Triceps'],
+    'Pull': ['Back', 'Biceps'],
+    'Leg': ['Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
+  };
 
   Future<void> _generateWorkout() async {
-    final countText = _countController.text.trim();
-    if (countText.isEmpty) {
+    if (_selectedWorkoutType == null) {
       setState(() {
-        _error = 'Please enter a number';
-      });
-      return;
-    }
-
-    final count = int.tryParse(countText);
-    if (count == null || count <= 0) {
-      setState(() {
-        _error = 'Please enter a valid number';
+        _error = 'Please select a workout type';
       });
       return;
     }
@@ -48,41 +38,71 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     });
 
     try {
-      final allExercises = await ExerciseService.listExercises();
+      final allExercises = await ExerciseService.listExercises().timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw Exception('Loading exercises timed out');
+            },
+          );
 
       if (allExercises.isEmpty) {
-        setState(() {
-          _error = 'No exercises available';
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _error = 'No exercises available';
+            _isLoading = false;
+          });
+        }
         return;
       }
 
-      final selectedCount = count > allExercises.length
-          ? allExercises.length
-          : count;
+      // Filter exercises by the selected workout type's body areas
+      final targetAreas = _workoutTypeMapping[_selectedWorkoutType] ?? [];
+      final filteredExercises = allExercises.where((exercise) {
+        final bodyArea = (exercise['exer_body_area'] ?? '').toString().toLowerCase();
+        return targetAreas.any((area) => bodyArea.contains(area.toLowerCase()));
+      }).toList();
 
-      final random = Random();
-      final selectedExercises = <Map<String, dynamic>>[];
-      final selectedIndices = <int>{};
-
-      while (selectedIndices.length < selectedCount) {
-        final index = random.nextInt(allExercises.length);
-        selectedIndices.add(index);
+      if (filteredExercises.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _error = 'No exercises found for this workout type';
+            _isLoading = false;
+          });
+        }
+        return;
       }
 
-      for (final index in selectedIndices) {
-        selectedExercises.add(allExercises[index]);
+      widget.onGenerate(filteredExercises.length, filteredExercises);
+      if (mounted) {
+        Navigator.pop(context);
       }
-
-      widget.onGenerate(selectedCount, selectedExercises);
-      Navigator.pop(context);
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  Widget _buildWorkoutTypeButton(String type, IconData icon) {
+    final isSelected = _selectedWorkoutType == type;
+    return ElevatedButton.icon(
+      onPressed: _isLoading ? null : () {
+        setState(() {
+          _selectedWorkoutType = type;
+          _error = null;
+        });
+      },
+      icon: Icon(icon),
+      label: Text(type),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? Colors.blue : Colors.grey.shade200,
+        foregroundColor: isSelected ? Colors.white : Colors.black87,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      ),
+    );
   }
 
   @override
@@ -125,21 +145,43 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'How many exercises do you want?',
-                    style: TextStyle(fontSize: 16),
+                    'Select Workout Type',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 16),
-                  TextField(
-                    controller: _countController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Number of exercises',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.fitness_center),
-                    ),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _buildWorkoutTypeButton('Push', Icons.arrow_upward),
+                      _buildWorkoutTypeButton('Pull', Icons.arrow_downward),
+                      _buildWorkoutTypeButton('Leg', Icons.accessibility_new),
+                    ],
                   ),
+                  if (_selectedWorkoutType != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.blue.shade600),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Selected: $_selectedWorkoutType',
+                            style: TextStyle(
+                              color: Colors.blue.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (_error != null) ...[
                     const SizedBox(height: 12),
                     Container(

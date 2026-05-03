@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class ExerciseDb {
   static final ExerciseDb instance = ExerciseDb._();
   ExerciseDb._();
 
-  // Update this URL to match your backend API
-  static const String baseUrl = 'http://localhost:5001/api';
+  static String get baseUrl => ApiConfig.baseUrl;
 
   Future<List<Map<String, dynamic>>> listExercises({
     String? name,

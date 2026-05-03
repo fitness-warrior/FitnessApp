@@ -65,6 +65,26 @@ CREATE TABLE exercise (
     exer_equip equip NOT NULL
 );
 
+CREATE TABLE training (
+    train_id SERIAL PRIMARY KEY,
+    train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    train_mins INT,
+    train_reps INT,
+    train_effort decimal NOT NULL,
+);
+
+CREATE TABLE training_exercise (
+    training_exercise_id SERIAL PRIMARY KEY,
+    train_id INT REFERENCES training(train_id),
+    exer_id INT REFERENCES exercise(exer_id)
+);
+                         
+                         CREATE TABLE training_body (
+    training_body_id SERIAL PRIMARY KEY,
+    train_id INT REFERENCES training(train_id),
+    body_id INT REFERENCES body_metrics(body_id)
+);
+
 ---------------- WORK PLAN ----------------
 
 CREATE TABLE work_plan (
@@ -265,14 +285,83 @@ INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, b
 INSERT INTO exercise
 (exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip)
 VALUES
-('Push-ups','chest','strength','Classic upper body exercise','https://youtube.com/pushups','Bodyweight Only'),
-('Squats','legs','strength','Lower body compound movement','https://youtube.com/squats','Bodyweight Only'),
-('Running','full body','cardio','Outdoor cardio exercise','https://youtube.com/running','Dumbbells'),
-('Bench Press','chest','strength','Chest and tricep builder','https://youtube.com/bench','Barbells'),
-('Deadlift','back','strength','Full posterior chain exercise','https://youtube.com/deadlift','Gym Machines'),
-('Cycling','legs','cardio','Low impact cardio','https://youtube.com/cycling','Cardio Machines'),
-('Pull-ups','back','strength','Back and bicep exercise','https://youtube.com/pullups','Bodyweight Only'),
-('Jump Rope','full body','cardio','High intensity cardio','https://youtube.com/jumprope','Resistance Bands');
+('Push-ups','chest','strength','Classic upper body exercise','https://youtube.com/watch?v=IODxDxX7oi4','Bodyweight Only'),
+('Squats','legs','strength','Lower body compound movement','https://youtube.com/watch?v=Dy28eq2PjlU','Bodyweight Only'),
+('Running','cardio','cardio','Outdoor cardio exercise','https://youtube.com/watch?v=JNhYkYNXfWc','Bodyweight Only'),
+('Bench Press','chest','strength','Chest and tricep builder','https://youtube.com/watch?v=4T9UQ4FBVXA','Barbells'),
+('Deadlift','back','strength','Full posterior chain exercise','https://youtube.com/watch?v=op9kVnSso6Q','Barbells'),
+('Cycling','cardio','cardio','Low impact cardio','https://youtube.com/watch?v=gIa7fh2eAHc','Cardio Machines'),
+('Pull-ups','back','strength','Back and bicep exercise','https://youtube.com/watch?v=eGo4IYlbE5g','Bodyweight Only'),
+('Jump Rope','cardio','cardio','High intensity cardio','https://youtube.com/watch?v=Ot1qPy5lqXY','Resistance Bands'),
+('Barbell Row','back','strength','Compound back movement','https://youtube.com/watch?v=p2OPXmnOy2w','Barbells'),
+('Dumbbell Curl','arms','isolation','Dumbbell bicep curl','https://youtube.com/watch?v=5up_DknRHa4','Dumbbells'),
+('Tricep Dips','arms','strength','Bodyweight tricep exercise','https://youtube.com/watch?v=SYFZ3NZXfCE','Bodyweight Only'),
+('Leg Press','legs','strength','Machine leg pressing','https://youtube.com/watch?v=IZxyjW7MIAI','Gym Machines'),
+('Lat Pulldown','back','isolation','Isolate latissimus dorsi','https://youtube.com/watch?v=ceaG6STpF1A','Gym Machines'),
+('Shoulder Press','shoulders','strength','Overhead pressing movement','https://youtube.com/watch?v=hQcJMpB45yA','Barbells'),
+('Lateral Raise','shoulders','isolation','Isolate lateral deltoids','https://youtube.com/watch?v=3VcIy7ZcqXE','Dumbbells'),
+('Dumbbell Bench Press','chest','strength','Dumbbell version of bench press','https://youtube.com/watch?v=QN39LvQKWGw','Dumbbells'),
+('Incline Bench Press','chest','strength','Targets upper chest','https://youtube.com/watch?v=Avs0JT0x7z8','Barbells'),
+('Decline Bench Press','chest','strength','Targets lower chest','https://youtube.com/watch?v=rT7DgCr-3pg','Barbells'),
+('Cable Flye','chest','isolation','Isolate chest with cables','https://youtube.com/watch?v=vHbmMO9RIDY','Gym Machines'),
+('Dumbbell Flye','chest','isolation','Stretch and contract chest','https://youtube.com/watch?v=Lnk_J2q0Hlw','Dumbbells'),
+('Incline Push-ups','chest','bodyweight','Easier variation of push-ups','https://youtube.com/watch?v=4dWVIX6EgsM','Bodyweight Only'),
+('Machine Chest Press','chest','isolation','Controlled chest movement','https://youtube.com/watch?v=4xLm-Nt5bJs','Gym Machines'),
+('T-Bar Row','back','strength','Machine assisted row','https://youtube.com/watch?v=c5QfRFMCUlQ','Gym Machines'),
+('Dumbbell Row','back','strength','Single arm dumbbell row','https://youtube.com/watch?v=qlqJoP-8yGM','Dumbbells'),
+('Chin-ups','back','strength','Underhand pull-up variation','https://youtube.com/watch?v=O5XLJlXCfJg','Bodyweight Only'),
+('Cable Row','back','isolation','Seated cable rowing','https://youtube.com/watch?v=SHuZo74x5gE','Gym Machines'),
+('Dumbbell Shoulder Press','shoulders','strength','Dumbbell overhead press','https://youtube.com/watch?v=qEwKWAw_gYc','Dumbbells'),
+('Front Raise','shoulders','isolation','Isolate front deltoids','https://youtube.com/watch?v=lehuFOVR9S0','Dumbbells'),
+('Reverse Pec Deck','shoulders','isolation','Target rear deltoids','https://youtube.com/watch?v=L9kFi6yrpP4','Gym Machines'),
+('Machine Shoulder Press','shoulders','isolation','Controlled shoulder press','https://youtube.com/watch?v=M89tKxw9nRs','Gym Machines'),
+('Pike Push-ups','shoulders','bodyweight','Bodyweight shoulder exercise','https://youtube.com/watch?v=rJWXM0rLdmE','Bodyweight Only'),
+('Upright Row','shoulders','strength','Compound shoulder movement','https://youtube.com/watch?v=4ZWc9MmfOD8','Barbells'),
+('Barbell Curl','arms','strength','Classic bicep exercise','https://youtube.com/watch?v=kwG2ipFQV0s','Barbells'),
+('Overhead Tricep Extension','arms','isolation','Tricep isolation exercise','https://youtube.com/watch?v=0c3kzsSMCAM','Dumbbells'),
+('Tricep Rope Pushdown','arms','isolation','Cable tricep exercise','https://youtube.com/watch?v=Ddt4Z5Koyrc','Gym Machines'),
+('Hammer Curl','arms','isolation','Neutral grip curl','https://youtube.com/watch?v=zC3nLlEvin0','Dumbbells'),
+('Preacher Curl','arms','isolation','Isolated bicep curl','https://youtube.com/watch?v=7JqH7VRLkMA','Barbells'),
+('Cable Curl','arms','isolation','Cable machine curl','https://youtube.com/watch?v=rvXPAc8YEZE','Gym Machines'),
+('Close Grip Bench Press','arms','strength','Tricep focused pressing','https://youtube.com/watch?v=2KPlPKrklW0','Barbells'),
+('Walking Lunge','legs','strength','Step forward lunge','https://youtube.com/watch?v=Z2n58m1gJ8Y','Dumbbells'),
+('Bulgarian Split Squat','legs','strength','Single leg squat variation','https://youtube.com/watch?v=EQFhGJXNuJE','Dumbbells'),
+('Leg Curl','legs','isolation','Hamstring isolation','https://youtube.com/watch?v=PJwmD1iB6t0','Gym Machines'),
+('Leg Extension','legs','isolation','Quad isolation','https://youtube.com/watch?v=TAeFnpBUh90','Gym Machines'),
+('Romanian Deadlift','legs','strength','Hamstring focused deadlift','https://youtube.com/watch?v=2SHsk9AzdjA','Barbells'),
+('Hack Squat','legs','strength','Machine assisted squat','https://youtube.com/watch?v=Ykd-khRrNHs','Gym Machines'),
+('Smith Machine Squat','legs','strength','Guided squat movement','https://youtube.com/watch?v=7cPxwBvD5e8','Gym Machines'),
+('Goblet Squat','legs','strength','Dumbbell squat hold','https://youtube.com/watch?v=2qQjLLhbRIY','Dumbbells'),
+('Calf Raise','legs','isolation','Isolate calf muscles','https://youtube.com/watch?v=RccvEVhIV9c','Barbells'),
+('Seated Leg Curl','legs','isolation','Seated hamstring curl','https://youtube.com/watch?v=JUy1fgQW4wQ','Gym Machines'),
+('Plank','core','bodyweight','Core stability exercise','https://youtube.com/watch?v=29G9hSE2RHw','Bodyweight Only'),
+('Ab Wheel Rollout','core','isolation','Advanced core exercise','https://youtube.com/watch?v=2w6oYvQgIPU','Dumbbells'),
+('Cable Wood Chop','core','isolation','Rotational core exercise','https://youtube.com/watch?v=9e8sLfpvs_c','Gym Machines'),
+('Decline Situp','core','bodyweight','Weighted ab exercise','https://youtube.com/watch?v=jDSbDAIVCl8','Bodyweight Only'),
+('Cable Crunch','core','isolation','Weighted ab crunch','https://youtube.com/watch?v=hcjgKqBXQqc','Gym Machines'),
+('Dead Bug','core','bodyweight','Core stability exercise','https://youtube.com/watch?v=MwBEyYhyZEo','Bodyweight Only'),
+('Bird Dog','core','bodyweight','Balance and core exercise','https://youtube.com/watch?v=0L8v5xVrOAM','Bodyweight Only'),
+('Hanging Leg Raise','core','strength','Advanced ab exercise','https://youtube.com/watch?v=Fv8Cb1bZvMw','Bodyweight Only'),
+('Pallof Press','core','isolation','Anti-rotation exercise','https://youtube.com/watch?v=bvcKXeKKUAg','Gym Machines'),
+('Rowing Machine','cardio','cardio','Full body cardio','https://youtube.com/watch?v=RvZVJ8kA9R8','Cardio Machines'),
+('Elliptical','cardio','cardio','Low impact cardio','https://youtube.com/watch?v=fQ7TcXSEAf4','Cardio Machines'),
+('Stair Climber','cardio','cardio','Lower body cardio','https://youtube.com/watch?v=tLxnM-YlmXE','Cardio Machines'),
+('Burpees','cardio','bodyweight','High intensity bodyweight','https://youtube.com/watch?v=WZ8EJ2aj-Nk','Bodyweight Only'),
+('Mountain Climbers','cardio','cardio','Core and cardio combo','https://youtube.com/watch?v=nmwgirgXLV4','Bodyweight Only'),
+('Sprint','cardio','cardio','High speed running','https://youtube.com/watch?v=yjNvJphVo9I','Bodyweight Only'),
+('Jump Squats','cardio','cardio','Explosive leg movement','https://youtube.com/watch?v=vovEj7RCj0I','Bodyweight Only'),
+('Rope Climb','cardio','strength','Climbing exercise','https://youtube.com/watch?v=pVvXxFY-G80','Resistance Bands'),
+('Treadmill','cardio','cardio','Indoor running','https://youtube.com/watch?v=dIUm_pwrjKE','Cardio Machines'),
+('Kettlebell Swing','back','strength','Hip-hinge explosive swing','https://youtube.com/watch?v=t7zY7Ey-XrI','Dumbbells'),
+('Farmer''s Carry','core','strength','Grip and core strength','https://youtube.com/watch?v=a0wKJvjqO7A','Dumbbells'),
+('Medicine Ball Slam','cardio','bodyweight','Explosive power movement','https://youtube.com/watch?v=oU1JJpKx7Vk','Resistance Bands'),
+('Cable Chop','core','isolation','Core rotation exercise','https://youtube.com/watch?v=e-VLvVt0RIM','Gym Machines'),
+('Sled Push','legs','strength','Heavy leg and cardio','https://youtube.com/watch?v=JwweNM-0gfY','Gym Machines'),
+('Battle Ropes','cardio','bodyweight','Full body cardio','https://youtube.com/watch?v=aMHWKqrfPqY','Resistance Bands'),
+('Box Jump','cardio','bodyweight','Plyometric leg power','https://youtube.com/watch?v=qnYwMoY-lY4','Bodyweight Only'),
+('Dumbbell Snatch','back','strength','Explosive full body','https://youtube.com/watch?v=P_J23Oj6pAo','Dumbbells'),
+('Power Clean','back','strength','Olympic lifting movement','https://youtube.com/watch?v=pN7MtEuDRfA','Barbells'),
+('Thruster','shoulders','strength','Squat to shoulder press','https://youtube.com/watch?v=b3-u2l_RKm0','Dumbbells');
 
 INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_updated_at, work_day) VALUES
 (1, 'Chest Day', 'Focus on chest and triceps', '2026-02-01 10:00:00', '2026-02-01 10:00:00', '2026-02-18'),

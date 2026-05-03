@@ -16,7 +16,32 @@ class ProfilePage extends StatelessWidget {
           },
         ),
       ),
-      body: const SizedBox.shrink(),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 36,
+                backgroundColor: Colors.blue.shade100,
+                child: const Icon(Icons.person, size: 40, color: Colors.blue),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Profile',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Your account details will appear here.',
+                style: TextStyle(color: Colors.grey.shade700),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

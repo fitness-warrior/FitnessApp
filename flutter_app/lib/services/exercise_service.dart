@@ -1,10 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart'; // add this for debugPrint
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class ExerciseService {
-  // Update baseUrl if your API runs elsewhere
-  static const String baseUrl =
-      'http://localhost:5001/api'; // Change from 10.0.2.2 to localhost
+  static String get baseUrl => ApiConfig.baseUrl;
 
   static Future<List<Map<String, dynamic>>> listExercises({
     String? name,
@@ -12,25 +12,24 @@ class ExerciseService {
     String? type,
     List<String>? equipment,
   }) async {
-    final uri = Uri.parse('$baseUrl/exercises').replace(queryParameters: {
-      if (name != null) 'name': name,
-      if (area != null) 'area': area,
-      if (type != null) 'type': type,
-      // equipment[] is handled by multiple query params below
-    });
-
-    // If equipment list provided, add them manually
-    Uri finalUri = uri;
-    if (equipment != null && equipment.isNotEmpty) {
-      final query = Map<String, String>.from(uri.queryParameters);
-      for (var i = 0; i < equipment.length; i++) {
-        query['equipment'] =
-            equipment[i]; // repeated key supported by http package
-      }
-      finalUri = uri.replace(queryParameters: query);
+    final queryParameters = <String, String>{};
+    
+    if (name != null && name.trim().isNotEmpty) {
+      queryParameters['name'] = name.trim();
+    }
+    if (area != null && area.trim().isNotEmpty) {
+      queryParameters['area'] = area.trim();
+    }
+    if (type != null && type.trim().isNotEmpty) {
+      queryParameters['type'] = type.trim();
     }
 
-    final res = await http.get(finalUri);
+    final uri = Uri.parse('$baseUrl/exercises').replace(
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+
+    debugPrint('GET => $uri');
+    final res = await http.get(uri);
     if (res.statusCode != 200) {
       throw Exception('Failed to load exercises: ${res.statusCode}');
     }
@@ -63,7 +62,10 @@ class ExerciseService {
   }
 
   static Future<Map<String, dynamic>> getExercise(int id) async {
-    final res = await http.get(Uri.parse('$baseUrl/exercises/$id'));
+    final uri = Uri.parse('$baseUrl/exercises/$id'); // fixed: remove extra /api
+    debugPrint('GET => $uri'); // paste here
+    final res = await http.get(uri);
+
     if (res.statusCode == 404) throw Exception('Exercise not found');
     if (res.statusCode != 200) throw Exception('Failed to load exercise');
     final Map<String, dynamic> m =

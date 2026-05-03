@@ -7,7 +7,7 @@ import '../../views/workout_page.dart';
 
 import 'package:flutter/material.dart';
 
-enum QuestionType { singleChoice, multiSelect, number, text }
+enum QuestionType { singleChoice, multiSelect, number, text, bmi }
 
 class Question {
   final String id;
@@ -48,84 +48,87 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     ),
     Question(
       id: 'Q002',
-      prompt: 'What is your main fitness goal?',
-      type: QuestionType.singleChoice,
+      prompt: 'Height and weight',
+      type: QuestionType.bmi,
       mandatory: true,
-      options: [
-        'Fat Loss',
-        'Muscle Gain',
-        'Endurance Improvement',
-        'General Fitness',
-        'Athletic Performance',
-        'Injury Rehabilitation',
-      ],
     ),
     Question(
       id: 'Q003',
-      prompt: 'How would you describe your current fitness level?',
+      prompt: 'What is your fitness goal?',
+      type: QuestionType.singleChoice,
+      mandatory: true,
+      options: [
+        'Lose weight',
+        'Build muscle',
+        'Stay fit',
+        'Gain weight',
+      ],
+    ),
+    Question(
+      id: 'Q004',
+      prompt: 'What is your experience level?',
       type: QuestionType.singleChoice,
       mandatory: true,
       options: ['Beginner', 'Intermediate', 'Advanced'],
     ),
     Question(
-      id: 'Q004',
-      prompt: 'How many days per week can you commit to working out?',
-      type: QuestionType.singleChoice,
-      mandatory: true,
-      options: ['1-2 Days', '3 Days', '4 Days', '5 Days', '6+ Days'],
-    ),
-    Question(
       id: 'Q005',
-      prompt: 'How long do you prefer your workouts to be?',
+      prompt:
+          'Where do you want to work out? (Home assumes no equipment; select Gym if you have equipment)',
       type: QuestionType.singleChoice,
       mandatory: true,
-      options: [
-        '20-30 Minutes',
-        '30-45 Minutes',
-        '45-60 Minutes',
-        '60+ Minutes',
-      ],
+      options: ['Home', 'Gym'],
     ),
     Question(
       id: 'Q006',
-      prompt: 'What equipment do you have access to?',
-      type: QuestionType.multiSelect,
+      prompt: 'How many days per week?',
+      type: QuestionType.singleChoice,
       mandatory: true,
-      options: [
-        'Bodyweight Only',
-        'Dumbbells',
-        'Barbells',
-        'Resistance Bands',
-        'Gym Machines',
-        'Cardio Machines',
-      ],
+      options: ['1', '2', '3', '4', '5', '6', '7'],
     ),
     Question(
       id: 'Q007',
-      prompt: 'Which type of training do you enjoy most?',
-      type: QuestionType.multiSelect,
+      prompt: 'How long per session?',
+      type: QuestionType.singleChoice,
       mandatory: true,
-      options: [
-        'Strength Training',
-        'Cardio Training',
-        'High Intensity Interval Training (HIIT)',
-        'Flexibility / Mobility',
-        'Mixed Training',
-      ],
+      options: ['20 mins', '30 mins', '60 mins'],
     ),
     Question(
       id: 'Q008',
-      prompt:
-          'Do you have any injuries or physical limitations we should consider?',
+      prompt: 'Any injuries?',
       type: QuestionType.multiSelect,
       mandatory: false,
       options: [
         'None',
-        'Knee Issues',
-        'Back Issues',
-        'Shoulder Issues',
-        'Joint Pain',
-        'Other',
+        'Knee',
+        'Back',
+        'Shoulder',
+        'Elbow',
+        'Wrist',
+        'Hip',
+        'Ankle',
+      ],
+    ),
+    Question(
+      id: 'Q010',
+      prompt: 'Diet preference',
+      type: QuestionType.singleChoice,
+      mandatory: true,
+      options: ['Veg', 'Non-veg'],
+    ),
+    Question(
+      id: 'Q011',
+      prompt: 'Any allergies?',
+      type: QuestionType.multiSelect,
+      mandatory: false,
+      options: [
+        'None',
+        'Milk',
+        'Nuts',
+        'Eggs',
+        'Soy',
+        'Wheat',
+        'Shellfish',
       ],
     ),
   ];
@@ -136,6 +139,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
   final Map<String, dynamic> _responses = {};
   final Map<String, TextEditingController> _textControllers = {};
   final Map<String, Set<String>> _multiSelections = {};
+  bool _useMetricBmi = true;
 
   @override
   void initState() {
@@ -144,7 +148,12 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       if (q.type == QuestionType.multiSelect) {
         _multiSelections[q.id] = <String>{};
       }
-      _textControllers[q.id] = TextEditingController();
+      if (q.type == QuestionType.bmi) {
+        _textControllers['${q.id}_height'] = TextEditingController();
+        _textControllers['${q.id}_weight'] = TextEditingController();
+      } else {
+        _textControllers[q.id] = TextEditingController();
+      }
     }
   }
 
@@ -184,6 +193,17 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       return !q.mandatory || txt.trim().isNotEmpty;
     }
 
+    if (q.type == QuestionType.bmi) {
+      final hTxt = _textControllers['${q.id}_height']!.text.trim();
+      final wTxt = _textControllers['${q.id}_weight']!.text.trim();
+      if (!q.mandatory && hTxt.isEmpty && wTxt.isEmpty) return true;
+      final hVal = double.tryParse(hTxt);
+      final wVal = double.tryParse(wTxt);
+      if (hVal == null || wVal == null) return false;
+      if (hVal <= 0 || wVal <= 0) return false;
+      return true;
+    }
+
     return true;
   }
 
@@ -195,6 +215,20 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     }
     if (q.type == QuestionType.multiSelect) {
       _responses[q.id] = _multiSelections[q.id]!.toList();
+    }
+    if (q.type == QuestionType.bmi) {
+      final hTxt = _textControllers['${q.id}_height']!.text.trim();
+      final wTxt = _textControllers['${q.id}_weight']!.text.trim();
+      final hVal = double.tryParse(hTxt) ?? 0;
+      final wVal = double.tryParse(wTxt) ?? 0;
+      final bmi = _calculateBmi(hVal, wVal, _useMetricBmi);
+      _responses[q.id] = {
+        'unit': _useMetricBmi ? 'metric' : 'imperial',
+        'height': hVal,
+        'weight': wVal,
+        'bmi': bmi,
+        'bmiClass': _bmiClassification(bmi),
+      };
     }
 
     if (_index < _questions.length - 1) {
@@ -219,24 +253,37 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     if (last.type == QuestionType.multiSelect) {
       _responses[last.id] = _multiSelections[last.id]!.toList();
     }
+    if (last.type == QuestionType.bmi) {
+      final hTxt = _textControllers['${last.id}_height']!.text.trim();
+      final wTxt = _textControllers['${last.id}_weight']!.text.trim();
+      final hVal = double.tryParse(hTxt) ?? 0;
+      final wVal = double.tryParse(wTxt) ?? 0;
+      final bmi = _calculateBmi(hVal, wVal, _useMetricBmi);
+      _responses[last.id] = {
+        'unit': _useMetricBmi ? 'metric' : 'imperial',
+        'height': hVal,
+        'weight': wVal,
+        'bmi': bmi,
+        'bmiClass': _bmiClassification(bmi),
+      };
+    }
 
     // Map to canonical output schema
     final age = int.tryParse(_responses['Q001'] ?? '0') ?? 0;
-    final fitnessGoalRaw = (_responses['Q002'] ?? '').toString();
-    final fitnessLevelRaw = (_responses['Q003'] ?? '').toString();
-    final durationRaw = (_responses['Q005'] ?? '').toString();
-    final equipmentRaw =
-        (_responses['Q006'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+    final fitnessGoalRaw = (_responses['Q003'] ?? '').toString();
+    final fitnessLevelRaw = (_responses['Q004'] ?? '').toString();
+    final locationRaw = (_responses['Q005'] ?? '').toString();
+    final durationRaw = (_responses['Q007'] ?? '').toString();
     final injuriesRaw =
         (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
 
     // Normalize mappings
     String mapGoal(String g) {
       final s = g.toLowerCase();
-      if (s.contains('fat')) return 'fat_loss';
-      if (s.contains('muscle') || s.contains('gain')) return 'strength';
-      if (s.contains('endurance')) return 'endurance';
-      if (s.contains('rehab') || s.contains('injury')) return 'rehab';
+      if (s.contains('lose')) return 'fat_loss';
+      if (s.contains('build')) return 'strength';
+      if (s.contains('stay')) return 'general_fitness';
+      if (s.contains('gain')) return 'weight_gain';
       return 'general_fitness';
     }
 
@@ -249,43 +296,32 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     }
 
     int mapDuration(String d) {
-      if (d.contains('20')) return 25;
-      if (d.contains('30-45')) return 35;
-      if (d.contains('45')) return 50;
-      if (d.contains('60')) return 75;
-      if (d.contains('30')) return 35;
+      if (d.contains('20')) return 20;
+      if (d.contains('30')) return 30;
+      if (d.contains('60')) return 60;
       return 30;
     }
 
-    List<String> mapEquipment(List<String> eq) {
-      return eq.map((e) {
-        final s = e.toLowerCase();
-        if (s.contains('bodyweight')) return 'bodyweight';
-        if (s.contains('dumbbell')) return 'dumbbells';
-        if (s.contains('barbell')) return 'barbells';
-        if (s.contains('resistance')) return 'resistance_bands';
-        if (s.contains('gym machine')) return 'gym_machines';
-        if (s.contains('cardio')) return 'cardio_machines';
-        return s.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
-      }).toList();
+    List<String> mapEquipmentFromLocation(String loc) {
+      final s = loc.toLowerCase();
+      if (s.contains('home')) return ['bodyweight'];
+      if (s.contains('gym')) return ['gym_machines'];
+      return <String>[];
     }
 
     List<String> mapInjuries(List<String> inj) {
       final res = <String>[];
       for (final i in inj) {
         final s = i.toLowerCase();
-        if (s.contains('knee')) {
-          res.add('knee');
-        } else if (s.contains('back'))
-          res.add('back');
-        else if (s.contains('shoulder'))
-          res.add('shoulder');
-        else if (s.contains('joint'))
-          res.add('joint');
-        else if (s.contains('none'))
-          continue;
-        else
-          res.add('other');
+        if (s.contains('none')) continue;
+        if (s.contains('knee')) res.add('knee');
+        if (s.contains('back')) res.add('back');
+        if (s.contains('shoulder')) res.add('shoulder');
+        if (s.contains('elbow')) res.add('elbow');
+        if (s.contains('wrist')) res.add('wrist');
+        if (s.contains('hip')) res.add('hip');
+        if (s.contains('ankle')) res.add('ankle');
+        if (s.contains('other')) res.add('other');
       }
       return res;
     }
@@ -294,7 +330,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       age: age,
       goal: mapGoal(fitnessGoalRaw),
       experience: mapExperience(fitnessLevelRaw),
-      equipment: mapEquipment(equipmentRaw),
+      equipment: mapEquipmentFromLocation(locationRaw),
       workoutLengthMinutes: mapDuration(durationRaw),
       injuredAreas: mapInjuries(injuriesRaw),
     );
@@ -304,10 +340,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
 
     // Call recommendation service
     RecommendationService.getRecommendations(profile).then((rec) {
-      final jsonStr = const JsonEncoder.withIndent('  ').convert({
-        'profile': profile.toJson(),
-        'recommendation': rec,
-      });
+      final jsonStr = const JsonEncoder.withIndent('  ').convert(_responses);
 
       showDialog<void>(
         context: context,
@@ -399,24 +432,19 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                   onChanged: (v) {
                     setState(() {
                       if (v == true) {
-                        _multiSelections[q.id]!.add(opt);
+                        if (opt == 'None') {
+                          _multiSelections[q.id]!.clear();
+                          _multiSelections[q.id]!.add(opt);
+                        } else {
+                          _multiSelections[q.id]!.remove('None');
+                          _multiSelections[q.id]!.add(opt);
+                        }
                       } else {
                         _multiSelections[q.id]!.remove(opt);
                       }
                     });
                   },
                 ),
-                if (opt == 'Other' && selected)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: TextField(
-                      controller: _textControllers[q.id],
-                      decoration: const InputDecoration(
-                        labelText: 'Please describe',
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
               ],
             );
           }).toList(),
@@ -428,7 +456,81 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
           decoration: InputDecoration(labelText: q.prompt),
           onChanged: (_) => setState(() {}),
         );
+
+      case QuestionType.bmi:
+        final heightCtrl = _textControllers['${q.id}_height']!;
+        final weightCtrl = _textControllers['${q.id}_weight']!;
+        final hVal = double.tryParse(heightCtrl.text.trim()) ?? 0;
+        final wVal = double.tryParse(weightCtrl.text.trim()) ?? 0;
+        final bmi = _calculateBmi(hVal, wVal, _useMetricBmi);
+        final bmiLabel =
+            bmi == null ? 'BMI: --' : 'BMI: ${bmi.toStringAsFixed(1)}';
+        final bmiClass = _bmiClassification(bmi) ?? '--';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment<bool>(value: true, label: Text('Metric')),
+                      ButtonSegment<bool>(
+                          value: false, label: Text('Imperial')),
+                    ],
+                    selected: {_useMetricBmi},
+                    onSelectionChanged: (v) => setState(() {
+                      _useMetricBmi = v.first;
+                    }),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: heightCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: _useMetricBmi ? 'Height (cm)' : 'Height (inches)',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: weightCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: _useMetricBmi ? 'Weight (kg)' : 'Weight (lb)',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            Text(bmiLabel),
+            const SizedBox(height: 4),
+            Text('Classification: $bmiClass'),
+          ],
+        );
     }
+  }
+
+  double? _calculateBmi(double height, double weight, bool metric) {
+    if (height <= 0 || weight <= 0) return null;
+    if (metric) {
+      final meters = height / 100.0;
+      if (meters <= 0) return null;
+      return weight / (meters * meters);
+    }
+    return (703 * weight) / (height * height);
+  }
+
+  String? _bmiClassification(double? bmi) {
+    if (bmi == null) return null;
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25.0) return 'Normal';
+    if (bmi < 30.0) return 'Overweight';
+    return 'Obese';
   }
 
   String _validateNumberFeedback(Question q) {

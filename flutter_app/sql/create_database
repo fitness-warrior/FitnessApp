@@ -15,7 +15,7 @@ CREATE TYPE goal AS ENUM (
 'Injury Rehabilitation'
 );
 
-CREATE TYPE focus AS ENUM ('strength','cardio');
+CREATE TYPE focus AS ENUM ('strength','cardio','isolation','bodyweight');
 
 CREATE TYPE equip AS ENUM (
 'Bodyweight Only',
@@ -88,6 +88,26 @@ CREATE TABLE exercise (
     exer_equip equip NOT NULL
 );
 
+CREATE TABLE training (
+    train_id SERIAL PRIMARY KEY,
+    train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    train_mins INT,
+    train_reps INT,
+    train_effort decimal NOT NULL,
+);
+
+CREATE TABLE training_exercise (
+    training_exercise_id SERIAL PRIMARY KEY,
+    train_id INT REFERENCES training(train_id),
+    exer_id INT REFERENCES exercise(exer_id)
+);
+
+CREATE TABLE training_body (
+    training_body_id SERIAL PRIMARY KEY,
+    train_id INT REFERENCES training(train_id),
+    body_id INT REFERENCES body_metrics(body_id)
+);
+
 ---------------- WORK PLAN ----------------
 
 CREATE TABLE work_plan (
@@ -126,7 +146,7 @@ CREATE TABLE food (
     food_calories FLOAT NOT NULL,
     food_fat FLOAT NOT NULL,
     food_fibre Float NOT NULL,
-    food_protein Float NOT NULL,
+    food_protein Float NOT NULL
 );
 
 CREATE TABLE food_plan (
@@ -290,7 +310,65 @@ VALUES
 ('Deadlift','back','strength','Full posterior chain exercise','https://youtube.com/deadlift','Gym Machines'),
 ('Cycling','legs','cardio','Low impact cardio','https://youtube.com/cycling','Cardio Machines'),
 ('Pull-ups','back','strength','Back and bicep exercise','https://youtube.com/pullups','Bodyweight Only'),
-('Jump Rope','full body','cardio','High intensity cardio','https://youtube.com/jumprope','Resistance Bands');
+('Jump Rope','full body','cardio','High intensity cardio','https://youtube.com/jumprope','Resistance Bands'),
+-- Additional Chest Exercises
+('Dumbbell Bench Press','chest','strength','Chest exercise using dumbbells','https://youtube.com/db-bench','Dumbbells'),
+('Incline Bench Press','chest','strength','Upper chest focus with barbells','https://youtube.com/incline-bench','Barbells'),
+('Decline Bench Press','chest','strength','Lower chest focus exercise','https://youtube.com/decline-bench','Barbells'),
+('Dumbbell Flyes','chest','isolation','Chest isolation exercise','https://youtube.com/db-flyes','Dumbbells'),
+('Cable Crossovers','chest','isolation','Chest isolation with cables','https://youtube.com/cable-cross','Gym Machines'),
+('Machine Chest Press','chest','strength','Chest press on machine','https://youtube.com/machine-press','Gym Machines'),
+('Resistance Band Chest Press','chest','strength','Chest exercise with bands','https://youtube.com/band-press','Resistance Bands'),
+('Dips','chest','bodyweight','Body weight chest and tricep exercise','https://youtube.com/dips','Bodyweight Only'),
+('Push-ups Wide Grip','chest','bodyweight','Wide grip variation of push-ups','https://youtube.com/wide-pushups','Bodyweight Only'),
+('Smith Machine Chest Press','chest','strength','Guided barbell chest press','https://youtube.com/smith-press','Barbells'),
+('Decline Dumbbell Flyes','chest','isolation','Lower chest isolation exercise','https://youtube.com/decline-flyes','Dumbbells'),
+('Landmine Press','chest','strength','Angled barbell chest press','https://youtube.com/landmine-press','Barbells'),
+('Chest Squeeze Press','chest','isolation','Isometric chest contraction','https://youtube.com/squeeze-press','Dumbbells'),
+('Hex Press','chest','strength','Hexagonal dumbbell chest press','https://youtube.com/hex-press','Dumbbells'),
+('Pec Deck Machine','chest','isolation','Isolated chest machine exercise','https://youtube.com/pec-deck','Gym Machines'),
+-- Additional Back Exercises
+('Barbell Row','back','strength','Classic compound back exercise','https://youtube.com/barbell-row','Barbells'),
+('Dumbbell Row','back','strength','Single arm dumbbell rowing','https://youtube.com/db-row','Dumbbells'),
+('Lat Pulldown','back','strength','Vertical pulling exercise','https://youtube.com/lat-pulldown','Gym Machines'),
+('Bent Over Rows','back','strength','Compound back exercise','https://youtube.com/bent-rows','Barbells'),
+('Face Pulls','back','isolation','Rear deltoid and back exercise','https://youtube.com/face-pulls','Resistance Bands'),
+('Inverted Rows','back','bodyweight','Horizontal pulling bodyweight','https://youtube.com/inverted-rows','Bodyweight Only'),
+('Seal Rows','back','strength','Machine assisted rowing','https://youtube.com/seal-rows','Gym Machines'),
+('T-Bar Rows','back','strength','Angled barbell rowing','https://youtube.com/t-bar-rows','Barbells'),
+-- Additional Shoulder Exercises
+('Overhead Press','shoulders','strength','Standing shoulder press','https://youtube.com/overhead-press','Barbells'),
+('Dumbbell Shoulder Press','shoulders','strength','Seated shoulder press with dumbbells','https://youtube.com/db-shoulder','Dumbbells'),
+('Lateral Raises','shoulders','isolation','Side shoulder isolation','https://youtube.com/lateral-raise','Dumbbells'),
+('Front Raises','shoulders','isolation','Front shoulder isolation','https://youtube.com/front-raise','Dumbbells'),
+('Shrugs','shoulders','isolation','Trapezius isolation exercise','https://youtube.com/shrugs','Dumbbells'),
+-- Additional Arm Exercises
+('Bicep Curls','arms','isolation','Classic arm curl exercise','https://youtube.com/bicep-curl','Dumbbells'),
+('Tricep Dips','arms','strength','Tricep focused dips','https://youtube.com/tricep-dips','Bodyweight Only'),
+('Hammer Curls','arms','isolation','Neutral grip arm curl','https://youtube.com/hammer-curl','Dumbbells'),
+('Tricep Pushdowns','arms','isolation','Cable tricep exercise','https://youtube.com/tricep-pushdown','Gym Machines'),
+('Preacher Curls','arms','isolation','Bench supported arm curl','https://youtube.com/preacher-curl','Dumbbells'),
+-- Additional Leg Exercises
+('Leg Press','legs','strength','Machine leg press exercise','https://youtube.com/leg-press','Gym Machines'),
+('Leg Curls','legs','isolation','Hamstring isolation','https://youtube.com/leg-curls','Gym Machines'),
+('Leg Extensions','legs','isolation','Quadriceps isolation','https://youtube.com/leg-ext','Gym Machines'),
+('Lunges','legs','strength','Single leg compound exercise','https://youtube.com/lunges','Dumbbells'),
+('Calf Raises','legs','isolation','Calf muscle isolation','https://youtube.com/calf-raise','Bodyweight Only'),
+-- Additional Core Exercises
+('Planks','core','bodyweight','Core stability exercise','https://youtube.com/planks','Bodyweight Only'),
+('Ab Crunches','core','isolation','Abdominal isolation','https://youtube.com/crunches','Bodyweight Only'),
+('Cable Woodchops','core','isolation','Rotational core exercise','https://youtube.com/woodchops','Gym Machines'),
+('Hanging Leg Raises','core','strength','Advanced core exercise','https://youtube.com/leg-raises','Bodyweight Only'),
+('Russian Twists','core','bodyweight','Rotational core work','https://youtube.com/russian-twists','Bodyweight Only'),
+-- Additional Cardio Exercises
+('Treadmill Running','cardio','cardio','Indoor running on treadmill','https://youtube.com/treadmill','Cardio Machines'),
+('Rowing Machine','cardio','cardio','Full body cardio machine','https://youtube.com/rowing','Cardio Machines'),
+('Elliptical','cardio','cardio','Low impact cardio machine','https://youtube.com/elliptical','Cardio Machines'),
+('Stair Climber','cardio','cardio','Staircase climbing machine','https://youtube.com/stair-climber','Cardio Machines'),
+('Burpees','cardio','cardio','High intensity full body','https://youtube.com/burpees','Bodyweight Only'),
+('Mountain Climbers','cardio','cardio','Core and cardio exercise','https://youtube.com/mountain-climbers','Bodyweight Only'),
+('High Knees','cardio','cardio','Running in place high intensity','https://youtube.com/high-knees','Bodyweight Only'),
+('Battle Ropes','cardio','cardio','Wave training cardio','https://youtube.com/battle-ropes','Dumbbells');
 
 INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_updated_at, work_day) VALUES
 (1, 'Chest Day', 'Focus on chest and triceps', '2026-02-01 10:00:00', '2026-02-01 10:00:00', '2026-02-18'),
