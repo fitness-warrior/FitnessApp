@@ -194,6 +194,101 @@ class _BodyDiagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Painter coming...', style: TextStyle(color: Colors.white)));
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildFrontView(),
+        _buildBackView(),
+      ],
+    );
   }
+
+  Widget _buildFrontView() {
+    return Column(
+      children: [
+        Text('Front', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+        const SizedBox(height: 6),
+        SizedBox(width: 110, height: 230, child: CustomPaint(painter: _BodyPainter(isFront: true, highlights: highlights, accentColor: accentColor))),
+      ],
+    );
+  }
+
+  Widget _buildBackView() {
+    return Column(
+      children: [
+        Text('Back', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+        const SizedBox(height: 6),
+        SizedBox(width: 110, height: 230, child: CustomPaint(painter: _BodyPainter(isFront: false, highlights: highlights, accentColor: accentColor))),
+      ],
+    );
+  }
+}
+
+class _BodyPainter extends CustomPainter {
+  final bool isFront;
+  final List<_BodyPart> highlights;
+  final Color accentColor;
+
+  _BodyPainter({required this.isFront, required this.highlights, required this.accentColor});
+
+  bool _h(_BodyPart part) => highlights.contains(part);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    final basePaint = Paint()..color = const Color(0xFF2A2A3E);
+    final highlightPaint = Paint()..color = accentColor;
+    final outlinePaint = Paint()..color = const Color(0xFF3A3A50)..style = PaintingStyle.stroke..strokeWidth = 1.2;
+
+    void drawPart(Rect rect, {bool isHighlighted = false, double radius = 6}) {
+      final rRect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+      canvas.drawRRect(rRect, isHighlighted ? highlightPaint : basePaint);
+      canvas.drawRRect(rRect, outlinePaint);
+    }
+    void drawOval(Rect rect, {bool isHighlighted = false}) {
+      canvas.drawOval(rect, isHighlighted ? highlightPaint : basePaint);
+      canvas.drawOval(rect, outlinePaint);
+    }
+
+    final cx = w / 2;
+    drawOval(Rect.fromCenter(center: Offset(cx, h * 0.06), width: w * 0.32, height: h * 0.10));
+    drawPart(Rect.fromLTWH(cx - w * 0.07, h * 0.105, w * 0.14, h * 0.05), radius: 4);
+
+    if (isFront) {
+      drawOval(Rect.fromCenter(center: Offset(cx - w * 0.35, h * 0.19), width: w * 0.24, height: h * 0.09), isHighlighted: _h(_BodyPart.shoulders));
+      drawOval(Rect.fromCenter(center: Offset(cx + w * 0.35, h * 0.19), width: w * 0.24, height: h * 0.09), isHighlighted: _h(_BodyPart.shoulders));
+      drawPart(Rect.fromLTWH(cx - w * 0.30, h * 0.155, w * 0.28, h * 0.13), isHighlighted: _h(_BodyPart.chest), radius: 8);
+      drawPart(Rect.fromLTWH(cx + w * 0.02, h * 0.155, w * 0.28, h * 0.13), isHighlighted: _h(_BodyPart.chest), radius: 8);
+      drawPart(Rect.fromLTWH(cx - w * 0.47, h * 0.265, w * 0.15, h * 0.14), isHighlighted: _h(_BodyPart.biceps), radius: 8);
+      drawPart(Rect.fromLTWH(cx + w * 0.32, h * 0.265, w * 0.15, h * 0.14), isHighlighted: _h(_BodyPart.biceps), radius: 8);
+      for (int i = 0; i < 3; i++) {
+        drawPart(Rect.fromLTWH(cx - w * 0.27, h * (0.29 + i * 0.075), w * 0.22, h * 0.06), isHighlighted: _h(_BodyPart.abs), radius: 5);
+        drawPart(Rect.fromLTWH(cx + w * 0.05, h * (0.29 + i * 0.075), w * 0.22, h * 0.06), isHighlighted: _h(_BodyPart.abs), radius: 5);
+      }
+      drawPart(Rect.fromLTWH(cx - w * 0.50, h * 0.415, w * 0.14, h * 0.13), isHighlighted: _h(_BodyPart.forearms), radius: 7);
+      drawPart(Rect.fromLTWH(cx + w * 0.36, h * 0.415, w * 0.14, h * 0.13), isHighlighted: _h(_BodyPart.forearms), radius: 7);
+      drawPart(Rect.fromLTWH(cx - w * 0.30, h * 0.57, w * 0.25, h * 0.20), isHighlighted: _h(_BodyPart.quads) || _h(_BodyPart.legs), radius: 10);
+      drawPart(Rect.fromLTWH(cx + w * 0.05, h * 0.57, w * 0.25, h * 0.20), isHighlighted: _h(_BodyPart.quads) || _h(_BodyPart.legs), radius: 10);
+      drawPart(Rect.fromLTWH(cx - w * 0.28, h * 0.79, w * 0.22, h * 0.16), isHighlighted: _h(_BodyPart.calves), radius: 8);
+      drawPart(Rect.fromLTWH(cx + w * 0.06, h * 0.79, w * 0.22, h * 0.16), isHighlighted: _h(_BodyPart.calves), radius: 8);
+    } else {
+      drawOval(Rect.fromCenter(center: Offset(cx - w * 0.35, h * 0.19), width: w * 0.24, height: h * 0.09), isHighlighted: _h(_BodyPart.shoulders));
+      drawOval(Rect.fromCenter(center: Offset(cx + w * 0.35, h * 0.19), width: w * 0.24, height: h * 0.09), isHighlighted: _h(_BodyPart.shoulders));
+      drawPart(Rect.fromLTWH(cx - w * 0.30, h * 0.155, w * 0.60, h * 0.14), isHighlighted: _h(_BodyPart.upperBack), radius: 8);
+      drawPart(Rect.fromLTWH(cx - w * 0.22, h * 0.30, w * 0.44, h * 0.12), isHighlighted: _h(_BodyPart.lowerBack), radius: 6);
+      drawPart(Rect.fromLTWH(cx - w * 0.47, h * 0.265, w * 0.15, h * 0.14), isHighlighted: _h(_BodyPart.triceps), radius: 8);
+      drawPart(Rect.fromLTWH(cx + w * 0.32, h * 0.265, w * 0.15, h * 0.14), isHighlighted: _h(_BodyPart.triceps), radius: 8);
+      drawPart(Rect.fromLTWH(cx - w * 0.50, h * 0.415, w * 0.14, h * 0.13), isHighlighted: _h(_BodyPart.forearms), radius: 7);
+      drawPart(Rect.fromLTWH(cx + w * 0.36, h * 0.415, w * 0.14, h * 0.13), isHighlighted: _h(_BodyPart.forearms), radius: 7);
+      drawPart(Rect.fromLTWH(cx - w * 0.30, h * 0.57, w * 0.25, h * 0.20), isHighlighted: _h(_BodyPart.hamstrings) || _h(_BodyPart.legs), radius: 10);
+      drawPart(Rect.fromLTWH(cx + w * 0.05, h * 0.57, w * 0.25, h * 0.20), isHighlighted: _h(_BodyPart.hamstrings) || _h(_BodyPart.legs), radius: 10);
+      drawPart(Rect.fromLTWH(cx - w * 0.28, h * 0.79, w * 0.22, h * 0.16), isHighlighted: _h(_BodyPart.calves), radius: 8);
+      drawPart(Rect.fromLTWH(cx + w * 0.06, h * 0.79, w * 0.22, h * 0.16), isHighlighted: _h(_BodyPart.calves), radius: 8);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BodyPainter old) => old.isFront != isFront || old.highlights != highlights || old.accentColor != accentColor;
 }
