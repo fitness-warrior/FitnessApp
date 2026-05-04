@@ -77,7 +77,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
     return data;
   }
 
-  Future<void> _submitWorkout() async {
+  Future<void> _showSaveConfirmationDialog() async {
     if (!_validateWorkoutData()) {
       setState(() {
         _error = 'Please fill in all kg and reps fields for all exercises';
@@ -85,6 +85,83 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
       return;
     }
 
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Save as Routine?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Would you like to save this workout as a routine for future reference?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _submitWorkout(saveAsRoutine: false);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                        ),
+                        child: const Text('No'),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _submitWorkout(saveAsRoutine: true);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
+                        child: const Text('Yes'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitWorkout({bool saveAsRoutine = true}) async {
     setState(() {
       _isLoading = true;
       _error = null;
@@ -94,11 +171,13 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
       final exerciseData = _buildExerciseData();
       final workoutName = _workoutNameController.text.trim();
 
-      // Save locally (works on all platforms including web)
-      await WorkoutStorage.saveWorkout(
-        exerciseData,
-        workoutName: workoutName.isNotEmpty ? workoutName : null,
-      );
+      // Save locally (works on all platforms including web) only if user chooses to
+      if (saveAsRoutine) {
+        await WorkoutStorage.saveWorkout(
+          exerciseData,
+          workoutName: workoutName.isNotEmpty ? workoutName : null,
+        );
+      }
 
       // Best-effort sync to API (skip if backend unreachable)
       try {
@@ -111,9 +190,13 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Workout saved successfully!'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(
+              saveAsRoutine
+                  ? 'Workout saved successfully!'
+                  : 'Workout completed!',
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -307,7 +390,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _submitWorkout,
+                        onPressed: _isLoading ? null : _showSaveConfirmationDialog,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                         ),
