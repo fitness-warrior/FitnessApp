@@ -14,23 +14,28 @@ class GenerateWorkoutDialog extends StatefulWidget {
 }
 
 class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
-  List<String> _selectedMuscles = [];
+  String? _selectedMuscleGroup;
   String? _selectedEquipmentType; // 'At Home', 'Gym (Machines)', 'Cardio', 'Dumbbells'
   bool _isLoading = false;
-  bool _showMusclesSection = false;
   String? _error;
 
-  final List<String> _allMuscles = [
-    'Chest',
-    'Shoulders',
-    'Triceps',
-    'Back',
-    'Biceps',
-    'Quadriceps',
-    'Hamstrings',
-    'Calves',
-    'Glutes',
-  ];
+  final Map<String, List<String>> _muscleGroupMapping = {
+    'Chest': ['Chest'],
+    'Back': ['Back'],
+    'Legs': ['Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
+    'Arms': ['Biceps', 'Triceps'],
+    'Full Body': [
+      'Chest',
+      'Back',
+      'Shoulders',
+      'Triceps',
+      'Biceps',
+      'Quadriceps',
+      'Hamstrings',
+      'Calves',
+      'Glutes',
+    ],
+  };
 
   final Map<String, List<String>> _equipmentTypeMapping = {
     'At Home': ['Bodyweight Only', 'Dumbbells'],
@@ -40,9 +45,9 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
   };
 
   Future<void> _generateWorkout() async {
-    if (_selectedMuscles.isEmpty) {
+    if (_selectedMuscleGroup == null) {
       setState(() {
-        _error = 'Please select at least one target muscle';
+        _error = 'Please select a target muscle group';
       });
       return;
     }
@@ -77,14 +82,15 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
         return;
       }
 
-      // Filter exercises by selected muscles and equipment type
+      // Filter exercises by selected muscle group and equipment type
+      final targetAreas = _muscleGroupMapping[_selectedMuscleGroup] ?? [];
       final targetEquipment = _equipmentTypeMapping[_selectedEquipmentType] ?? [];
       
       final filteredExercises = allExercises.where((exercise) {
         final bodyArea = (exercise['exer_body_area'] ?? '').toString().toLowerCase();
         final equipment = (exercise['exer_equip'] ?? '').toString().toLowerCase();
         
-        final matchesArea = _selectedMuscles.any((muscle) => bodyArea.contains(muscle.toLowerCase()));
+        final matchesArea = targetAreas.any((area) => bodyArea.contains(area.toLowerCase()));
         final matchesEquipment = targetEquipment.any((equip) => equipment.contains(equip.toLowerCase()));
         
         return matchesArea && matchesEquipment;
@@ -114,25 +120,25 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     }
   }
 
-  Widget _buildMuscleButton(String muscle) {
-    final isSelected = _selectedMuscles.contains(muscle);
-    return ElevatedButton(
-      onPressed: _isLoading ? null : () {
-        setState(() {
-          if (isSelected) {
-            _selectedMuscles.remove(muscle);
-          } else {
-            _selectedMuscles.add(muscle);
-          }
-          _error = null;
-        });
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? Colors.purple : Colors.grey.shade200,
-        foregroundColor: isSelected ? Colors.white : Colors.black87,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+  Widget _buildMuscleGroupChip(String muscleGroup) {
+    final isSelected = _selectedMuscleGroup == muscleGroup;
+    return ChoiceChip(
+      label: Text(muscleGroup),
+      selected: isSelected,
+      onSelected: _isLoading
+          ? null
+          : (_) {
+              setState(() {
+                _selectedMuscleGroup = muscleGroup;
+                _error = null;
+              });
+            },
+      selectedColor: Colors.purple,
+      backgroundColor: Colors.grey.shade200,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black87,
+        fontWeight: FontWeight.w600,
       ),
-      child: Text(muscle),
     );
   }
 
@@ -194,33 +200,28 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Target Muscles',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.info_outline),
-                        onPressed: () {
-                          setState(() {
-                            _showMusclesSection = !_showMusclesSection;
-                          });
-                        },
-                        tooltip: 'Select muscles to target',
-                      ),
-                    ],
+                  const Text(
+                    'Target Muscle Group',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  if (_showMusclesSection) ...[
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: _allMuscles.map((muscle) => _buildMuscleButton(muscle)).toList(),
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildMuscleGroupChip('Chest'),
+                        const SizedBox(width: 8),
+                        _buildMuscleGroupChip('Back'),
+                        const SizedBox(width: 8),
+                        _buildMuscleGroupChip('Legs'),
+                        const SizedBox(width: 8),
+                        _buildMuscleGroupChip('Arms'),
+                        const SizedBox(width: 8),
+                        _buildMuscleGroupChip('Full Body'),
+                      ],
                     ),
-                  ],
-                  if (_selectedMuscles.isNotEmpty) ...[
+                  ),
+                  if (_selectedMuscleGroup != null) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -235,7 +236,7 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Selected: ${_selectedMuscles.join(", ")}',
+                              'Selected: $_selectedMuscleGroup',
                               style: TextStyle(
                                 color: Colors.purple.shade600,
                                 fontWeight: FontWeight.w600,
