@@ -34,6 +34,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     'Shoulders',
     'Arms',
     'Legs',
+    'Full Body',
     'Core',
     'Cardio',
   ];
