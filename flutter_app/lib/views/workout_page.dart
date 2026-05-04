@@ -153,12 +153,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
         },
       ];
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added ${exercise['exer_name']} to workout!'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
     _saveCurrentWorkoutSession();
   }
 
@@ -224,11 +218,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openSearchDialog() {
-    if (_workoutExercises.isNotEmpty) {
-      _showWorkoutActiveDialog();
-      return;
-    }
-    
     showDialog(
       context: context,
       builder: (context) => ExerciseSearchDialog(
@@ -242,11 +231,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openSearchDialogWithTags(List<String> tags) {
-    if (_workoutExercises.isNotEmpty) {
-      _showWorkoutActiveDialog();
-      return;
-    }
-    
     showDialog(
       context: context,
       builder: (context) => ExerciseSearchDialog(
@@ -274,12 +258,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
             for (final exercise in exercises) {
               _addExercise(exercise);
             }
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Generated $muscleGroup workout with $equipment!'),
-                duration: const Duration(seconds: 2),
-              ),
-            );
           }
         },
       ),
