@@ -121,12 +121,23 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  void _showWorkoutActiveMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Please finish your current workout first.'),
-        backgroundColor: Colors.red.shade600,
-        duration: const Duration(seconds: 3),
+  void _showWorkoutActiveDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C2E),
+        title: const Text('Active Workout', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Please finish your current workout first.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A9FFF)),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
@@ -215,7 +226,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   void _openSearchDialog() {
     if (_workoutExercises.isNotEmpty) {
-      _showWorkoutActiveMessage();
+      _showWorkoutActiveDialog();
       return;
     }
     
@@ -233,7 +244,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   void _openSearchDialogWithTags(List<String> tags) {
     if (_workoutExercises.isNotEmpty) {
-      _showWorkoutActiveMessage();
+      _showWorkoutActiveDialog();
       return;
     }
     
@@ -252,7 +263,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   void _openGenerateDialog() {
     if (_workoutExercises.isNotEmpty) {
-      _showWorkoutActiveMessage();
+      _showWorkoutActiveDialog();
       return;
     }
     
