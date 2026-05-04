@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../services/exercise_service.dart';
 
@@ -107,7 +109,17 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
         return;
       }
 
-      widget.onGenerate(filteredExercises.length, filteredExercises);
+      final random = Random();
+      final shuffledExercises = List<Map<String, dynamic>>.from(filteredExercises)
+        ..shuffle(random);
+
+      final targetCount = shuffledExercises.length >= 6
+          ? 5 + random.nextInt(2)
+          : shuffledExercises.length;
+
+      final generatedExercises = shuffledExercises.take(targetCount).toList();
+
+      widget.onGenerate(generatedExercises.length, generatedExercises);
       if (mounted) {
         Navigator.pop(context);
       }
