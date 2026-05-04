@@ -300,6 +300,145 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
+  void _openRoutineDetailsDialog(Map<String, dynamic> workout, int workoutNumber) {
+    final exercises = workout['exercises'];
+    final exerciseList = exercises is List ? exercises : [];
+    final dateText = workout['date']?.toString() ?? 'Unknown date';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Workout $workoutNumber Details',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Date: $dateText',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Exercises',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    exerciseList.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              'No exercises recorded',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          )
+                        : Column(
+                            children: List.generate(exerciseList.length, (idx) {
+                              final exercise = exerciseList[idx];
+                              final exerName =
+                                  exercise['exer_name'] ?? 'Unknown Exercise';
+                              final sets = exercise['sets'];
+                              final setsList = sets is List ? sets : [];
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      exerName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ...List.generate(setsList.length, (setIdx) {
+                                      final set = setsList[setIdx];
+                                      final kg = set['kg']?.toString() ?? '0';
+                                      final reps =
+                                          set['reps']?.toString() ?? '0';
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 4),
+                                        child: Text(
+                                          'Set ${setIdx + 1}: $reps × ${kg}kg',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                        ),
+                        child: const Text('Close'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openFinishDialog() {
     if (_workoutExercises.isEmpty) return;
 
@@ -820,39 +959,44 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     final exercises = workout['exercises'];
                     final exerciseList = exercises is List ? exercises : [];
                     final dateText = workout['date']?.toString() ?? '';
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF252538),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Workout ${_savedWorkouts.length - idx}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                    final workoutNumber = _savedWorkouts.length - idx;
+                    
+                    return GestureDetector(
+                      onTap: () => _openRoutineDetailsDialog(workout, workoutNumber),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF252538),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Workout $workoutNumber',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '${exerciseList.length} exercises  •  $dateText',
-                                  style: TextStyle(
-                                      color: Colors.grey[500], fontSize: 12),
-                                ),
-                              ],
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '${exerciseList.length} exercises  •  $dateText',
+                                    style: TextStyle(
+                                        color: Colors.grey[500], fontSize: 12),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
-                        ],
+                            Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
+                          ],
+                        ),
                       ),
                     );
                   }).toList(),
