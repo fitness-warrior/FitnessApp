@@ -15,6 +15,7 @@ class GenerateWorkoutDialog extends StatefulWidget {
 
 class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
   String? _selectedWorkoutType; // 'Push', 'Pull', or 'Leg'
+  String? _selectedEquipmentType; // 'At Home', 'Gym (Machines)', 'Cardio', 'Dumbbells'
   bool _isLoading = false;
   String? _error;
 
@@ -24,10 +25,24 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     'Leg': ['Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
   };
 
+  final Map<String, List<String>> _equipmentTypeMapping = {
+    'At Home': ['Bodyweight Only', 'Dumbbells'],
+    'Gym (Machines)': ['Machine'],
+    'Cardio': ['Cardio'],
+    'Dumbbells': ['Dumbbells'],
+  };
+
   Future<void> _generateWorkout() async {
     if (_selectedWorkoutType == null) {
       setState(() {
-        _error = 'Please select a workout type';
+        _error = 'Please select a workout type (Push, Pull, or Leg)';
+      });
+      return;
+    }
+
+    if (_selectedEquipmentType == null) {
+      setState(() {
+        _error = 'Please select an equipment type';
       });
       return;
     }
@@ -55,17 +70,24 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
         return;
       }
 
-      // Filter exercises by the selected workout type's body areas
+      // Filter exercises by body area (workout type)
       final targetAreas = _workoutTypeMapping[_selectedWorkoutType] ?? [];
+      final targetEquipment = _equipmentTypeMapping[_selectedEquipmentType] ?? [];
+      
       final filteredExercises = allExercises.where((exercise) {
         final bodyArea = (exercise['exer_body_area'] ?? '').toString().toLowerCase();
-        return targetAreas.any((area) => bodyArea.contains(area.toLowerCase()));
+        final equipment = (exercise['exer_equip'] ?? '').toString().toLowerCase();
+        
+        final matchesArea = targetAreas.any((area) => bodyArea.contains(area.toLowerCase()));
+        final matchesEquipment = targetEquipment.any((equip) => equipment.contains(equip.toLowerCase()));
+        
+        return matchesArea && matchesEquipment;
       }).toList();
 
       if (filteredExercises.isEmpty) {
         if (mounted) {
           setState(() {
-            _error = 'No exercises found for this workout type';
+            _error = 'No exercises found for this combination. Try different selections.';
             _isLoading = false;
           });
         }
@@ -99,6 +121,25 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
       label: Text(type),
       style: ElevatedButton.styleFrom(
         backgroundColor: isSelected ? Colors.blue : Colors.grey.shade200,
+        foregroundColor: isSelected ? Colors.white : Colors.black87,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildEquipmentTypeButton(String type, IconData icon) {
+    final isSelected = _selectedEquipmentType == type;
+    return ElevatedButton.icon(
+      onPressed: _isLoading ? null : () {
+        setState(() {
+          _selectedEquipmentType = type;
+          _error = null;
+        });
+      },
+      icon: Icon(icon),
+      label: Text(type),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? Colors.green : Colors.grey.shade200,
         foregroundColor: isSelected ? Colors.white : Colors.black87,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       ),
@@ -145,7 +186,7 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Select Workout Type',
+                    'Select Workout Focus',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 16),
@@ -172,9 +213,49 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                           Icon(Icons.check_circle, color: Colors.blue.shade600),
                           const SizedBox(width: 8),
                           Text(
-                            'Selected: $_selectedWorkoutType',
+                            'Focus: $_selectedWorkoutType',
                             style: TextStyle(
                               color: Colors.blue.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Select Equipment Type',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _buildEquipmentTypeButton('At Home', Icons.home),
+                      _buildEquipmentTypeButton('Gym (Machines)', Icons.fitness_center),
+                      _buildEquipmentTypeButton('Cardio', Icons.directions_run),
+                      _buildEquipmentTypeButton('Dumbbells', Icons.sports_gymnastics),
+                    ],
+                  ),
+                  if (_selectedEquipmentType != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.green.shade600),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Equipment: $_selectedEquipmentType',
+                            style: TextStyle(
+                              color: Colors.green.shade600,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
