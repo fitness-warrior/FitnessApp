@@ -93,7 +93,7 @@ CREATE TABLE training (
     train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     train_mins INT,
     train_reps INT,
-    train_effort decimal NOT NULL,
+    train_effort decimal NOT NULL
 );
 
 CREATE TABLE training_exercise (
