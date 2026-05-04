@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/exercise_service.dart';
 
 class GenerateWorkoutDialog extends StatefulWidget {
-  final Function(int, List<Map<String, dynamic>>) onGenerate;
+  final Function(int, List<Map<String, dynamic>>, String, String) onGenerate;
 
   const GenerateWorkoutDialog({
     Key? key,
@@ -119,7 +119,12 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
 
       final generatedExercises = shuffledExercises.take(targetCount).toList();
 
-      widget.onGenerate(generatedExercises.length, generatedExercises);
+      widget.onGenerate(
+        generatedExercises.length,
+        generatedExercises,
+        _selectedMuscleGroup ?? 'Unknown',
+        _selectedEquipmentType ?? 'Unknown',
+      );
       if (mounted) {
         Navigator.pop(context);
       }
