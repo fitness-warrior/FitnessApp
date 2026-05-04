@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
@@ -270,14 +269,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
     showDialog(
       context: context,
       builder: (context) => GenerateWorkoutDialog(
-        onGenerate: (count, exercises) {
+        onGenerate: (count, exercises, muscleGroup, equipment) {
           if (mounted) {
             for (final exercise in exercises) {
               _addExercise(exercise);
             }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Generated ${exercises.length} exercises!'),
+                content: Text('Generated $muscleGroup workout with $equipment!'),
                 duration: const Duration(seconds: 2),
               ),
             );
@@ -582,7 +581,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${_workoutExercises.length} exercises',
+                            '${_setControllers.values.fold<int>(0, (sum, sets) => sum + sets.length)} sets',
                             style: const TextStyle(
                               color: Colors.orange,
                               fontWeight: FontWeight.bold,
