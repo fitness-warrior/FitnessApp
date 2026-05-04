@@ -22,6 +22,22 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
   bool _isLoading = false;
   String? _error;
 
+  bool _validateWorkoutData() {
+    for (int i = 0; i < widget.exercises.length; i++) {
+      if (widget.setControllers.containsKey(i)) {
+        for (final set in widget.setControllers[i]!) {
+          final kg = set['kg']!.text.trim();
+          final reps = set['reps']!.text.trim();
+
+          if (kg.isEmpty || reps.isEmpty) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
   List<Map<String, dynamic>> _buildExerciseData() {
     final data = <Map<String, dynamic>>[];
 
@@ -49,6 +65,13 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
   }
 
   Future<void> _submitWorkout() async {
+    if (!_validateWorkoutData()) {
+      setState(() {
+        _error = 'Please fill in all kg and reps fields for all exercises';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
