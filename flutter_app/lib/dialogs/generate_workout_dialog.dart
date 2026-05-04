@@ -14,16 +14,23 @@ class GenerateWorkoutDialog extends StatefulWidget {
 }
 
 class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
-  String? _selectedWorkoutType; // 'Push', 'Pull', or 'Leg'
+  List<String> _selectedMuscles = [];
   String? _selectedEquipmentType; // 'At Home', 'Gym (Machines)', 'Cardio', 'Dumbbells'
   bool _isLoading = false;
+  bool _showMusclesSection = false;
   String? _error;
 
-  final Map<String, List<String>> _workoutTypeMapping = {
-    'Push': ['Chest', 'Shoulders', 'Triceps'],
-    'Pull': ['Back', 'Biceps'],
-    'Leg': ['Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
-  };
+  final List<String> _allMuscles = [
+    'Chest',
+    'Shoulders',
+    'Triceps',
+    'Back',
+    'Biceps',
+    'Quadriceps',
+    'Hamstrings',
+    'Calves',
+    'Glutes',
+  ];
 
   final Map<String, List<String>> _equipmentTypeMapping = {
     'At Home': ['Bodyweight Only', 'Dumbbells'],
@@ -33,9 +40,9 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
   };
 
   Future<void> _generateWorkout() async {
-    if (_selectedWorkoutType == null) {
+    if (_selectedMuscles.isEmpty) {
       setState(() {
-        _error = 'Please select a workout type (Push, Pull, or Leg)';
+        _error = 'Please select at least one target muscle';
       });
       return;
     }
@@ -70,15 +77,14 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
         return;
       }
 
-      // Filter exercises by body area (workout type)
-      final targetAreas = _workoutTypeMapping[_selectedWorkoutType] ?? [];
+      // Filter exercises by selected muscles and equipment type
       final targetEquipment = _equipmentTypeMapping[_selectedEquipmentType] ?? [];
       
       final filteredExercises = allExercises.where((exercise) {
         final bodyArea = (exercise['exer_body_area'] ?? '').toString().toLowerCase();
         final equipment = (exercise['exer_equip'] ?? '').toString().toLowerCase();
         
-        final matchesArea = targetAreas.any((area) => bodyArea.contains(area.toLowerCase()));
+        final matchesArea = _selectedMuscles.any((muscle) => bodyArea.contains(muscle.toLowerCase()));
         final matchesEquipment = targetEquipment.any((equip) => equipment.contains(equip.toLowerCase()));
         
         return matchesArea && matchesEquipment;
@@ -108,22 +114,25 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     }
   }
 
-  Widget _buildWorkoutTypeButton(String type, IconData icon) {
-    final isSelected = _selectedWorkoutType == type;
-    return ElevatedButton.icon(
+  Widget _buildMuscleButton(String muscle) {
+    final isSelected = _selectedMuscles.contains(muscle);
+    return ElevatedButton(
       onPressed: _isLoading ? null : () {
         setState(() {
-          _selectedWorkoutType = type;
+          if (isSelected) {
+            _selectedMuscles.remove(muscle);
+          } else {
+            _selectedMuscles.add(muscle);
+          }
           _error = null;
         });
       },
-      icon: Icon(icon),
-      label: Text(type),
       style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? Colors.blue : Colors.grey.shade200,
+        backgroundColor: isSelected ? Colors.purple : Colors.grey.shade200,
         foregroundColor: isSelected ? Colors.white : Colors.black87,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       ),
+      child: Text(muscle),
     );
   }
 
@@ -185,38 +194,52 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Select Workout Focus',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildWorkoutTypeButton('Push', Icons.arrow_upward),
-                      _buildWorkoutTypeButton('Pull', Icons.arrow_downward),
-                      _buildWorkoutTypeButton('Leg', Icons.accessibility_new),
+                      const Text(
+                        'Target Muscles',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.info_outline),
+                        onPressed: () {
+                          setState(() {
+                            _showMusclesSection = !_showMusclesSection;
+                          });
+                        },
+                        tooltip: 'Select muscles to target',
+                      ),
                     ],
                   ),
-                  if (_selectedWorkoutType != null) ...[
+                  if (_showMusclesSection) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _allMuscles.map((muscle) => _buildMuscleButton(muscle)).toList(),
+                    ),
+                  ],
+                  if (_selectedMuscles.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: Colors.purple.shade50,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
+                        border: Border.all(color: Colors.purple.shade200),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle, color: Colors.blue.shade600),
+                          Icon(Icons.check_circle, color: Colors.purple.shade600),
                           const SizedBox(width: 8),
-                          Text(
-                            'Focus: $_selectedWorkoutType',
-                            style: TextStyle(
-                              color: Colors.blue.shade600,
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              'Selected: ${_selectedMuscles.join(", ")}',
+                              style: TextStyle(
+                                color: Colors.purple.shade600,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
