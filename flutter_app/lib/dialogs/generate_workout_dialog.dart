@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import '../services/exercise_service.dart';
 
@@ -17,7 +16,7 @@ class GenerateWorkoutDialog extends StatefulWidget {
 
 class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
   String? _selectedMuscleGroup;
-  String? _selectedEquipmentType; // 'At Home', 'Gym (Machines)', 'Cardio', 'Dumbbells'
+  String? _selectedEquipmentType;
   bool _isLoading = false;
   String? _error;
 
@@ -27,38 +26,26 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     'Legs': ['Legs', 'Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
     'Arms': ['Arms', 'Biceps', 'Triceps'],
     'Full Body': [
-      'Full Body',
-      'Chest',
-      'Back',
-      'Shoulders',
-      'Triceps',
-      'Biceps',
-      'Quadriceps',
-      'Hamstrings',
-      'Calves',
-      'Glutes',
+      'Chest', 'Back', 'Shoulders', 'Triceps', 'Biceps',
+      'Quadriceps', 'Hamstrings', 'Calves', 'Glutes'
     ],
   };
 
   final Map<String, List<String>> _equipmentTypeMapping = {
-    'At Home': ['Bodyweight Only', 'Dumbbells'],
-    'Gym (Machines)': ['Machine'],
+    'At Home': ['Bodyweight', 'Dumbbells'],
+    'Gym': ['Machine'],
     'Cardio': ['Cardio'],
     'Dumbbells': ['Dumbbells'],
   };
 
   Future<void> _generateWorkout() async {
     if (_selectedMuscleGroup == null) {
-      setState(() {
-        _error = 'Please select a target muscle group';
-      });
+      setState(() => _error = 'Select a muscle group');
       return;
     }
 
     if (_selectedEquipmentType == null) {
-      setState(() {
-        _error = 'Please select an equipment type';
-      });
+      setState(() => _error = 'Select equipment type');
       return;
     }
 
@@ -68,113 +55,99 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     });
 
     try {
-      final allExercises = await ExerciseService.listExercises().timeout(
-            const Duration(seconds: 15),
-            onTimeout: () {
-              throw Exception('Loading exercises timed out');
-            },
-          );
+      final allExercises = await ExerciseService.listExercises();
 
-      if (allExercises.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _error = 'No exercises available';
-            _isLoading = false;
-          });
-        }
-        return;
-      }
+      final targetAreas = _muscleGroupMapping[_selectedMuscleGroup]!;
+      final targetEquipment = _equipmentTypeMapping[_selectedEquipmentType]!;
 
-      // Filter exercises by selected muscle group and equipment type
-      final targetAreas = _muscleGroupMapping[_selectedMuscleGroup] ?? [];
-      final targetEquipment = _equipmentTypeMapping[_selectedEquipmentType] ?? [];
-      
-      final filteredExercises = allExercises.where((exercise) {
-        final bodyArea = (exercise['exer_body_area'] ?? '').toString().toLowerCase();
-        final equipment = (exercise['exer_equip'] ?? '').toString().toLowerCase();
-        
-        final matchesArea = targetAreas.any((area) => bodyArea.contains(area.toLowerCase()));
-        final matchesEquipment = targetEquipment.any((equip) => equipment.contains(equip.toLowerCase()));
-        
-        return matchesArea && matchesEquipment;
+      final filtered = allExercises.where((e) {
+        final area = (e['exer_body_area'] ?? '').toString().toLowerCase();
+        final equip = (e['exer_equip'] ?? '').toString().toLowerCase();
+
+        return targetAreas.any((a) => area.contains(a.toLowerCase())) &&
+            targetEquipment.any((t) => equip.contains(t.toLowerCase()));
       }).toList();
 
-      if (filteredExercises.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _error = 'No exercises found for this combination. Try different selections.';
-            _isLoading = false;
-          });
-        }
+      if (filtered.isEmpty) {
+        setState(() {
+          _error = 'No exercises found';
+          _isLoading = false;
+        });
         return;
       }
 
-      final random = Random();
-      final shuffledExercises = List<Map<String, dynamic>>.from(filteredExercises)
-        ..shuffle(random);
+      filtered.shuffle();
+      final generated = filtered.take(6).toList();
 
-      final targetCount = shuffledExercises.length >= 6
-          ? 5 + random.nextInt(2)
-          : shuffledExercises.length;
+      // 👉 Loading delay
+      await Future.delayed(const Duration(seconds: 2));
 
-      final generatedExercises = shuffledExercises.take(targetCount).toList();
+      if (!mounted) return;
 
-      widget.onGenerate(
-        generatedExercises.length,
-        generatedExercises,
-        _selectedMuscleGroup ?? 'Unknown',
-        _selectedEquipmentType ?? 'Unknown',
+      // 👉 SHOW SUCCESS AND WAIT FOR USER
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const _SuccessDialog(),
       );
-      if (mounted) {
-        Navigator.pop(context);
-      }
+
+      // 👉 NOW CLOSE GENERATE DIALOG ONLY ONCE
+      Navigator.of(context).pop();
+
+      // 👉 THEN RETURN DATA
+      widget.onGenerate(
+        generated.length,
+        generated,
+        _selectedMuscleGroup!,
+        _selectedEquipmentType!,
+      );
+
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _error = 'Something went wrong';
+        _isLoading = false;
+      });
     }
   }
 
-  Widget _buildMuscleGroupChip(String muscleGroup) {
-    final isSelected = _selectedMuscleGroup == muscleGroup;
+  Widget _chip(String label) {
+    final selected = _selectedMuscleGroup == label;
+
     return ChoiceChip(
-      label: Text(muscleGroup),
-      selected: isSelected,
+      label: Text(label),
+      selected: selected,
       onSelected: _isLoading
           ? null
           : (_) {
               setState(() {
-                _selectedMuscleGroup = muscleGroup;
+                _selectedMuscleGroup = label;
                 _error = null;
               });
             },
-      selectedColor: Colors.purple,
-      backgroundColor: Colors.grey.shade200,
+      selectedColor: Colors.blue,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
-        fontWeight: FontWeight.w600,
+        color: selected ? Colors.white : Colors.black,
       ),
     );
   }
 
-  Widget _buildEquipmentTypeButton(String type, IconData icon) {
-    final isSelected = _selectedEquipmentType == type;
+  Widget _equipment(String label, IconData icon) {
+    final selected = _selectedEquipmentType == label;
+
     return ElevatedButton.icon(
-      onPressed: _isLoading ? null : () {
-        setState(() {
-          _selectedEquipmentType = type;
-          _error = null;
-        });
-      },
+      onPressed: _isLoading
+          ? null
+          : () {
+              setState(() {
+                _selectedEquipmentType = label;
+                _error = null;
+              });
+            },
       icon: Icon(icon),
-      label: Text(type),
+      label: Text(label),
       style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? Colors.green : Colors.grey.shade200,
-        foregroundColor: isSelected ? Colors.white : Colors.black87,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        backgroundColor: selected ? Colors.green : Colors.grey.shade200,
+        foregroundColor: selected ? Colors.white : Colors.black,
       ),
     );
   }
@@ -182,178 +155,103 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      insetPadding: const EdgeInsets.all(16),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Generate Workout',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+      child: _isLoading
+          ? Padding(
+              padding: const EdgeInsets.all(30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 20),
+                  Text(
+                    "Generating workout...",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
-            ),
-            Padding(
+            )
+          : Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Target Muscle Group',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildMuscleGroupChip('Chest'),
-                        const SizedBox(width: 8),
-                        _buildMuscleGroupChip('Back'),
-                        const SizedBox(width: 8),
-                        _buildMuscleGroupChip('Legs'),
-                        const SizedBox(width: 8),
-                        _buildMuscleGroupChip('Arms'),
-                        const SizedBox(width: 8),
-                        _buildMuscleGroupChip('Full Body'),
-                      ],
-                    ),
-                  ),
-                  if (_selectedMuscleGroup != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.purple.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.purple.shade600),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Selected: $_selectedMuscleGroup',
-                              style: TextStyle(
-                                color: Colors.purple.shade600,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Select Equipment Type',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 16),
+                  const Text("Target Muscle"),
+                  const SizedBox(height: 10),
                   Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                    spacing: 8,
                     children: [
-                      _buildEquipmentTypeButton('At Home', Icons.home),
-                      _buildEquipmentTypeButton('Gym (Machines)', Icons.fitness_center),
-                      _buildEquipmentTypeButton('Cardio', Icons.directions_run),
-                      _buildEquipmentTypeButton('Dumbbells', Icons.sports_gymnastics),
+                      _chip('Chest'),
+                      _chip('Back'),
+                      _chip('Legs'),
+                      _chip('Arms'),
+                      _chip('Full Body'),
                     ],
                   ),
-                  if (_selectedEquipmentType != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.green.shade600),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Equipment: $_selectedEquipmentType',
-                            style: TextStyle(
-                              color: Colors.green.shade600,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  const SizedBox(height: 20),
+                  const Text("Workout Type"),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    children: [
+                      _equipment('At Home', Icons.home),
+                      _equipment('Gym', Icons.fitness_center),
+                      _equipment('Cardio', Icons.favorite),
+                      _equipment('Dumbbells', Icons.sports_gymnastics),
+                    ],
+                  ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error, color: Colors.red.shade600),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              style: TextStyle(color: Colors.red.shade600),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      OutlinedButton(
-                        onPressed: _isLoading ? null : () => Navigator.pop(context),
-                        child: const Text('Cancel'),
+                      TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => Navigator.pop(context),
+                        child: const Text("Cancel"),
                       ),
-                      const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _generateWorkout,
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Generate'),
+                        onPressed:
+                            _isLoading ? null : _generateWorkout,
+                        child: const Text("Generate"),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _SuccessDialog extends StatelessWidget {
+  const _SuccessDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green, size: 60),
+            const SizedBox(height: 16),
+            const Text(
+              "Workout Generated!",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // ONLY closes success dialog
+              },
+              child: const Text("Continue"),
+            )
           ],
         ),
       ),

@@ -245,24 +245,27 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openGenerateDialog() {
-    if (_workoutExercises.isNotEmpty) {
-      _showWorkoutActiveDialog();
-      return;
-    }
-    
-    showDialog(
-      context: context,
-      builder: (context) => GenerateWorkoutDialog(
-        onGenerate: (count, exercises, muscleGroup, equipment) {
-          if (mounted) {
-            for (final exercise in exercises) {
-              _addExercise(exercise);
-            }
-          }
-        },
-      ),
-    );
+  if (_workoutExercises.isNotEmpty) {
+    _showWorkoutActiveDialog();
+    return;
   }
+
+  showDialog(
+    context: context,
+    builder: (context) => GenerateWorkoutDialog(
+      onGenerate: (count, exercises, muscleGroup, equipment) {
+        if (!mounted) return;
+
+        // ✅ DO NOT POP HERE
+
+        // Just add exercises
+        for (final exercise in exercises) {
+          _addExercise(exercise);
+        }
+      },
+    ),
+  );
+}
 
   void _openRoutineDetailsDialog(Map<String, dynamic> workout, String routineName) {
     final exercises = workout['exercises'];
