@@ -21,6 +21,19 @@ class FinishWorkoutDialog extends StatefulWidget {
 class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
   bool _isLoading = false;
   String? _error;
+  late TextEditingController _workoutNameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _workoutNameController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _workoutNameController.dispose();
+    super.dispose();
+  }
 
   bool _validateWorkoutData() {
     for (int i = 0; i < widget.exercises.length; i++) {
@@ -79,9 +92,13 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
 
     try {
       final exerciseData = _buildExerciseData();
+      final workoutName = _workoutNameController.text.trim();
 
       // Save locally (works on all platforms including web)
-      await WorkoutStorage.saveWorkout(exerciseData);
+      await WorkoutStorage.saveWorkout(
+        exerciseData,
+        workoutName: workoutName.isNotEmpty ? workoutName : null,
+      );
 
       // Best-effort sync to API (skip if backend unreachable)
       try {
@@ -168,6 +185,38 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Routine Name',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _workoutNameController,
+                    decoration: InputDecoration(
+                      hintText: 'Enter routine name (e.g., Chest Day)',
+                      hintStyle: TextStyle(color: Colors.grey[500]),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Divider(),
