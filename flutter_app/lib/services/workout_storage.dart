@@ -70,12 +70,17 @@ class WorkoutStorage {
 
   /// Saves a completed workout to local storage.
   /// [exercises] is a list of {exer_id, exer_name, sets: [{kg, reps}]}
-  static Future<void> saveWorkout(List<Map<String, dynamic>> exercises) async {
+  /// [workoutName] is an optional name for the routine
+  static Future<void> saveWorkout(
+    List<Map<String, dynamic>> exercises, {
+    String? workoutName,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getString(_key);
     final List<dynamic> all = existing != null ? jsonDecode(existing) : [];
     all.add({
       'date': DateTime.now().toIso8601String(),
+      'name': workoutName,
       'exercises': exercises,
     });
     await prefs.setString(_key, jsonEncode(all));
