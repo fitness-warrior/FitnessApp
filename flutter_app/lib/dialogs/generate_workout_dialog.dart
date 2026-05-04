@@ -22,9 +22,10 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
   final Map<String, List<String>> _muscleGroupMapping = {
     'Chest': ['Chest'],
     'Back': ['Back'],
-    'Legs': ['Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
-    'Arms': ['Biceps', 'Triceps'],
+    'Legs': ['Legs', 'Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
+    'Arms': ['Arms', 'Biceps', 'Triceps'],
     'Full Body': [
+      'Full Body',
       'Chest',
       'Back',
       'Shoulders',
