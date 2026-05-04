@@ -340,6 +340,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
           });
           // Clear the saved session after completing workout
           await WorkoutStorage.clearCurrentWorkoutSession();
+          // Refresh the routines list to show the newly saved workout
+          await _loadSavedWorkouts();
         },
       ),
     );
