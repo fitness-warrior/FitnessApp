@@ -17,7 +17,7 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
   String? _selectedArea;
 
   static const List<String> _areas = [
-    'All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Cardio',
+    'All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Cardio', 'Full Body',
   ];
 
   static const Map<String, Color> _areaColors = {
@@ -28,6 +28,7 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
     'Legs':      Color(0xFF66BB6A),
     'Core':      Color(0xFFFFA726),
     'Cardio':    Color(0xFFEC407A),
+    'Full Body': Color(0xFF8D6E63),
   };
 
   @override
