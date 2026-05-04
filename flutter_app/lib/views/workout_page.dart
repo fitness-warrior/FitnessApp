@@ -215,6 +215,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
       }
       _setControllers.remove(index);
     }
+    
+    // Rebuild the setControllers map with reindexed keys after deletion
+    final newSetControllers = <int, List<Map<String, TextEditingController>>>{};
+    int newIndex = 0;
+    for (int i = 0; i < _setControllers.length + 1; i++) {
+      if (i != index && _setControllers.containsKey(i)) {
+        newSetControllers[newIndex] = _setControllers[i]!;
+        newIndex++;
+      }
+    }
+    _setControllers.clear();
+    _setControllers.addAll(newSetControllers);
+    
     setState(() {
       _workoutExercises.removeAt(index);
     });
