@@ -300,7 +300,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
-  void _openRoutineDetailsDialog(Map<String, dynamic> workout, int workoutNumber) {
+  void _openRoutineDetailsDialog(Map<String, dynamic> workout, String routineName) {
     final exercises = workout['exercises'];
     final exerciseList = exercises is List ? exercises : [];
     final dateText = workout['date']?.toString() ?? 'Unknown date';
@@ -326,7 +326,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Workout $workoutNumber Details',
+                      '$routineName Details',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -960,9 +960,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     final exerciseList = exercises is List ? exercises : [];
                     final dateText = workout['date']?.toString() ?? '';
                     final workoutNumber = _savedWorkouts.length - idx;
+                    final routineName =
+                        workout['name']?.toString() ?? 'Workout $workoutNumber';
                     
                     return GestureDetector(
-                      onTap: () => _openRoutineDetailsDialog(workout, workoutNumber),
+                      onTap: () => _openRoutineDetailsDialog(workout, routineName),
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(
@@ -978,7 +980,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Workout $workoutNumber',
+                                    routineName,
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
