@@ -19,6 +19,8 @@ class WorkoutDayView extends StatefulWidget {
 class _WorkoutDayViewState extends State<WorkoutDayView> {
   // Map structure: routineIndex -> exerciseIndex -> list of boolean for sets
   final Map<int, Map<int, List<bool>>> _completedSets = {};
+  // Map structure: routineIndex -> exerciseIndex -> setIndex -> map of controllers
+  final Map<int, Map<int, List<Map<String, TextEditingController>>>> _setControllers = {};
 
   @override
   void initState() {
@@ -29,6 +31,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView> {
   void _initializeState() {
     for (int rIndex = 0; rIndex < widget.routines.length; rIndex++) {
       _completedSets[rIndex] = {};
+      _setControllers[rIndex] = {};
       final routine = widget.routines[rIndex];
       final exercises =
           routine['exercises'] is List ? routine['exercises'] as List : [];
@@ -38,8 +41,33 @@ class _WorkoutDayViewState extends State<WorkoutDayView> {
         final sets = exercise['sets'] is List ? exercise['sets'] as List : [];
         _completedSets[rIndex]![eIndex] =
             List.generate(sets.length, (_) => false);
+            
+        _setControllers[rIndex]![eIndex] = List.generate(sets.length, (sIndex) {
+          final setMap = sets[sIndex];
+          return {
+            'kg': TextEditingController(text: setMap['kg']?.toString() ?? '0'),
+            'reps': TextEditingController(text: setMap['reps']?.toString() ?? '0'),
+            'time': TextEditingController(text: setMap['time']?.toString() ?? ''),
+            'calories': TextEditingController(text: setMap['calories']?.toString() ?? ''),
+          };
+        });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    for (var routine in _setControllers.values) {
+      for (var exercise in routine.values) {
+        for (var set in exercise) {
+          set['kg']?.dispose();
+          set['reps']?.dispose();
+          set['time']?.dispose();
+          set['calories']?.dispose();
+        }
+      }
+    }
+    super.dispose();
   }
 
   void _toggleSet(int rIndex, int eIndex, int sIndex, bool isCurrentlyComplete) {
@@ -258,51 +286,62 @@ class _WorkoutDayViewState extends State<WorkoutDayView> {
                             ),
                             const SizedBox(height: 16),
                             ...List.generate(sets.length, (sIndex) {
-                              final set = sets[sIndex];
-
-                              final kg = set['kg']?.toString() ?? '0';
-                              final reps = set['reps']?.toString() ?? '0';
-                              final time = set['time']?.toString() ?? '';
-                              final calories =
-                                  set['calories']?.toString() ?? '';
-
-                              String setText = '';
-                              if (time.isNotEmpty || calories.isNotEmpty) {
-                                setText = 'Time: $time min';
-                                if (calories.isNotEmpty) {
-                                  setText += ' | Cal: $calories';
-                                }
-                              } else {
-                                setText = '$kg kg × $reps reps';
-                              }
-
-                              final isSetComplete =
-                                  _completedSets[rIndex]![eIndex]![sIndex];
+                              final isSetComplete = _completedSets[rIndex]![eIndex]![sIndex];
+                              final controllers = _setControllers[rIndex]![eIndex]![sIndex];
+                              final isCardio = controllers['time']!.text.isNotEmpty || controllers['calories']!.text.isNotEmpty;
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 10),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF252538),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Set ${sIndex + 1}:  $setText',
+                                      'Set ${sIndex + 1}',
                                       style: TextStyle(
-                                        color: isSetComplete
-                                            ? Colors.grey[500]
-                                            : Colors.white,
-                                        fontSize: 15,
-                                        decoration: isSetComplete
-                                            ? TextDecoration.lineThrough
-                                            : null,
+                                        color: isSetComplete ? Colors.grey[500] : Colors.grey[300],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                    const SizedBox(width: 16),
+                                    if (isCardio) ...[
+                                      Expanded(
+                                        child: _buildCompactTextField(
+                                          controller: controllers['time']!,
+                                          label: 'min',
+                                          isComplete: isSetComplete,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: _buildCompactTextField(
+                                          controller: controllers['calories']!,
+                                          label: 'cal',
+                                          isComplete: isSetComplete,
+                                        ),
+                                      ),
+                                    ] else ...[
+                                      Expanded(
+                                        child: _buildCompactTextField(
+                                          controller: controllers['kg']!,
+                                          label: 'kg',
+                                          isComplete: isSetComplete,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: _buildCompactTextField(
+                                          controller: controllers['reps']!,
+                                          label: 'reps',
+                                          isComplete: isSetComplete,
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(width: 16),
                                     GestureDetector(
                                       onTap: () {
                                         _toggleSet(rIndex, eIndex, sIndex,
@@ -343,6 +382,34 @@ class _WorkoutDayViewState extends State<WorkoutDayView> {
                 );
               },
             ),
+    );
+  }
+  Widget _buildCompactTextField({
+    required TextEditingController controller,
+    required String label,
+    required bool isComplete,
+  }) {
+    return TextField(
+      controller: controller,
+      enabled: !isComplete,
+      keyboardType: TextInputType.number,
+      style: TextStyle(
+        color: isComplete ? Colors.grey[600] : Colors.white,
+        fontSize: 16,
+        decoration: isComplete ? TextDecoration.lineThrough : null,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey[500], fontSize: 12),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        filled: true,
+        fillColor: isComplete ? Colors.transparent : const Color(0xFF1C1C2E),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
+        ),
+      ),
     );
   }
 }
