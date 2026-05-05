@@ -52,6 +52,29 @@ class CollectedData:
         """, (self.body_id, self.body_id))
         return self.cur.fetchall()
     
+    def _get_cadio_callories (self):
+        self.cur.execute("""
+            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_met
+            FROM training t
+            JOIN training_exercise te ON t.train_id = te.train_id 
+            JOIN exercies e ON e.exer_id = te.exer_id 
+            JOIN training_body tb ON tb.train_id = t.train_id 
+            JOIN body_metrics bm ON bm.body_id = tb.body_id 
+            Where bm.body_id = %s
+            AND exer_type = "cardio"
+            ORDER BY t.train_data
+""", (self.body_id))
+        return self.cur.fetchall()
+    
+#set a limmit for 7 days but not max how much 1 can do in a day 
+    
+    def day_cadio_callories (self):
+        rows = self._get_cadio_callories()
+        final_collection = []
+        for row in rows:
+            speed = (row[2]*1000) / row[1]
+            
+    
     def no_change_data (self,name,find):
         #1 = endurance
         #2 = distance/weight
