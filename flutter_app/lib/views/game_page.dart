@@ -427,7 +427,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
       ],
       ),
       // Keeping the standard app bottom nav bar
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 

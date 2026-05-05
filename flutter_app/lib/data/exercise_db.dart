@@ -8,6 +8,27 @@ class ExerciseDb {
 
   static String get baseUrl => ApiConfig.baseUrl;
 
+  Map<String, dynamic> _normalizeRow(Map<String, dynamic> row) {
+    final Map<String, dynamic> m = Map<String, dynamic>.from(row);
+    m['exer_id'] = m['exer_id'] ?? m['id'];
+    m['exer_name'] = m['exer_name'] ?? m['name'] ?? m['title'];
+    m['exer_body_area'] =
+        m['exer_body_area'] ?? m['body_area'] ?? m['area'];
+    m['exer_type'] = m['exer_type'] ?? m['type'];
+    m['exer_descrip'] = m['exer_descrip'] ?? m['description'] ?? m['desc'];
+    m['exer_vid'] = m['exer_vid'] ?? m['video_url'] ?? m['vid'];
+    if (m['exer_equip'] == null) {
+      if (m['equipment'] is List) {
+        m['exer_equip'] = (m['equipment'] as List).join(', ');
+      } else if (m['equipment'] != null) {
+        m['exer_equip'] = m['equipment'].toString();
+      } else {
+        m['exer_equip'] = '';
+      }
+    }
+    return m;
+  }
+
   Future<List<Map<String, dynamic>>> listExercises({
     String? name,
     String? area,
@@ -35,7 +56,9 @@ class ExerciseDb {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+        return data
+            .map((e) => _normalizeRow(Map<String, dynamic>.from(e)))
+            .toList();
       } else {
         print('Failed to load exercises: ${response.statusCode}');
         return [];
@@ -55,7 +78,7 @@ class ExerciseDb {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return Map<String, dynamic>.from(data);
+        return _normalizeRow(Map<String, dynamic>.from(data));
       } else {
         print('Failed to load exercise $id: ${response.statusCode}');
         return null;
@@ -75,7 +98,9 @@ class ExerciseDb {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+        return data
+            .map((e) => _normalizeRow(Map<String, dynamic>.from(e)))
+            .toList();
       } else {
         return [];
       }

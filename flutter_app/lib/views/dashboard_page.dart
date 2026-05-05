@@ -157,7 +157,7 @@ class _DashboardPage extends State<DashboardPage> {
 
 
       
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 4),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 }
