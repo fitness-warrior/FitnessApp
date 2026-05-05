@@ -1220,13 +1220,20 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 ],
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete,
-                                  color: Colors.redAccent, size: 20),
-                              onPressed: () => _deleteRoutine(idx),
-                              constraints: const BoxConstraints(),
-                              padding: EdgeInsets.zero,
-                            ),
+                            if (workout['source'] == 'local')
+                                IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.redAccent, size: 20),
+                                  onPressed: () => _deleteRoutine(idx),
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
+                                )
+                              else
+                                Icon(
+                                  Icons.lock,
+                                  color: Colors.grey[500],
+                                  size: 18,
+                                ),
                           ],
                         ),
                       ),
