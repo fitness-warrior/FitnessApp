@@ -17,7 +17,7 @@ class WorkoutDayView extends StatefulWidget {
 }
 
 class _WorkoutDayViewState extends State<WorkoutDayView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // routineIndex -> exerciseIndex -> list<bool> for each set
   final Map<int, Map<int, List<bool>>> _completedSets = {};
   // routineIndex -> exerciseIndex -> setIndex -> controllers
@@ -27,6 +27,11 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
   bool _workoutFinished = false;
   late AnimationController _successController;
   late Animation<double> _scaleAnimation;
+
+  // ── Quit interception ─────────────────────────────────────────────────────
+  bool _showingQuitScreen = false;
+  late AnimationController _quitController;
+  late Animation<double> _quitAnimation;
 
   // ── Elapsed timer ─────────────────────────────────────────────────────────
   int _elapsedSeconds = 0;
@@ -55,6 +60,14 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
     );
     _scaleAnimation = CurvedAnimation(
       parent: _successController,
+      curve: Curves.elasticOut,
+    );
+    _quitController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _quitAnimation = CurvedAnimation(
+      parent: _quitController,
       curve: Curves.elasticOut,
     );
     // Start the elapsed workout timer
@@ -100,6 +113,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
   @override
   void dispose() {
     _elapsedTimer?.cancel();
+    _quitController.dispose();
     for (var routine in _setControllers.values) {
       for (var exercise in routine.values) {
         for (var set in exercise) {
@@ -192,6 +206,31 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
     _showRestTimerDialog();
   }
 
+  void _handleBackPress() {
+    if (_workoutFinished) {
+      Navigator.of(context).pop();
+      return;
+    }
+    // If all done, let them leave (finish button handles it)
+    if (_areAllComplete()) {
+      Navigator.of(context).pop();
+      return;
+    }
+    // Mid-workout: show the quit screen
+    setState(() => _showingQuitScreen = true);
+    _quitController.forward(from: 0);
+  }
+
+  void _keepGoing() {
+    _quitController.reverse().then((_) {
+      if (mounted) setState(() => _showingQuitScreen = false);
+    });
+  }
+
+  void _confirmQuit() {
+    Navigator.of(context).pop();
+  }
+
   void _finishWorkout() {
     HapticFeedback.heavyImpact();
     setState(() => _workoutFinished = true);
@@ -266,6 +305,11 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
 
   @override
   Widget build(BuildContext context) {
+    // Show full-screen quit overlay when back is pressed mid-workout
+    if (_showingQuitScreen) {
+      return _buildQuitScreen();
+    }
+
     // Show full-screen success overlay when workout is finished
     if (_workoutFinished) {
       return _buildSuccessScreen();
@@ -273,8 +317,13 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
 
     final allDone = _areAllComplete();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) _handleBackPress();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0D0D14),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D14),
         elevation: 0,
@@ -528,6 +577,98 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                 );
               },
             ),
+        ),
+      );
+    }
+
+  Widget _buildQuitScreen() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0D14),
+      body: SafeArea(
+        child: Center(
+          child: ScaleTransition(
+            scale: _quitAnimation,
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.redAccent.withOpacity(0.15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.redAccent.withOpacity(0.4),
+                          blurRadius: 40,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.heart_broken_rounded,
+                      size: 64,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Really? Giving up?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'I thought you weren\'t a quitter... \ud83d\ude14\nYour future self will thank you for finishing.',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 16,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 48),
+                  ElevatedButton.icon(
+                    onPressed: _keepGoing,
+                    icon: const Icon(Icons.fitness_center, size: 20),
+                    label: const Text(
+                      'Keep Going! \ud83d\udcaa',
+                      style: TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4A9FFF),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      elevation: 4,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextButton(
+                    onPressed: _confirmQuit,
+                    child: Text(
+                      'Yes, I give up',
+                      style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.grey[600]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
