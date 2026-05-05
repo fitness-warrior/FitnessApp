@@ -39,7 +39,8 @@ class MealStorage {
         if (resp.statusCode == 200) {
           final body = jsonDecode(resp.body) as Map<String, dynamic>;
           final planObj = body['plan'] as Map<String, dynamic>?;
-          if (planObj == null || planObj.isEmpty) return DailyMealPlan(date: date);
+          if (planObj == null || planObj.isEmpty)
+            return DailyMealPlan(date: date);
           return DailyMealPlan.fromMap(planObj);
         }
       }
