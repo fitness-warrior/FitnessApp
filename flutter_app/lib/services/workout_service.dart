@@ -1,28 +1,38 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import 'auth_service.dart';
 
 class WorkoutService {
   static String get baseUrl => ApiConfig.baseUrl;
 
+  /// Submit a completed workout (saves to user account)
   static Future<Map<String, dynamic>> submitWorkout(
-    List<Map<String, dynamic>> exercises,
-  ) async {
+    List<Map<String, dynamic>> exercises, {
+    int? durationMinutes,
+    String? notes,
+  }) async {
     try {
+      final headers = await AuthService.getAuthHeaders();
+
       final payload = {
         'exercises': exercises.map((exercise) {
           return {
             'exer_id': exercise['exer_id'],
             'exer_name': exercise['exer_name'],
-            'sets': exercise['sets'],
+            'sets': exercise['sets'] ?? 0,
+            'reps': exercise['reps'] ?? 0,
+            'weight': exercise['weight'] ?? 0,
+            'notes': exercise['notes'] ?? '',
           };
         }).toList(),
-        'total_exercises': exercises.length,
+        'duration_minutes': durationMinutes ?? 0,
+        'notes': notes ?? '',
       };
 
       final response = await http.post(
-        Uri.parse('$baseUrl/api/workouts'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/workouts'),
+        headers: headers,
         body: jsonEncode(payload),
       );
 

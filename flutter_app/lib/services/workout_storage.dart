@@ -3,69 +3,91 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class WorkoutStorage {
   static const _key = 'saved_workouts';
-  static const _currentWorkoutKey = 'current_workout_session';
+  static const _currentWorkoutsKey = 'current_workout_sessions_list';
 
-  /// Saves the current in-progress workout session (exercises being edited).
-  /// This ensures exercises persist when navigating away and back.
-  static Future<void> saveCurrentWorkoutSession(
-    List<Map<String, dynamic>> exercises,
-    Map<int, List<Map<String, dynamic>>> setControllers,
+  /// Saves all current in-progress workout sessions.
+  static Future<void> saveCurrentWorkoutSessions(
+    List<List<Map<String, dynamic>>> activeExercisesList,
+    List<Map<int, List<Map<String, dynamic>>>> activeSetsList,
   ) async {
     final prefs = await SharedPreferences.getInstance();
     
-    // Serialize set controllers (convert to string keys for JSON compatibility)
-    final serializedSets = <String, List<Map<String, String>>>{};
-    setControllers.forEach((index, sets) {
-      serializedSets[index.toString()] = sets
-          .map((set) => {
-                'kg': set['kg'] is String ? set['kg'] as String : set['kg'].toString(),
-                'reps': set['reps'] is String ? set['reps'] as String : set['reps'].toString(),
-              })
-          .toList();
-    });
-
-    final sessionData = {
-      'exercises': exercises,
-      'setControllers': serializedSets,
-      'savedAt': DateTime.now().toIso8601String(),
-    };
+    final List<Map<String, dynamic>> sessionsToSave = [];
     
-    await prefs.setString(_currentWorkoutKey, jsonEncode(sessionData));
+    for (int i = 0; i < activeExercisesList.length; i++) {
+      final exercises = activeExercisesList[i];
+      final setControllers = activeSetsList[i];
+      
+      final serializedSets = <String, List<Map<String, String>>>{};
+      setControllers.forEach((index, sets) {
+        serializedSets[index.toString()] = sets
+            .map((set) => {
+                  'kg': set['kg'] is String ? set['kg'] as String : set['kg'].toString(),
+                  'reps': set['reps'] is String ? set['reps'] as String : set['reps'].toString(),
+                })
+            .toList();
+      });
+
+      sessionsToSave.add({
+        'exercises': exercises,
+        'setControllers': serializedSets,
+        'savedAt': DateTime.now().toIso8601String(),
+      });
+    }
+    
+    await prefs.setString(_currentWorkoutsKey, jsonEncode(sessionsToSave));
   }
 
-  /// Loads the current in-progress workout session if it exists.
-  /// Returns null if no session was saved.
-  static Future<Map<String, dynamic>?> loadCurrentWorkoutSession() async {
+  /// Loads all current in-progress workout sessions.
+  static Future<List<Map<String, dynamic>>> loadCurrentWorkoutSessions() async {
     final prefs = await SharedPreferences.getInstance();
-    final sessionJson = prefs.getString(_currentWorkoutKey);
-    if (sessionJson == null) return null;
+    
+    // Check for old single session key to migrate or clear
+    final oldSessionJson = prefs.getString('current_workout_session');
+    if (oldSessionJson != null) {
+      await prefs.remove('current_workout_session');
+      try {
+        final oldData = Map<String, dynamic>.from(jsonDecode(oldSessionJson));
+        return [oldData]; // Migrate single to list temporarily
+      } catch (e) {
+        print('Error parsing old session: $e');
+      }
+    }
+
+    final sessionsJson = prefs.getString(_currentWorkoutsKey);
+    if (sessionsJson == null) return [];
     
     try {
-      final data = Map<String, dynamic>.from(jsonDecode(sessionJson));
+      final List<dynamic> decodedList = jsonDecode(sessionsJson);
+      final List<Map<String, dynamic>> result = [];
       
-      // Convert setControllers string keys back to int keys if needed
-      if (data['setControllers'] is Map) {
-        final setControllersMap = Map<String, dynamic>.from(data['setControllers']);
-        final convertedSets = <String, dynamic>{};
+      for (final session in decodedList) {
+        final data = Map<String, dynamic>.from(session);
         
-        setControllersMap.forEach((key, value) {
-          convertedSets[key] = value;
-        });
-        
-        data['setControllers'] = convertedSets;
+        if (data['setControllers'] is Map) {
+          final setControllersMap = Map<String, dynamic>.from(data['setControllers']);
+          final convertedSets = <String, dynamic>{};
+          
+          setControllersMap.forEach((key, value) {
+            convertedSets[key] = value;
+          });
+          
+          data['setControllers'] = convertedSets;
+        }
+        result.add(data);
       }
       
-      return data;
+      return result;
     } catch (e) {
-      print('Error deserializing workout session: $e');
-      return null;
+      print('Error deserializing workout sessions: $e');
+      return [];
     }
   }
 
-  /// Clears the current workout session.
-  static Future<void> clearCurrentWorkoutSession() async {
+  /// Clears all current workout sessions.
+  static Future<void> clearAllCurrentWorkoutSessions() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_currentWorkoutKey);
+    await prefs.remove(_currentWorkoutsKey);
   }
 
   /// Saves a completed workout to local storage.

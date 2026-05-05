@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../data/exercise_db.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
@@ -8,7 +7,6 @@ import '../services/workout_storage.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
 import 'exercise_library_page.dart';
-import 'profile_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -21,18 +19,15 @@ class WorkoutPage extends StatefulWidget {
 }
 
 class _WorkoutPageState extends State<WorkoutPage> {
-  final List<Map<String, dynamic>> _workoutExercises = [];
-  final Map<int, List<Map<String, TextEditingController>>> _setControllers = {};
+  List<Map<String, dynamic>> _workoutExercises = [];
+  Map<int, List<Map<String, TextEditingController>>> _setControllers = {};
   int _selectedTab = 0;
-  Map<String, dynamic>? _placeholderExercise;
-  bool _isLoadingPlaceholder = true;
   List<Map<String, dynamic>> _savedWorkouts = [];
   bool _loadingSavedWorkouts = true;
 
   @override
   void initState() {
     super.initState();
-    _loadPlaceholderExercise();
     _loadSavedWorkoutSession();
     _loadSavedWorkouts();
     // If launched with recommendation tags, open the search dialog after build
@@ -61,45 +56,35 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  /// Load previously saved workout session (exercises and their set data)
   Future<void> _loadSavedWorkoutSession() async {
     try {
-      final session = await WorkoutStorage.loadCurrentWorkoutSession();
-      if (session == null) return;
+      final sessions = await WorkoutStorage.loadCurrentWorkoutSessions();
+      if (sessions.isEmpty) return;
 
+      // Only load first session (single workout mode)
+      final session = sessions.first;
       if (!mounted) return;
+      
       setState(() {
-        // Restore exercises
-        final exercises = session['exercises'];
-        if (exercises is List) {
-          _workoutExercises.addAll(
-            exercises.cast<Map<String, dynamic>>().map((e) {
-              return Map<String, dynamic>.from(e);
-            }),
-          );
-        }
-
-        // Restore set controllers with saved values
-        final savedSets = session['setControllers'];
-        if (savedSets is Map) {
-          savedSets.forEach((indexStr, sets) {
-            final index = int.tryParse(indexStr.toString()) ?? 0;
-            if (sets is List) {
-              _setControllers[index] = [];
-              for (final set in sets) {
-                final setMap = set is Map ? Map<String, dynamic>.from(set) : {};
-                _setControllers[index]!.add({
-                  'kg': _createAutoSaveController(
-                    initialText: setMap['kg']?.toString() ?? '',
-                  ),
-                  'reps': _createAutoSaveController(
-                    initialText: setMap['reps']?.toString() ?? '',
-                  ),
-                });
-              }
+        final exercises = session['exercises'] as List? ?? [];
+        final savedSets = session['setControllers'] as Map? ?? {};
+        
+        _workoutExercises = exercises.cast<Map<String, dynamic>>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _setControllers = <int, List<Map<String, TextEditingController>>>{};
+        
+        savedSets.forEach((indexStr, sets) {
+          final index = int.tryParse(indexStr.toString()) ?? 0;
+          if (sets is List) {
+            _setControllers[index] = [];
+            for (final set in sets) {
+              final setMap = set is Map ? Map<String, dynamic>.from(set) : {};
+              _setControllers[index]!.add({
+                'kg': _createAutoSaveController(initialText: setMap['kg']?.toString() ?? ''),
+                'reps': _createAutoSaveController(initialText: setMap['reps']?.toString() ?? ''),
+              });
             }
-          });
-        }
+          }
+        });
       });
     } catch (e) {
       print('Error loading workout session: $e');
@@ -116,7 +101,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Future<void> _saveCurrentWorkoutSession() async {
     try {
-      // Build serializable set data (convert TextEditingController values to strings)
       final serializableSets = <int, List<Map<String, String>>>{};
       _setControllers.forEach((index, sets) {
         serializableSets[index] = sets
@@ -127,55 +111,41 @@ class _WorkoutPageState extends State<WorkoutPage> {
             .toList();
       });
 
-      await WorkoutStorage.saveCurrentWorkoutSession(
-        _workoutExercises,
-        serializableSets,
+      await WorkoutStorage.saveCurrentWorkoutSessions(
+        [_workoutExercises],
+        [serializableSets],
       );
     } catch (e) {
       print('Error saving workout session: $e');
     }
   }
 
-  Future<void> _loadPlaceholderExercise() async {
-    try {
-      final exercises = await ExerciseDb.instance.listExercises().timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw Exception('Exercise loading timed out');
-            },
-          );
-      if (mounted) {
-        setState(() {
-          _placeholderExercise = exercises.isNotEmpty
-              ? exercises.first
-              : {
-                  'exer_name': 'Sample Exercise',
-                  'exer_descrip': 'No exercises available',
-                  'exer_vid': '',
-                };
-          _isLoadingPlaceholder = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _placeholderExercise = {
-            'exer_name': 'Error Loading Exercises',
-            'exer_descrip': 'Tap the search button to browse exercises manually',
-            'exer_vid': '',
-          };
-          _isLoadingPlaceholder = false;
-        });
-      }
-    }
+  void _showWorkoutActiveDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C2E),
+        title: const Text('Active Workout', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Please finish your current workout first.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A9FFF)),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _addExercise() {
-    if (_placeholderExercise == null) return;
+  void _addExercise(Map<String, dynamic> exercise) {
+    if (exercise.isEmpty) return;
     setState(() {
-      final normalizedExercise = _normalizeExercise(_placeholderExercise!);
+      final normalizedExercise = _normalizeExercise(exercise);
       _workoutExercises.add(normalizedExercise);
-      // Start each exercise with one empty set
       _setControllers[_workoutExercises.length - 1] = [
         {
           'kg': _createAutoSaveController(),
@@ -183,13 +153,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
         },
       ];
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content:
-            Text('Added ${_placeholderExercise!['exer_name']} to workout!'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
     _saveCurrentWorkoutSession();
   }
 
@@ -207,7 +170,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _removeExercise(int index) {
-    // Dispose controllers for this exercise
     if (_setControllers.containsKey(index)) {
       for (final set in _setControllers[index]!) {
         set['kg']!.dispose();
@@ -216,7 +178,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
       _setControllers.remove(index);
     }
     
-    // Rebuild the setControllers map with reindexed keys after deletion
     final newSetControllers = <int, List<Map<String, TextEditingController>>>{};
     int newIndex = 0;
     for (int i = 0; i < _setControllers.length + 1; i++) {
@@ -262,10 +223,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       builder: (context) => ExerciseSearchDialog(
         onExerciseSelected: (exercise) {
           if (mounted) {
-            setState(() {
-              _placeholderExercise = exercise;
-            });
-            _addExercise();
+            _addExercise(exercise);
           }
         },
       ),
@@ -278,10 +236,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       builder: (context) => ExerciseSearchDialog(
         onExerciseSelected: (exercise) {
           if (mounted) {
-            setState(() {
-              _placeholderExercise = exercise;
-            });
-            _addExercise();
+            _addExercise(exercise);
           }
         },
         initialTags: tags,
@@ -290,28 +245,27 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openGenerateDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => GenerateWorkoutDialog(
-        onGenerate: (count, exercises) {
-          if (mounted) {
-            for (final exercise in exercises) {
-              setState(() {
-                _placeholderExercise = exercise;
-              });
-              _addExercise();
-            }
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Generated ${exercises.length} exercises!'),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
-        },
-      ),
-    );
+  if (_workoutExercises.isNotEmpty) {
+    _showWorkoutActiveDialog();
+    return;
   }
+
+  showDialog(
+    context: context,
+    builder: (context) => GenerateWorkoutDialog(
+      onGenerate: (count, exercises, muscleGroup, equipment) {
+        if (!mounted) return;
+
+        // ✅ DO NOT POP HERE
+
+        // Just add exercises
+        for (final exercise in exercises) {
+          _addExercise(exercise);
+        }
+      },
+    ),
+  );
+}
 
   void _openRoutineDetailsDialog(Map<String, dynamic> workout, String routineName) {
     final exercises = workout['exercises'];
@@ -490,8 +444,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
             _workoutExercises.clear();
             _setControllers.clear();
           });
-          // Clear the saved session after completing workout
-          await WorkoutStorage.clearCurrentWorkoutSession();
+          // Update the saved sessions
+          await _saveCurrentWorkoutSession();
           // Refresh the routines list to show the newly saved workout
           await _loadSavedWorkouts();
         },
@@ -582,7 +536,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 ),
               ),
             ),
-            // Current/In-Progress Workout Section
+            // Current Workout Section
             if (_workoutExercises.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -608,7 +562,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '${_workoutExercises.length} exercises',
+                            '${_setControllers.values.fold<int>(0, (sum, sets) => sum + sets.length)} sets',
                             style: const TextStyle(
                               color: Colors.orange,
                               fontWeight: FontWeight.bold,
@@ -741,7 +695,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       child: ElevatedButton.icon(
                         onPressed: _openFinishDialog,
                         icon: const Icon(Icons.check),
-                        label: const Text('Finish & Save'),
+                        label: const Text('Finish & Save Workout'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4CAF50),
                           foregroundColor: Colors.white,
@@ -754,6 +708,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
             ],
             // ── Action Cards ──────────────────────────────────
             Padding(

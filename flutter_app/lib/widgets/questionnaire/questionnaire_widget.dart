@@ -2,7 +2,7 @@ import 'dart:convert';
 import '../../models/recommendation_profile.dart';
 import '../../services/recommendation_service.dart';
 import '../../services/recommendation_storage.dart';
-
+import '../../services/user_service.dart';
 import '../../views/workout_page.dart';
 
 import 'package:flutter/material.dart';
@@ -338,6 +338,9 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     // Persist profile locally
     RecommendationStorage.saveProfile(profile);
 
+    // Save questionnaire to backend
+    _saveToBackend(_responses);
+
     // Call recommendation service
     RecommendationService.getRecommendations(profile).then((rec) {
       final jsonStr = const JsonEncoder.withIndent('  ').convert(_responses);
@@ -354,7 +357,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
             ),
             TextButton(
               onPressed: () {
-                // Navigate to WorkoutPage and open search dialog with tags
+                // Navigate to WorkoutPage with tags
                 Navigator.of(context).pop();
                 final tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ??
                     <String>[];
@@ -541,6 +544,43 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     if (q.min != null && val < q.min!) return 'Minimum value is ${q.min}.';
     if (q.max != null && val > q.max!) return 'Maximum value is ${q.max}.';
     return 'Looks good.';
+  }
+
+  Future<void> _saveToBackend(Map<String, dynamic> responses) async {
+    try {
+      // Extract values from responses
+      final age = int.tryParse(responses['Q001']?.toString() ?? '0') ?? 0;
+      final bmiData = responses['Q002'] as Map? ?? {};
+      final height = bmiData['height'] ?? 170.0;
+      final weight = bmiData['weight'] ?? 70.0;
+      final goal = responses['Q003']?.toString() ?? 'Stay fit';
+      final experience = responses['Q004']?.toString() ?? 'Beginner';
+      final location = responses['Q005']?.toString() ?? 'Home';
+      final daysPerWeek =
+          int.tryParse(responses['Q006']?.toString().split(' ')[0] ?? '3') ?? 3;
+      final sessionLength =
+          int.tryParse(responses['Q007']?.toString().split(' ')[0] ?? '30') ??
+              30;
+      final injuries = (responses['Q008'] as List?)?.cast<String>() ?? [];
+      final dietPref = responses['Q009']?.toString() ?? 'non-veg';
+      final allergies = (responses['Q010'] as List?)?.cast<String>() ?? [];
+
+      await UserService.saveQuestionnaireResponse({
+        'age': age,
+        'height': height,
+        'weight': weight,
+        'goal': goal,
+        'experience': experience,
+        'location': location,
+        'days_per_week': daysPerWeek,
+        'session_length': sessionLength,
+        'injuries': injuries,
+        'diet_preference': dietPref,
+        'allergies': allergies,
+      });
+    } catch (e) {
+      // Silently fail - questionnaire still progresses
+    }
   }
 
   @override

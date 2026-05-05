@@ -26,7 +26,7 @@ class AppBottomNavBar extends StatelessWidget {
       activeColor: Color(0xFFEF5350),
     ),
     _NavItem(
-      route: '/dashboard',
+      route: '/profile',
       icon: Icons.person_rounded,
       label: 'Profile',
       activeColor: Color(0xFFAB47BC),
@@ -87,8 +87,7 @@ class AppBottomNavBar extends StatelessWidget {
               style: TextStyle(
                 color: color,
                 fontSize: 10,
-                fontWeight:
-                    selected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],
