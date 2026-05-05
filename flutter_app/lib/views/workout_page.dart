@@ -68,6 +68,46 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
+<<<<<<< HEAD
+=======
+  List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
+    List<Map<String, dynamic>> apiHistory,
+  ) {
+    return apiHistory.map((workout) {
+      final exercisesRaw = workout['exercises'];
+      final exercisesList = exercisesRaw is List ? exercisesRaw : <dynamic>[];
+
+      final mappedExercises = exercisesList.map((e) {
+        final ex = Map<String, dynamic>.from(e as Map);
+        final exerId = ex['exer_id'];
+        final reps = ex['reps'] ?? 0;
+        final weight = ex['weight'] ?? 0;
+        final setCountRaw = ex['sets'];
+        final int setCount = (setCountRaw is int) ? setCountRaw : (int.tryParse(setCountRaw?.toString() ?? '1') ?? 1);
+
+        return {
+          'exer_id': exerId,
+          'exer_name': ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
+          'sets': List.generate(setCount > 0 ? setCount : 1, (index) => {
+            'kg': weight.toString(),
+            'reps': reps.toString(),
+          }),
+        };
+      }).toList();
+
+      return {
+        'id': workout['workout_id'],
+        'date': workout['created_at']?.toString() ??
+            DateTime.now().toIso8601String(),
+        'name': workout['notes']?.toString().isNotEmpty == true
+            ? workout['notes']
+            : 'Workout ${workout['workout_id'] ?? ''}',
+        'exercises': mappedExercises,
+        'source': 'api',
+      };
+    }).toList();
+  }
+>>>>>>> 70d5e1893009291c0e2b42978d92efbf4e0f66ad
 
   Future<void> _loadSavedWorkoutSession() async {
     try {

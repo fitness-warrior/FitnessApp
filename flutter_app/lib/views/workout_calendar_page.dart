@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'workout_day_view.dart';
 
 class WorkoutCalendarPage extends StatefulWidget {
   final List<Map<String, dynamic>> savedWorkouts;
@@ -186,150 +187,17 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   void _openDayDetailsDialog(String day) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final routines = _weeklyPlan[day] ?? [];
-            return Dialog(
-              backgroundColor: const Color(0xFF1C1C2E),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              insetPadding: const EdgeInsets.all(16),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${_dayNames[day]} Routines',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit,
-                                  color: Color(0xFF4A9FFF)),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _openAssignRoutineDialog(day);
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    routines.isEmpty
-                        ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: Text(
-                                'No routines assigned.',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          )
-                        : Flexible(
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: routines.length,
-                              itemBuilder: (context, index) {
-                                final routine = routines[index];
-                                final routineName =
-                                    routine['name']?.toString() ?? 'Workout';
-                                final exercises = routine['exercises'];
-                                final exerciseList =
-                                    exercises is List ? exercises : [];
+    final routines = _weeklyPlan[day] ?? [];
+    if (routines.isEmpty) return;
 
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF252538),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            routineName,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete,
-                                                color: Colors.redAccent,
-                                                size: 20),
-                                            constraints: const BoxConstraints(),
-                                            padding: EdgeInsets.zero,
-                                            onPressed: () {
-                                              setDialogState(() {
-                                                routines.removeAt(index);
-                                                _weeklyPlan[day] = routines;
-                                              });
-                                              setState(() {});
-                                              _saveWeeklyPlan();
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      ...List.generate(exerciseList.length,
-                                          (exIdx) {
-                                        final exercise = exerciseList[exIdx];
-                                        final exerName =
-                                            exercise['exer_name'] ??
-                                                'Unknown Exercise';
-                                        final sets = exercise['sets'];
-                                        final setsList =
-                                            sets is List ? sets : [];
-
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                              bottom: 4.0),
-                                          child: Text(
-                                            '• $exerName (${setsList.length} sets)',
-                                            style: TextStyle(
-                                                color: Colors.grey[400],
-                                                fontSize: 14),
-                                          ),
-                                        );
-                                      }),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WorkoutDayView(
+          dayName: _dayNames[day] ?? day,
+          routines: routines,
+        ),
+      ),
     );
   }
 
@@ -357,6 +225,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
         final routines = _weeklyPlan[day] ?? [];
 
         return GestureDetector(
+          onLongPress: () => _openAssignRoutineDialog(day),
           onTap: () {
             if (routines.isEmpty) {
               _openAssignRoutineDialog(day);
