@@ -51,49 +51,35 @@ class CollectedData:
             LIMIT 7
         """, (self.body_id, self.body_id))
         return self.cur.fetchall()
-        
+    
+    def no_change_data (self,name,find):
+        #1 = endurance
+        #2 = distance/weight
+        rows = self._collect_rows(name)
+        final_collection = []
+        for row in rows:
+            new_row = [row[0],row[find]]
+            final_collection.append (new_row)
+        return final_collection 
+
     def cardio_speed(self,name):
-        rows = self._collect_rows()
+        rows = self._collect_rows(name)
         final_collection = []
         for row in rows:
             speed = (row[2]*1000) / row[1]
             new_row = [row[0],speed]
             final_collection.append (new_row)
         return final_collection  
-    
-    def cardio_endurance(self,name):
-        rows = self._collect_rows()
-        final_collection = []
-        for row in rows:
-            new_row = [row[0],row[1]]
-            final_collection.append (new_row)
-        return final_collection 
-    
-    def cardio_endurance(self,name):
-        rows = self._collect_rows()
-        final_collection = []
-        for row in rows:
-            new_row = [row[0],row[2]]
-            final_collection.append (new_row)
-        return final_collection  
-    
+     
     def strength_total(self,name):
-        rows = self._collect_rows()
+        rows = self._collect_rows(name)
         final_collection = []
         for row in rows:
             total = row[2] * row[3]
             new_row = [row[0],total]
             final_collection.append (new_row)
         return final_collection  
-    
-    def strength_max(self,name):
-        rows = self._collect_rows()
-        final_collection = []
-        for row in rows:
-            new_row = [row[0],row[2]]
-            final_collection.append (new_row)
-        return final_collection  
-#if date is same select highest one lol 
+      
 
 if __name__ == "__main__":
     CD = CollectedData(4)
