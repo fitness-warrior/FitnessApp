@@ -30,7 +30,12 @@ class Question {
 }
 
 class QuestionnairePage extends StatefulWidget {
-  const QuestionnairePage({Key? key}) : super(key: key);
+  /// [isOnboarding] = true  → shown after sign-up; navigates to WorkoutPage on submit.
+  /// [isOnboarding] = false → shown from Edit Profile; pops back on submit.
+  final bool isOnboarding;
+
+  const QuestionnairePage({Key? key, this.isOnboarding = true})
+      : super(key: key);
 
   @override
   State<QuestionnairePage> createState() => _QuestionnairePageState();
