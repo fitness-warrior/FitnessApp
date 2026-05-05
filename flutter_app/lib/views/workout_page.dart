@@ -10,6 +10,7 @@ import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
 import '../widgets/common/streak_display.dart';
 import 'exercise_library_page.dart';
+import 'workout_calendar_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -723,8 +724,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
               ),
             ),
             // Current Workout Section
-            if (_workoutExercises.isNotEmpty) ...[
-              Padding(
+            if (_selectedTab == 0) ...[
+              if (_workoutExercises.isNotEmpty) ...[
+                Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1056,6 +1058,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
               child: _buildRoutinesSection(),
             ),
             const SizedBox(height: 100),
+            ] else ...[
+              WorkoutCalendarPage(
+                savedWorkouts: _savedWorkouts,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+              ),
+              const SizedBox(height: 100),
+            ],
           ],
         ),
       ),
