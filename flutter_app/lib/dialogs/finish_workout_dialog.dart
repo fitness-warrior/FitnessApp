@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/streak_service.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
+import '../services/user_stats_service.dart';
 
 class FinishWorkoutDialog extends StatefulWidget {
   final List<Map<String, dynamic>> exercises;
@@ -349,6 +350,10 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
         await StreakService.updateStreak()
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
+
+      // Grant XP: 20 XP per exercise
+      final xpEarned = exerciseData.length * 20;
+      await UserStatsService.addXP(xpEarned);
 
       widget.onSuccess({});
       Navigator.pop(context);
