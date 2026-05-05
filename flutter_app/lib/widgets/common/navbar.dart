@@ -14,7 +14,7 @@ class AppBottomNavBar extends StatelessWidget {
       activeColor: Color(0xFF4A9FFF),
     ),
     _NavItem(
-      route: '/game',
+      route: '/dashboard',
       icon: Icons.home_rounded,
       label: 'Home',
       activeColor: Color(0xFF4A9FFF),

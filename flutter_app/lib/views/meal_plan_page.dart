@@ -17,7 +17,6 @@ class MealPlanPage extends StatefulWidget {
 }
 
 class _MealPlanPageState extends State<MealPlanPage> {
-
   DateTime _selectedDate = DateTime.now();
 
   // ── Static demo data ────────────────────────────────────────────────────
@@ -88,51 +87,65 @@ class _MealPlanPageState extends State<MealPlanPage> {
   }
 
   Future<void> _addFood(MealSlot slot) async {
-  final selectedFood = await Navigator.push<MealItem>(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const FoodBrowserPage(),
-    ),
-  );
+    final selectedFood = await Navigator.push<MealItem>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const FoodBrowserPage(),
+      ),
+    );
 
-  if (selectedFood != null) {
+    if (selectedFood != null) {
+      setState(() {
+        _demoSlots[slot]?.add(selectedFood);
+      });
+    }
+  }
+
+  void _previousDay() {
     setState(() {
-      _demoSlots[slot]?.add(selectedFood);
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
     });
   }
-}
 
-void _previousDay() {
-  setState(() {
-    _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-  });
-}
+  void _nextDay() {
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+    });
+  }
 
-void _nextDay() {
-  setState(() {
-    _selectedDate = _selectedDate.add(const Duration(days: 1));
-  });
-}
+  String _getDateLabel() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selected =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
 
-String _getDateLabel() {
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final selected = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-  
-  final difference = selected.difference(today).inDays;
-  
-  if (difference == 0) return 'Today';
-  if (difference == -1) return 'Yesterday';
-  if (difference == 1) return 'Tomorrow';
-  
-  final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  
-  final weekday = days[_selectedDate.weekday - 1];
-  final month = months[_selectedDate.month - 1];
-  
-  return '$weekday, $month ${_selectedDate.day}';
-}
+    final difference = selected.difference(today).inDays;
+
+    if (difference == 0) return 'Today';
+    if (difference == -1) return 'Yesterday';
+    if (difference == 1) return 'Tomorrow';
+
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    final weekday = days[_selectedDate.weekday - 1];
+    final month = months[_selectedDate.month - 1];
+
+    return '$weekday, $month ${_selectedDate.day}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -206,8 +219,7 @@ String _getDateLabel() {
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 }
-  

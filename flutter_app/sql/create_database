@@ -265,16 +265,16 @@ VALUES
 (1,'orange','b',140,16,10);
 
 INSERT INTO users
-(game_char_id, user_name, user_surname, user_email)
+(game_char_id, user_name, user_surname, user_email, user_password)
 VALUES
-(1, 'John', 'Smith', 'john.smith@email.com'),
-(2, 'Sarah', 'Johnson', 'sarah.j@email.com'),
-(3, 'Mike', 'Williams', 'mike.w@email.com'),
-(4, 'Emma', 'Brown', 'emma.brown@email.com'),
-(5, 'David', 'Jones', 'david.jones@email.com'),
-(6, 'Lisa', 'Garcia', 'lisa.garcia@email.com'),
-(7, 'James', 'Miller', 'james.miller@email.com'),
-(8, 'Anna', 'Davis', 'anna.davis@email.com');
+(1, 'John', 'Smith', 'john.smith@email.com', 'password'),
+(2, 'Sarah', 'Johnson', 'sarah.j@email.com', 'password'),
+(3, 'Mike', 'Williams', 'mike.w@email.com', 'password'),
+(4, 'Emma', 'Brown', 'emma.brown@email.com', 'password'),
+(5, 'David', 'Jones', 'david.jones@email.com', 'password'),
+(6, 'Lisa', 'Garcia', 'lisa.garcia@email.com', 'password'),
+(7, 'James', 'Miller', 'james.miller@email.com', 'password'),
+(8, 'Anna', 'Davis', 'anna.davis@email.com', 'password');
 
 INSERT INTO equipment (equip_id, equipment) VALUES
 (1,'Dumbbells'),
