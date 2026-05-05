@@ -67,12 +67,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
       for (final w in [...localWorkouts, ...apiWorkouts]) {
         final name = w['name']?.toString() ?? 'Workout';
         final dateStr = w['date']?.toString() ?? '';
-        final datePrefix = dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
+        final datePrefix =
+            dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
         final exercises = w['exercises'] as List? ?? [];
-        
+
         // Hash based on name, day, and exercise count to reliably deduplicate
         final hash = '$name-$datePrefix-${exercises.length}';
-        
+
         if (!seenHashes.contains(hash)) {
           seenHashes.add(hash);
           combined.add(w);
@@ -80,8 +81,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
       }
 
       combined.sort((a, b) {
-        final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
-        final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        final dateA =
+            DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
         return dateB.compareTo(dateA); // Newest first
       });
 
@@ -99,8 +102,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-<<<<<<< HEAD
-=======
   List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
     List<Map<String, dynamic>> apiHistory,
   ) {
