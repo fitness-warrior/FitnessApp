@@ -49,10 +49,8 @@ class MealStorage {
   static Future<List<DateTime>> savedDates() async {
     final prefs = await SharedPreferences.getInstance();
     final scope = await _userScope();
-    final keys = prefs
-        .getKeys()
-        .where((k) => k.startsWith('$_prefix$scope-'))
-        .toList();
+    final keys =
+        prefs.getKeys().where((k) => k.startsWith('$_prefix$scope-')).toList();
     final dates = keys
         .map((k) {
           try {
