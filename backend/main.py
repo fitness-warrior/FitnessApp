@@ -229,10 +229,56 @@ async def save_questionnaire(
                     'male'  # Default
                 )
             
+            # Save fitness profile with weekly gym days goal
+            profile_exists = await connection.fetchval(
+                "SELECT profile_id FROM user_fitness_profile WHERE user_id = $1",
+                user_id
+            )
+            
+            if profile_exists:
+                await connection.execute(
+                    """
+                    UPDATE user_fitness_profile
+                    SET days_per_week_goal = $1
+                    WHERE user_id = $2
+                    """,
+                    request.days_per_week,
+                    user_id
+                )
+            else:
+                await connection.execute(
+                    """
+                    INSERT INTO user_fitness_profile (user_id, days_per_week_goal)
+                    VALUES ($1, $2)
+                    """,
+                    user_id,
+                    request.days_per_week
+                )
+            
+            # Initialize streak if not exists
+            streak_exists = await connection.fetchval(
+                "SELECT streak_id FROM user_streak WHERE user_id = $1",
+                user_id
+            )
+            
+            if not streak_exists:
+                from datetime import date
+                today = date.today()
+                await connection.execute(
+                    """
+                    INSERT INTO user_streak 
+                    (user_id, current_streak, longest_streak, week_start_date)
+                    VALUES ($1, 0, 0, $2)
+                    """,
+                    user_id,
+                    today
+                )
+            
             return {
                 "success": True,
                 "message": "Questionnaire saved successfully",
-                "user_id": user_id
+                "user_id": user_id,
+                "days_per_week_goal": request.days_per_week
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save questionnaire: {str(e)}")

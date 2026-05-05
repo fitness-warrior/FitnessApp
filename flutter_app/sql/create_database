@@ -230,6 +230,27 @@ CREATE TABLE collection_foods (
     PRIMARY KEY (collection_id,food_id)
 );
 
+---------------- FITNESS PROFILE & STREAK ----------------
+
+CREATE TABLE user_fitness_profile (
+    profile_id SERIAL PRIMARY KEY,
+    user_id INT UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    days_per_week_goal INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_streak (
+    streak_id SERIAL PRIMARY KEY,
+    user_id INT UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    current_streak INT DEFAULT 0,
+    longest_streak INT DEFAULT 0,
+    streak_start_date DATE,
+    last_workout_date DATE,
+    workouts_this_week INT DEFAULT 0,
+    week_start_date DATE,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 INSERT INTO game_char
 (game_char_level, game_char_colour, game_char_type,
  game_char_hp, game_char_attack, game_char_speed)
