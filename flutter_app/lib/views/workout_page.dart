@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
-import '../services/workout_service.dart';
+import '../services/auth_service.dart';
+import '../services/workout_history_service.dart';
 import '../services/workout_storage.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
@@ -41,10 +42,27 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Future<void> _loadSavedWorkouts() async {
     try {
-      final workouts = await WorkoutStorage.getWorkouts();
+      final localWorkouts = await WorkoutStorage.getWorkouts();
+      var mergedWorkouts = List<Map<String, dynamic>>.from(localWorkouts);
+
+      try {
+        final isLoggedIn = await AuthService.isLoggedIn();
+        if (isLoggedIn) {
+          final apiHistory =
+              await WorkoutHistoryService.getWorkoutHistory(limit: 50);
+          final apiWorkouts = _mapApiWorkoutsToRoutines(apiHistory);
+          mergedWorkouts = [
+            ...apiWorkouts,
+            ...localWorkouts,
+          ];
+        }
+      } catch (_) {
+        // Fallback to local routines if API is temporarily unavailable.
+      }
+
       if (!mounted) return;
       setState(() {
-        _savedWorkouts = workouts;
+        _savedWorkouts = mergedWorkouts;
         _loadingSavedWorkouts = false;
       });
     } catch (e) {
@@ -56,6 +74,43 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
+  List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
+    List<Map<String, dynamic>> apiHistory,
+  ) {
+    return apiHistory.map((workout) {
+      final exercisesRaw = workout['exercises'];
+      final exercisesList = exercisesRaw is List ? exercisesRaw : <dynamic>[];
+
+      final mappedExercises = exercisesList.map((e) {
+        final ex = Map<String, dynamic>.from(e as Map);
+        final exerId = ex['exer_id'];
+        final reps = ex['reps'] ?? 0;
+        final weight = ex['weight'] ?? 0;
+
+        return {
+          'exer_id': exerId,
+          'exer_name': ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
+          'sets': [
+            {
+              'kg': weight.toString(),
+              'reps': reps.toString(),
+            }
+          ],
+        };
+      }).toList();
+
+      return {
+        'date': workout['created_at']?.toString() ??
+            DateTime.now().toIso8601String(),
+        'name': workout['notes']?.toString().isNotEmpty == true
+            ? workout['notes']
+            : 'Workout ${workout['workout_id'] ?? ''}',
+        'exercises': mappedExercises,
+        'source': 'api',
+      };
+    }).toList();
+  }
+
   Future<void> _loadSavedWorkoutSession() async {
     try {
       final sessions = await WorkoutStorage.loadCurrentWorkoutSessions();
@@ -64,14 +119,17 @@ class _WorkoutPageState extends State<WorkoutPage> {
       // Only load first session (single workout mode)
       final session = sessions.first;
       if (!mounted) return;
-      
+
       setState(() {
         final exercises = session['exercises'] as List? ?? [];
         final savedSets = session['setControllers'] as Map? ?? {};
-        
-        _workoutExercises = exercises.cast<Map<String, dynamic>>().map((e) => Map<String, dynamic>.from(e)).toList();
+
+        _workoutExercises = exercises
+            .cast<Map<String, dynamic>>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
         _setControllers = <int, List<Map<String, TextEditingController>>>{};
-        
+
         savedSets.forEach((indexStr, sets) {
           final index = int.tryParse(indexStr.toString()) ?? 0;
           if (sets is List) {
@@ -79,8 +137,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
             for (final set in sets) {
               final setMap = set is Map ? Map<String, dynamic>.from(set) : {};
               _setControllers[index]!.add({
-                'kg': _createAutoSaveController(initialText: setMap['kg']?.toString() ?? ''),
-                'reps': _createAutoSaveController(initialText: setMap['reps']?.toString() ?? ''),
+                'kg': _createAutoSaveController(
+                    initialText: setMap['kg']?.toString() ?? ''),
+                'reps': _createAutoSaveController(
+                    initialText: setMap['reps']?.toString() ?? ''),
               });
             }
           }
@@ -125,7 +185,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1C1C2E),
-        title: const Text('Active Workout', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Active Workout', style: TextStyle(color: Colors.white)),
         content: const Text(
           'Please finish your current workout first.',
           style: TextStyle(color: Colors.grey),
@@ -133,7 +194,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A9FFF)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A9FFF)),
             child: const Text('OK'),
           ),
         ],
@@ -160,9 +222,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
     final normalized = Map<String, dynamic>.from(exercise);
     // Ensure all fields have defaults
     normalized['exer_id'] = normalized['exer_id'] ?? 0;
-    normalized['exer_name'] = normalized['exer_name']?.toString() ?? 'Unknown Exercise';
+    normalized['exer_name'] =
+        normalized['exer_name']?.toString() ?? 'Unknown Exercise';
     normalized['exer_descrip'] = normalized['exer_descrip']?.toString() ?? '';
-    normalized['exer_body_area'] = normalized['exer_body_area']?.toString() ?? 'Unknown';
+    normalized['exer_body_area'] =
+        normalized['exer_body_area']?.toString() ?? 'Unknown';
     normalized['exer_type'] = normalized['exer_type']?.toString() ?? 'General';
     normalized['exer_equip'] = normalized['exer_equip']?.toString() ?? 'None';
     normalized['exer_vid'] = normalized['exer_vid']?.toString() ?? '';
@@ -177,7 +241,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       }
       _setControllers.remove(index);
     }
-    
+
     final newSetControllers = <int, List<Map<String, TextEditingController>>>{};
     int newIndex = 0;
     for (int i = 0; i < _setControllers.length + 1; i++) {
@@ -188,7 +252,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
     _setControllers.clear();
     _setControllers.addAll(newSetControllers);
-    
+
     setState(() {
       _workoutExercises.removeAt(index);
     });
@@ -245,29 +309,30 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openGenerateDialog() {
-  if (_workoutExercises.isNotEmpty) {
-    _showWorkoutActiveDialog();
-    return;
+    if (_workoutExercises.isNotEmpty) {
+      _showWorkoutActiveDialog();
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => GenerateWorkoutDialog(
+        onGenerate: (count, exercises, muscleGroup, equipment) {
+          if (!mounted) return;
+
+          // ✅ DO NOT POP HERE
+
+          // Just add exercises
+          for (final exercise in exercises) {
+            _addExercise(exercise);
+          }
+        },
+      ),
+    );
   }
 
-  showDialog(
-    context: context,
-    builder: (context) => GenerateWorkoutDialog(
-      onGenerate: (count, exercises, muscleGroup, equipment) {
-        if (!mounted) return;
-
-        // ✅ DO NOT POP HERE
-
-        // Just add exercises
-        for (final exercise in exercises) {
-          _addExercise(exercise);
-        }
-      },
-    ),
-  );
-}
-
-  void _openRoutineDetailsDialog(Map<String, dynamic> workout, String routineName) {
+  void _openRoutineDetailsDialog(
+      Map<String, dynamic> workout, String routineName) {
     final exercises = workout['exercises'];
     final exerciseList = exercises is List ? exercises : [];
     final dateText = workout['date']?.toString() ?? 'Unknown date';
@@ -351,7 +416,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade50,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade200),
+                                  border:
+                                      Border.all(color: Colors.grey.shade200),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,7 +436,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                       final reps =
                                           set['reps']?.toString() ?? '0';
                                       return Padding(
-                                        padding: const EdgeInsets.only(bottom: 4),
+                                        padding:
+                                            const EdgeInsets.only(bottom: 4),
                                         child: Text(
                                           'Set ${setIdx + 1}: $reps × ${kg}kg',
                                           style: TextStyle(
@@ -415,31 +482,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         exercises: _workoutExercises,
         setControllers: _setControllers,
         onSuccess: (result) async {
-          // Submit the completed workout to the backend
-          try {
-            final exercisesWithSets = List.generate(
-              _workoutExercises.length,
-              (i) {
-                final sets = _setControllers[i] ?? [];
-                return {
-                  ..._workoutExercises[i],
-                  'sets': List.generate(
-                      sets.length,
-                      (s) => {
-                            'kg': double.tryParse(sets[s]['kg']!.text) ?? 0,
-                            'reps': int.tryParse(sets[s]['reps']!.text) ?? 0,
-                          }),
-                };
-              },
-            );
-            await WorkoutService.submitWorkout(exercisesWithSets);
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Warning: Could not save workout: $e')),
-              );
-            }
-          }
+          // Finish dialog handles both local save and API sync.
           setState(() {
             _workoutExercises.clear();
             _setControllers.clear();
@@ -599,7 +642,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    exercise['exer_name']?.toString() ?? 'Unknown',
+                                    exercise['exer_name']?.toString() ??
+                                        'Unknown',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -630,18 +674,22 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                     Expanded(
                                       child: TextField(
                                         controller: sets[setIndex]['kg'],
-                                        style: const TextStyle(color: Colors.white),
+                                        style: const TextStyle(
+                                            color: Colors.white),
                                         decoration: InputDecoration(
                                           labelText: 'kg',
-                                          labelStyle: TextStyle(color: Colors.grey[500]),
+                                          labelStyle: TextStyle(
+                                              color: Colors.grey[500]),
                                           filled: true,
                                           fillColor: const Color(0xFF252538),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                             borderSide: BorderSide.none,
                                           ),
                                           isDense: true,
-                                          contentPadding: const EdgeInsets.all(8),
+                                          contentPadding:
+                                              const EdgeInsets.all(8),
                                         ),
                                         keyboardType: TextInputType.number,
                                       ),
@@ -650,18 +698,22 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                     Expanded(
                                       child: TextField(
                                         controller: sets[setIndex]['reps'],
-                                        style: const TextStyle(color: Colors.white),
+                                        style: const TextStyle(
+                                            color: Colors.white),
                                         decoration: InputDecoration(
                                           labelText: 'reps',
-                                          labelStyle: TextStyle(color: Colors.grey[500]),
+                                          labelStyle: TextStyle(
+                                              color: Colors.grey[500]),
                                           filled: true,
                                           fillColor: const Color(0xFF252538),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                             borderSide: BorderSide.none,
                                           ),
                                           isDense: true,
-                                          contentPadding: const EdgeInsets.all(8),
+                                          contentPadding:
+                                              const EdgeInsets.all(8),
                                         ),
                                         keyboardType: TextInputType.number,
                                       ),
@@ -670,7 +722,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                       IconButton(
                                         icon: const Icon(Icons.remove_circle,
                                             size: 18, color: Colors.redAccent),
-                                        onPressed: () => _removeSet(index, setIndex),
+                                        onPressed: () =>
+                                            _removeSet(index, setIndex),
                                         constraints: const BoxConstraints(),
                                         padding: EdgeInsets.zero,
                                       ),
@@ -720,7 +773,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ExerciseLibraryPage()),
+                    MaterialPageRoute(
+                        builder: (_) => const ExerciseLibraryPage()),
                   );
                 },
               ),
@@ -775,7 +829,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ),
                   Row(
                     children: [
-                      Icon(Icons.folder_outlined, color: Colors.grey[400], size: 22),
+                      Icon(Icons.folder_outlined,
+                          color: Colors.grey[400], size: 22),
                       const SizedBox(width: 14),
                       Icon(Icons.add, color: Colors.grey[400], size: 22),
                     ],
@@ -890,7 +945,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            tilePadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             collapsedIconColor: Colors.white,
             iconColor: const Color(0xFF4A9FFF),
@@ -930,9 +986,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     final workoutNumber = _savedWorkouts.length - idx;
                     final routineName =
                         workout['name']?.toString() ?? 'Workout $workoutNumber';
-                    
+
                     return GestureDetector(
-                      onTap: () => _openRoutineDetailsDialog(workout, routineName),
+                      onTap: () =>
+                          _openRoutineDetailsDialog(workout, routineName),
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(
@@ -964,7 +1021,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 ],
                               ),
                             ),
-                            Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
+                            Icon(Icons.more_vert,
+                                color: Colors.grey[400], size: 20),
                           ],
                         ),
                       ),
