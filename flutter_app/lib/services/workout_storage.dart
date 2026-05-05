@@ -118,4 +118,18 @@ class WorkoutStorage {
         .map((w) => Map<String, dynamic>.from(w))
         .toList();
   }
+
+  /// Deletes a workout at the specified index (in the reversed list order).
+  static Future<void> deleteWorkout(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString(_key);
+    if (existing == null) return;
+    final List<dynamic> all = jsonDecode(existing);
+    // Index is based on reversed list, so we need to convert it
+    final actualIndex = all.length - 1 - index;
+    if (actualIndex >= 0 && actualIndex < all.length) {
+      all.removeAt(actualIndex);
+      await prefs.setString(_key, jsonEncode(all));
+    }
+  }
 }

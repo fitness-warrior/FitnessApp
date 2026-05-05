@@ -43,7 +43,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Future<void> _loadSavedWorkouts() async {
     try {
-      final localWorkouts = await WorkoutStorage.getWorkouts();
+
+      
+      final localWorkouts = (await WorkoutStorage.getWorkouts())
+        .map((w) => {
+              ...w,
+              'source': 'local',
+            })
+        .toList();
       var mergedWorkouts = List<Map<String, dynamic>>.from(localWorkouts);
 
       try {
@@ -378,6 +385,81 @@ class _WorkoutPageState extends State<WorkoutPage> {
       ),
     );
   }
+
+  Future<void> _deleteRoutine(int index) async {
+  final workout = _savedWorkouts[index];
+  final routineName = workout['name']?.toString() ?? 'Workout';
+  final pageContext = context;
+
+  // ❌ Prevent deleting API workouts
+  if (workout['source'] != 'local') {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('You can only delete locally saved workouts'),
+      ),
+    );
+    return;
+  }
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: const Color(0xFF1C1C2E),
+      title: const Text(
+        'Delete Routine',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: Text(
+        'Are you sure you want to delete "$routineName"?',
+        style: const TextStyle(color: Colors.grey),
+      ),
+      actions: [
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey[700],
+          ),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            Navigator.pop(context);
+
+            try {
+              // ✅ Get ONLY local workouts
+              final localWorkouts = _savedWorkouts
+                  .where((w) => w['source'] == 'local')
+                  .toList();
+
+              // ✅ Find correct index inside local list
+              final localIndex = localWorkouts.indexOf(workout);
+
+              if (localIndex == -1) return;
+
+              await WorkoutStorage.deleteWorkout(localIndex);
+              await _loadSavedWorkouts();
+
+              if (mounted) {
+                ScaffoldMessenger.of(pageContext).showSnackBar(
+                  SnackBar(
+                    content: Text('$routineName deleted'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e) {
+              print('Error deleting workout: $e');
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+          ),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+}
 
   void _openRoutineDetailsDialog(
       Map<String, dynamic> workout, String routineName) {
@@ -1138,8 +1220,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 ],
                               ),
                             ),
-                            Icon(Icons.more_vert,
-                                color: Colors.grey[400], size: 20),
+                            IconButton(
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.redAccent, size: 20),
+                              onPressed: () => _deleteRoutine(idx),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                            ),
                           ],
                         ),
                       ),
