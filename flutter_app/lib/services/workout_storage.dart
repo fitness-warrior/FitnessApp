@@ -1,9 +1,16 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 
 class WorkoutStorage {
   static const _key = 'saved_workouts';
   static const _currentWorkoutsKey = 'current_workout_sessions_list';
+
+  static Future<String> _getNamespacedKey(String baseKey) async {
+    final user = await AuthService.getCurrentUser();
+    final userId = user?['id']?.toString() ?? 'anonymous';
+    return '${baseKey}_$userId';
+  }
 
   /// Saves all current in-progress workout sessions.
   static Future<void> saveCurrentWorkoutSessions(
@@ -35,7 +42,8 @@ class WorkoutStorage {
       });
     }
     
-    await prefs.setString(_currentWorkoutsKey, jsonEncode(sessionsToSave));
+    final key = await _getNamespacedKey(_currentWorkoutsKey);
+    await prefs.setString(key, jsonEncode(sessionsToSave));
   }
 
   /// Loads all current in-progress workout sessions.
@@ -54,7 +62,8 @@ class WorkoutStorage {
       }
     }
 
-    final sessionsJson = prefs.getString(_currentWorkoutsKey);
+    final key = await _getNamespacedKey(_currentWorkoutsKey);
+    final sessionsJson = prefs.getString(key);
     if (sessionsJson == null) return [];
     
     try {
@@ -84,10 +93,10 @@ class WorkoutStorage {
     }
   }
 
-  /// Clears all current workout sessions.
   static Future<void> clearAllCurrentWorkoutSessions() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_currentWorkoutsKey);
+    final key = await _getNamespacedKey(_currentWorkoutsKey);
+    await prefs.remove(key);
   }
 
   /// Saves a completed workout to local storage.
@@ -98,20 +107,22 @@ class WorkoutStorage {
     String? workoutName,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getString(_key);
+    final key = await _getNamespacedKey(_key);
+    final existing = prefs.getString(key);
     final List<dynamic> all = existing != null ? jsonDecode(existing) : [];
     all.add({
       'date': DateTime.now().toIso8601String(),
       'name': workoutName,
       'exercises': exercises,
     });
-    await prefs.setString(_key, jsonEncode(all));
+    await prefs.setString(key, jsonEncode(all));
   }
 
   /// Returns all saved workouts, newest first.
   static Future<List<Map<String, dynamic>>> getWorkouts() async {
     final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getString(_key);
+    final key = await _getNamespacedKey(_key);
+    final existing = prefs.getString(key);
     if (existing == null) return [];
     final List<dynamic> all = jsonDecode(existing);
     return all.reversed
@@ -122,14 +133,15 @@ class WorkoutStorage {
   /// Deletes a workout at the specified index (in the reversed list order).
   static Future<void> deleteWorkout(int index) async {
     final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getString(_key);
+    final key = await _getNamespacedKey(_key);
+    final existing = prefs.getString(key);
     if (existing == null) return;
     final List<dynamic> all = jsonDecode(existing);
     // Index is based on reversed list, so we need to convert it
     final actualIndex = all.length - 1 - index;
     if (actualIndex >= 0 && actualIndex < all.length) {
       all.removeAt(actualIndex);
-      await prefs.setString(_key, jsonEncode(all));
+      await prefs.setString(key, jsonEncode(all));
     }
   }
 }

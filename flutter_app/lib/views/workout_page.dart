@@ -68,8 +68,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-<<<<<<< HEAD
-=======
   List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
     List<Map<String, dynamic>> apiHistory,
   ) {
@@ -107,7 +105,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
       };
     }).toList();
   }
->>>>>>> 70d5e1893009291c0e2b42978d92efbf4e0f66ad
 
   Future<void> _loadSavedWorkoutSession() async {
     try {
