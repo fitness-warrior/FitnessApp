@@ -29,19 +29,34 @@ class _WorkoutPageState extends State<WorkoutPage> {
   List<Map<String, dynamic>> _savedWorkouts = [];
   bool _loadingSavedWorkouts = true;
   int _streakRefreshToken = 0;
+  /// Names of routines currently assigned to at least one day in the weekly plan.
+  Set<String> _assignedRoutineNames = {};
 
   @override
   void initState() {
     super.initState();
     _loadSavedWorkoutSession();
     _loadSavedWorkouts();
-    // If launched with recommendation tags, open the search dialog after build
+    _loadAssignedRoutines();
     if (widget.initialRecommendationTags != null &&
         widget.initialRecommendationTags!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openSearchDialogWithTags(widget.initialRecommendationTags!);
       });
     }
+  }
+
+  Future<void> _loadAssignedRoutines() async {
+    try {
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      if (plan != null && mounted) {
+        final assigned = <String>{};
+        for (final names in plan.values) {
+          assigned.addAll(names);
+        }
+        setState(() => _assignedRoutineNames = assigned);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadSavedWorkouts() async {
@@ -1329,6 +1344,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     final workoutNumber = _savedWorkouts.length - idx;
                     final routineName =
                         workout['name']?.toString() ?? 'Workout $workoutNumber';
+                    final isAssigned =
+                        _assignedRoutineNames.contains(routineName);
 
                     return GestureDetector(
                       onTap: () =>
@@ -1338,8 +1355,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF252538),
+                          color: isAssigned
+                              ? const Color(0xFF1E1A3A)
+                              : const Color(0xFF252538),
                           borderRadius: BorderRadius.circular(12),
+                          border: isAssigned
+                              ? Border.all(
+                                  color: const Color(0xFF7C5CBF),
+                                  width: 1.2,
+                                )
+                              : null,
                         ),
                         child: Row(
                           children: [
@@ -1347,13 +1372,53 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    routineName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          routineName,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isAssigned)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF7C5CBF)
+                                                .withOpacity(0.25),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: const Color(0xFF7C5CBF),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.calendar_today_rounded,
+                                                size: 11,
+                                                color: Color(0xFFB39DDB),
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                'Assigned',
+                                                style: TextStyle(
+                                                  color: Color(0xFFB39DDB),
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
