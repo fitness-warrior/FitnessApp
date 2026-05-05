@@ -2,6 +2,7 @@ import 'package:fitness_app_flutter/graphs/core.dart';
 import 'package:fitness_app_flutter/views/recipe_list_page.dart';
 import 'package:fitness_app_flutter/views/profile_page.dart';
 import 'package:fitness_app_flutter/widgets/common/header.dart';
+import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
 import 'package:flutter/material.dart';
 import '../widgets/common/navbar.dart';
 
@@ -16,15 +17,16 @@ if above 7 of the start, 5 in the direction of the graph headed
 
 */
 
-class DashboardPage extends StatefulWidget{
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   @override
   State<DashboardPage> createState() => _DashboardPage();
 }
+
 class _DashboardPage extends State<DashboardPage> {
-  //examples 
-  final double start = 92.1;  
+  //examples
+  final double start = 92.1;
   final double range = 10;
   List<double> weight = [
     92.8,
@@ -50,12 +52,7 @@ class _DashboardPage extends State<DashboardPage> {
   ];
   late double maxCalDeviation;
 
-  List<double> target = [
-    20.5,
-    28.9,
-    17.4,
-    24.1
-  ];
+  List<double> target = [20.5, 28.9, 17.4, 24.1];
 
   List<String> order = [
     "legs",
@@ -63,8 +60,6 @@ class _DashboardPage extends State<DashboardPage> {
     "core",
     "arms",
   ];
-
-  
 
   @override
   void initState() {
@@ -88,6 +83,7 @@ class _DashboardPage extends State<DashboardPage> {
           },
         ),
         actions: [
+          const StreakDisplay(compact: true),
           IconButton(
             icon: const Icon(Icons.add_box),
             tooltip: 'Add Chart',
@@ -95,7 +91,7 @@ class _DashboardPage extends State<DashboardPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const RecipeListPage(), //temp area 
+                  builder: (context) => const RecipeListPage(), //temp area
                 ),
               );
             },
@@ -115,7 +111,7 @@ class _DashboardPage extends State<DashboardPage> {
         ],
       ),
 
-    // start of making pages :)
+      // start of making pages :)
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Column(
@@ -129,7 +125,6 @@ class _DashboardPage extends State<DashboardPage> {
                 range: range,
               ),
             ),
-
             const SizedBox(height: 12),
             SizedBox(
               height: 300,
@@ -140,7 +135,6 @@ class _DashboardPage extends State<DashboardPage> {
                 range: maxCalDeviation,
               ),
             ),
-
             const SizedBox(height: 12),
             SizedBox(
               height: 300,
@@ -153,11 +147,8 @@ class _DashboardPage extends State<DashboardPage> {
           ],
         ),
       ),
-      
 
-
-      
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 4),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 }

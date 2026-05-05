@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from contextlib import asynccontextmanager
+from datetime import date
 import asyncpg
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Header
@@ -229,10 +230,55 @@ async def save_questionnaire(
                     'male'  # Default
                 )
             
+            # Save fitness profile with weekly gym days goal
+            profile_exists = await connection.fetchval(
+                "SELECT profile_id FROM user_fitness_profile WHERE user_id = $1",
+                user_id
+            )
+            
+            if profile_exists:
+                await connection.execute(
+                    """
+                    UPDATE user_fitness_profile
+                    SET days_per_week_goal = $1
+                    WHERE user_id = $2
+                    """,
+                    request.days_per_week,
+                    user_id
+                )
+            else:
+                await connection.execute(
+                    """
+                    INSERT INTO user_fitness_profile (user_id, days_per_week_goal)
+                    VALUES ($1, $2)
+                    """,
+                    user_id,
+                    request.days_per_week
+                )
+            
+            # Initialize streak if not exists
+            streak_exists = await connection.fetchval(
+                "SELECT streak_id FROM user_streak WHERE user_id = $1",
+                user_id
+            )
+            
+            if not streak_exists:
+                today = date.today()
+                await connection.execute(
+                    """
+                    INSERT INTO user_streak 
+                    (user_id, current_streak, longest_streak, week_start_date)
+                    VALUES ($1, 0, 0, $2)
+                    """,
+                    user_id,
+                    today
+                )
+            
             return {
                 "success": True,
                 "message": "Questionnaire saved successfully",
-                "user_id": user_id
+                "user_id": user_id,
+                "days_per_week_goal": request.days_per_week
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save questionnaire: {str(e)}")
@@ -392,6 +438,81 @@ async def save_workout(
                     exc.notes
                 )
             
+            # Update streak automatically
+            from datetime import date, timedelta
+            today = date.today()
+            
+            streak = await connection.fetchrow(
+                """
+                SELECT 
+                    current_streak,
+                    longest_streak,
+                    streak_start_date,
+                    last_workout_date,
+                    workouts_this_week,
+                    week_start_date
+                FROM user_streak
+                WHERE user_id = $1
+                """,
+                user_id
+            )
+            
+            if streak and streak["last_workout_date"] != today:
+                # Only update if not already worked out today
+                last_workout = streak["last_workout_date"]
+                current_streak = streak["current_streak"]
+                longest_streak = streak["longest_streak"]
+                week_start = streak["week_start_date"]
+                workouts_this_week = streak["workouts_this_week"]
+                
+                # Check if it's a new week
+                if week_start:
+                    days_since_week_start = (today - week_start).days
+                    if days_since_week_start >= 7:
+                        workouts_this_week = 0
+                        week_start = today - timedelta(days=today.weekday())
+                else:
+                    week_start = today - timedelta(days=today.weekday())
+                
+                workouts_this_week += 1
+                
+                # Update streak logic
+                if last_workout and (today - last_workout).days == 1:
+                    current_streak += 1
+                elif last_workout and (today - last_workout).days > 1:
+                    current_streak = 1
+                else:
+                    current_streak = 1
+                
+                if current_streak > longest_streak:
+                    longest_streak = current_streak
+                
+                streak_start_date = streak["streak_start_date"]
+                if current_streak == 1:
+                    streak_start_date = today
+                
+                await connection.execute(
+                    """
+                    UPDATE user_streak
+                    SET 
+                        current_streak = $1,
+                        longest_streak = $2,
+                        streak_start_date = $3,
+                        last_workout_date = $4,
+                        workouts_this_week = $5,
+                        week_start_date = $6,
+                        updated_at = NOW()
+                    WHERE user_id = $7
+                    """,
+                    current_streak,
+                    longest_streak,
+                    streak_start_date,
+                    today,
+                    workouts_this_week,
+                    week_start,
+                    user_id
+                )
+            
             return {
                 "success": True,
                 "workout_id": workout_id,
@@ -535,6 +656,175 @@ async def delete_workout(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete workout: {str(e)}")
+
+
+# ==================== STREAK ENDPOINTS ====================
+
+@app.get("/api/streak")
+async def get_streak(user_id: int = Depends(get_current_user_id)):
+    """Get user's current streak information"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            streak = await connection.fetchrow(
+                """
+                SELECT 
+                    current_streak,
+                    longest_streak,
+                    streak_start_date,
+                    last_workout_date,
+                    workouts_this_week,
+                    week_start_date
+                FROM user_streak
+                WHERE user_id = $1
+                """,
+                user_id
+            )
+            
+            if not streak:
+                raise HTTPException(status_code=404, detail="Streak not found")
+            
+            # Fetch the user's weekly goal
+            profile = await connection.fetchval(
+                "SELECT days_per_week_goal FROM user_fitness_profile WHERE user_id = $1",
+                user_id
+            )
+            
+            return {
+                "current_streak": streak["current_streak"],
+                "longest_streak": streak["longest_streak"],
+                "streak_start_date": str(streak["streak_start_date"]) if streak["streak_start_date"] else None,
+                "last_workout_date": str(streak["last_workout_date"]) if streak["last_workout_date"] else None,
+                "workouts_this_week": streak["workouts_this_week"],
+                "week_start_date": str(streak["week_start_date"]) if streak["week_start_date"] else None,
+                "weekly_goal": profile or 3,  # Default to 3 if not set
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch streak: {str(e)}")
+
+
+@app.post("/api/streak/update")
+async def update_streak(user_id: int = Depends(get_current_user_id)):
+    """Update streak after a workout is completed"""
+    try:
+        from datetime import date, timedelta
+        
+        async with app.state.db_pool.acquire() as connection:
+            today = date.today()
+            
+            # Get current streak data
+            streak = await connection.fetchrow(
+                """
+                SELECT 
+                    current_streak,
+                    longest_streak,
+                    streak_start_date,
+                    last_workout_date,
+                    workouts_this_week,
+                    week_start_date
+                FROM user_streak
+                WHERE user_id = $1
+                """,
+                user_id
+            )
+            
+            if not streak:
+                raise HTTPException(status_code=404, detail="Streak not found")
+            
+            last_workout = streak["last_workout_date"]
+            current_streak = streak["current_streak"]
+            longest_streak = streak["longest_streak"]
+            week_start = streak["week_start_date"]
+            workouts_this_week = streak["workouts_this_week"]
+            
+            # Check if it's a new week (week starts on Sunday/Monday logic)
+            # Simple approach: if week_start is not this week, reset weekly counter
+            if week_start:
+                days_since_week_start = (today - week_start).days
+                if days_since_week_start >= 7:
+                    # New week, reset counter
+                    workouts_this_week = 0
+                    week_start = today - timedelta(days=today.weekday())  # Start of this week (Monday)
+            else:
+                week_start = today - timedelta(days=today.weekday())
+            
+            # Check if this is a new workout today
+            if last_workout == today:
+                # Already worked out today, don't update streak
+                return {
+                    "message": "Already worked out today",
+                    "current_streak": current_streak,
+                    "workouts_this_week": workouts_this_week
+                }
+            
+            # Update workouts this week
+            workouts_this_week += 1
+            
+            # Update streak logic
+            if last_workout and (today - last_workout).days == 1:
+                # Consecutive day - extend streak
+                current_streak += 1
+            elif last_workout and (today - last_workout).days > 1:
+                # Streak broken - restart
+                current_streak = 1
+            else:
+                # First workout or coming back after a break
+                current_streak = 1
+            
+            # Update longest streak if current is longer
+            if current_streak > longest_streak:
+                longest_streak = current_streak
+            
+            # Update streak if current is 1 (start date of new streak)
+            streak_start_date = streak["streak_start_date"]
+            if current_streak == 1:
+                streak_start_date = today
+            
+            # Update database
+            await connection.execute(
+                """
+                UPDATE user_streak
+                SET 
+                    current_streak = $1,
+                    longest_streak = $2,
+                    streak_start_date = $3,
+                    last_workout_date = $4,
+                    workouts_this_week = $5,
+                    week_start_date = $6,
+                    updated_at = NOW()
+                WHERE user_id = $7
+                """,
+                current_streak,
+                longest_streak,
+                streak_start_date,
+                today,
+                workouts_this_week,
+                week_start,
+                user_id
+            )
+            
+            # Get weekly goal to check if user hit goal
+            profile = await connection.fetchval(
+                "SELECT days_per_week_goal FROM user_fitness_profile WHERE user_id = $1",
+                user_id
+            )
+            weekly_goal = profile or 3
+            goal_met = workouts_this_week >= weekly_goal
+            
+            return {
+                "success": True,
+                "message": "Streak updated",
+                "current_streak": current_streak,
+                "longest_streak": longest_streak,
+                "workouts_this_week": workouts_this_week,
+                "weekly_goal": weekly_goal,
+                "goal_met": goal_met,
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update streak: {str(e)}")
 
 
 def format_exercise(row: asyncpg.Record) -> dict:

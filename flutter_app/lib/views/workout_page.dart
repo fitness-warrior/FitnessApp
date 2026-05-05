@@ -7,6 +7,7 @@ import '../services/workout_history_service.dart';
 import '../services/workout_storage.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
+import '../widgets/common/streak_display.dart';
 import 'exercise_library_page.dart';
 
 class WorkoutPage extends StatefulWidget {
@@ -556,6 +557,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: const [
+          StreakDisplay(compact: true),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadSavedWorkouts,
