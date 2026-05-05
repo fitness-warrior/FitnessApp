@@ -592,9 +592,10 @@ async def get_workouts(
             for w in workouts:
                 exercises = await connection.fetch(
                     """
-                    SELECT exer_id, sets, reps, weight, notes
-                    FROM user_workout_exercise
-                    WHERE workout_id = $1
+                    SELECT uwe.exer_id, e.exer_name, uwe.sets, uwe.reps, uwe.weight, uwe.notes
+                    FROM user_workout_exercise uwe
+                    JOIN exercise e ON e.exer_id = uwe.exer_id
+                    WHERE uwe.workout_id = $1
                     """,
                     w["workout_id"]
                 )
@@ -607,6 +608,7 @@ async def get_workouts(
                     "exercises": [
                         {
                             "exer_id": e["exer_id"],
+                            "name": e["exer_name"],
                             "sets": e["sets"],
                             "reps": e["reps"],
                             "weight": e["weight"],
@@ -643,9 +645,10 @@ async def get_workout(
             
             exercises = await connection.fetch(
                 """
-                SELECT exer_id, sets, reps, weight, notes
-                FROM user_workout_exercise
-                WHERE workout_id = $1
+                SELECT uwe.exer_id, e.exer_name, uwe.sets, uwe.reps, uwe.weight, uwe.notes
+                FROM user_workout_exercise uwe
+                JOIN exercise e ON e.exer_id = uwe.exer_id
+                WHERE uwe.workout_id = $1
                 """,
                 workout_id
             )
@@ -658,6 +661,7 @@ async def get_workout(
                 "exercises": [
                     {
                         "exer_id": e["exer_id"],
+                        "name": e["exer_name"],
                         "sets": e["sets"],
                         "reps": e["reps"],
                         "weight": e["weight"],

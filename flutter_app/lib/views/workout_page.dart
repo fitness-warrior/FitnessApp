@@ -121,7 +121,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
         return {
           'exer_id': exerId,
-          'exer_name': ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
+          'exer_name': ex['name']?.toString().isNotEmpty == true
+              ? ex['name']
+              : ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
           'sets': List.generate(
               setCount > 0 ? setCount : 1,
               (index) => {
@@ -283,7 +285,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
     // Ensure all fields have defaults
     normalized['exer_id'] = normalized['exer_id'] ?? 0;
     normalized['exer_name'] =
-        normalized['exer_name']?.toString() ?? 'Unknown Exercise';
+        (normalized['exer_name']?.toString().isNotEmpty == true
+            ? normalized['exer_name']
+            : normalized['name']?.toString().isNotEmpty == true
+                ? normalized['name']
+                : null) ??
+        'Unknown Exercise';
     normalized['exer_descrip'] = normalized['exer_descrip']?.toString() ?? '';
     normalized['exer_body_area'] =
         normalized['exer_body_area']?.toString() ?? 'Unknown';
