@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../../models/recommendation_profile.dart';
 import '../../services/recommendation_service.dart';
 import '../../services/recommendation_storage.dart';
@@ -250,7 +249,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
   }
 
   void _buildAndShowResult() {
-    // Ensure final question persisted
+    // Ensure final question is persisted
     final last = _questions[_index];
     if (last.type == QuestionType.number || last.type == QuestionType.text) {
       _responses[last.id] = _textControllers[last.id]!.text.trim();
@@ -273,7 +272,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       };
     }
 
-    // Map to canonical output schema
+    // Map responses to canonical RecommendationProfile
     final age = int.tryParse(_responses['Q001'] ?? '0') ?? 0;
     final fitnessGoalRaw = (_responses['Q003'] ?? '').toString();
     final fitnessLevelRaw = (_responses['Q004'] ?? '').toString();
@@ -282,7 +281,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     final injuriesRaw =
         (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
 
-    // Normalize mappings
     String mapGoal(String g) {
       final s = g.toLowerCase();
       if (s.contains('lose')) return 'fat_loss';
@@ -340,46 +338,30 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       injuredAreas: mapInjuries(injuriesRaw),
     );
 
-    // Persist profile locally
+    // Persist profile locally (offline cache)
     RecommendationStorage.saveProfile(profile);
 
-    // Save questionnaire to backend
+    // Save questionnaire to backend (source of truth)
     _saveToBackend(_responses);
 
-    // Call recommendation service
+    // Get recommendations then navigate
     RecommendationService.getRecommendations(profile).then((rec) {
-      final jsonStr = const JsonEncoder.withIndent('  ').convert(_responses);
+      if (!mounted) return;
 
-      showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Recommendations Ready'),
-          content: SingleChildScrollView(child: Text(jsonStr)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to WorkoutPage with tags
-                Navigator.of(context).pop();
-                final tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ??
-                    <String>[];
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        WorkoutPage(initialRecommendationTags: tags),
-                  ),
-                );
-              },
-              child: const Text('Apply Recommendations'),
-            ),
-          ],
-        ),
-      );
-      // ignore: avoid_print
-      print(jsonStr);
+      final tags =
+          (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+
+      if (widget.isOnboarding) {
+        // New user — go to WorkoutPage with their personalised tags
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => WorkoutPage(initialRecommendationTags: tags),
+          ),
+        );
+      } else {
+        // Returning user editing their profile — pop back to Profile page
+        Navigator.of(context).pop(true); // pass true = profile was updated
+      }
     });
   }
 
