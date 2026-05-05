@@ -3,8 +3,13 @@ import '../../services/streak_service.dart';
 
 class StreakDisplay extends StatefulWidget {
   final bool compact;
+  final int refreshToken;
 
-  const StreakDisplay({Key? key, this.compact = true}) : super(key: key);
+  const StreakDisplay({
+    Key? key,
+    this.compact = true,
+    this.refreshToken = 0,
+  }) : super(key: key);
 
   @override
   State<StreakDisplay> createState() => _StreakDisplayState();
@@ -13,10 +18,29 @@ class StreakDisplay extends StatefulWidget {
 class _StreakDisplayState extends State<StreakDisplay> {
   late Future<StreakData> _streakFuture;
 
+  void _handleSharedStreakChange() {
+    _refreshStreak();
+  }
+
   @override
   void initState() {
     super.initState();
     _loadStreak();
+    StreakService.streakVersion.addListener(_handleSharedStreakChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant StreakDisplay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken) {
+      _refreshStreak();
+    }
+  }
+
+  @override
+  void dispose() {
+    StreakService.streakVersion.removeListener(_handleSharedStreakChange);
+    super.dispose();
   }
 
   void _loadStreak() {

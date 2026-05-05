@@ -5,6 +5,7 @@ import '../dialogs/finish_workout_dialog.dart';
 import '../services/auth_service.dart';
 import '../services/workout_history_service.dart';
 import '../services/workout_storage.dart';
+import '../services/streak_service.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
 import '../widgets/common/streak_display.dart';
@@ -26,6 +27,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   int _selectedTab = 0;
   List<Map<String, dynamic>> _savedWorkouts = [];
   bool _loadingSavedWorkouts = true;
+  int _streakRefreshToken = 0;
 
   @override
   void initState() {
@@ -43,14 +45,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Future<void> _loadSavedWorkouts() async {
     try {
-
-      
       final localWorkouts = (await WorkoutStorage.getWorkouts())
-        .map((w) => {
-              ...w,
-              'source': 'local',
-            })
-        .toList();
+          .map((w) => {
+                ...w,
+                'source': 'local',
+              })
+          .toList();
       var mergedWorkouts = List<Map<String, dynamic>>.from(localWorkouts);
 
       try {
@@ -181,9 +181,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
     try {
       final serializableSets = <int, List<Map<String, String>>>{};
       _setControllers.forEach((index, sets) {
-        final exercise = index < _workoutExercises.length
-            ? _workoutExercises[index]
-            : null;
+        final exercise =
+            index < _workoutExercises.length ? _workoutExercises[index] : null;
         final exerType = exercise?['exer_type']?.toString() ?? 'strength';
         final isCardio = exerType.toLowerCase() == 'cardio';
         serializableSets[index] = sets
@@ -236,7 +235,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
     setState(() {
       final normalizedExercise = _normalizeExercise(exercise);
       _workoutExercises.add(normalizedExercise);
-      final exerType = normalizedExercise['exer_type']?.toString() ?? 'strength';
+      final exerType =
+          normalizedExercise['exer_type']?.toString() ?? 'strength';
       final isCardio = exerType.toLowerCase() == 'cardio';
       _setControllers[_workoutExercises.length - 1] = [
         isCardio
@@ -387,79 +387,79 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   Future<void> _deleteRoutine(int index) async {
-  final workout = _savedWorkouts[index];
-  final routineName = workout['name']?.toString() ?? 'Workout';
-  final pageContext = context;
+    final workout = _savedWorkouts[index];
+    final routineName = workout['name']?.toString() ?? 'Workout';
+    final pageContext = context;
 
-  // ❌ Prevent deleting API workouts
-  if (workout['source'] != 'local') {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('You can only delete locally saved workouts'),
+    // ❌ Prevent deleting API workouts
+    if (workout['source'] != 'local') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You can only delete locally saved workouts'),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C2E),
+        title: const Text(
+          'Delete Routine',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete "$routineName"?',
+          style: const TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey[700],
+            ),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              try {
+                // ✅ Get ONLY local workouts
+                final localWorkouts = _savedWorkouts
+                    .where((w) => w['source'] == 'local')
+                    .toList();
+
+                // ✅ Find correct index inside local list
+                final localIndex = localWorkouts.indexOf(workout);
+
+                if (localIndex == -1) return;
+
+                await WorkoutStorage.deleteWorkout(localIndex);
+                await _loadSavedWorkouts();
+
+                if (mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('$routineName deleted'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                print('Error deleting workout: $e');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
-    return;
   }
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: const Color(0xFF1C1C2E),
-      title: const Text(
-        'Delete Routine',
-        style: TextStyle(color: Colors.white),
-      ),
-      content: Text(
-        'Are you sure you want to delete "$routineName"?',
-        style: const TextStyle(color: Colors.grey),
-      ),
-      actions: [
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey[700],
-          ),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            Navigator.pop(context);
-
-            try {
-              // ✅ Get ONLY local workouts
-              final localWorkouts = _savedWorkouts
-                  .where((w) => w['source'] == 'local')
-                  .toList();
-
-              // ✅ Find correct index inside local list
-              final localIndex = localWorkouts.indexOf(workout);
-
-              if (localIndex == -1) return;
-
-              await WorkoutStorage.deleteWorkout(localIndex);
-              await _loadSavedWorkouts();
-
-              if (mounted) {
-                ScaffoldMessenger.of(pageContext).showSnackBar(
-                  SnackBar(
-                    content: Text('$routineName deleted'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            } catch (e) {
-              print('Error deleting workout: $e');
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-          ),
-          child: const Text('Delete'),
-        ),
-      ],
-    ),
-  );
-}
 
   void _openRoutineDetailsDialog(
       Map<String, dynamic> workout, String routineName) {
@@ -616,11 +616,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
           setState(() {
             _workoutExercises.clear();
             _setControllers.clear();
+            _streakRefreshToken++;
           });
           // Update the saved sessions
           await _saveCurrentWorkoutSession();
           // Refresh the routines list to show the newly saved workout
           await _loadSavedWorkouts();
+          StreakService.notifyStreakChanged();
         },
       ),
     );
@@ -688,8 +690,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: const [
-          StreakDisplay(compact: true),
+        actions: [
+          StreakDisplay(
+            compact: true,
+            refreshToken: _streakRefreshToken,
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -798,8 +803,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             const SizedBox(height: 8),
                             ...List.generate(sets.length, (setIndex) {
                               final exerType =
-                                  exercise['exer_type']?.toString() ?? 'strength';
-                              final isCardio = exerType.toLowerCase() == 'cardio';
+                                  exercise['exer_type']?.toString() ??
+                                      'strength';
+                              final isCardio =
+                                  exerType.toLowerCase() == 'cardio';
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: Row(
@@ -809,106 +816,117 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                             color: Colors.grey[400],
                                             fontSize: 12)),
                                     const SizedBox(width: 8),
-                                    if (isCardio) ...[Expanded(
-                                      child: TextField(
-                                        controller: sets[setIndex]['time'],
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                        decoration: InputDecoration(
-                                          labelText: 'time (min)',
-                                          labelStyle: TextStyle(
-                                              color: Colors.grey[500]),
-                                          filled: true,
-                                          fillColor: const Color(0xFF252538),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            borderSide: BorderSide.none,
+                                    if (isCardio) ...[
+                                      Expanded(
+                                        child: TextField(
+                                          controller: sets[setIndex]['time'],
+                                          style: const TextStyle(
+                                              color: Colors.white),
+                                          decoration: InputDecoration(
+                                            labelText: 'time (min)',
+                                            labelStyle: TextStyle(
+                                                color: Colors.grey[500]),
+                                            filled: true,
+                                            fillColor: const Color(0xFF252538),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            isDense: true,
+                                            contentPadding:
+                                                const EdgeInsets.all(8),
+                                            errorText: _validatePositive(
+                                                sets[setIndex]['time']!.text,
+                                                'Time'),
                                           ),
-                                          isDense: true,
-                                          contentPadding:
-                                              const EdgeInsets.all(8),
-                                          errorText: _validatePositive(
-                                              sets[setIndex]['time']!.text,
-                                              'Time'),
+                                          keyboardType: TextInputType.number,
                                         ),
-                                        keyboardType: TextInputType.number,
                                       ),
-                                    ), const SizedBox(width: 8), Expanded(
-                                      child: TextField(
-                                        controller: sets[setIndex]['calories'],
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                        decoration: InputDecoration(
-                                          labelText: 'calories',
-                                          labelStyle: TextStyle(
-                                              color: Colors.grey[500]),
-                                          filled: true,
-                                          fillColor: const Color(0xFF252538),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            borderSide: BorderSide.none,
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: sets[setIndex]
+                                              ['calories'],
+                                          style: const TextStyle(
+                                              color: Colors.white),
+                                          decoration: InputDecoration(
+                                            labelText: 'calories',
+                                            labelStyle: TextStyle(
+                                                color: Colors.grey[500]),
+                                            filled: true,
+                                            fillColor: const Color(0xFF252538),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            isDense: true,
+                                            contentPadding:
+                                                const EdgeInsets.all(8),
+                                            errorText: _validatePositive(
+                                                sets[setIndex]['calories']!
+                                                    .text,
+                                                'Calories'),
                                           ),
-                                          isDense: true,
-                                          contentPadding:
-                                              const EdgeInsets.all(8),
-                                          errorText: _validatePositive(
-                                              sets[setIndex]['calories']!.text,
-                                              'Calories'),
+                                          keyboardType: TextInputType.number,
                                         ),
-                                        keyboardType: TextInputType.number,
-                                      ),
-                                    )] else ...[Expanded(
-                                      child: TextField(
-                                        controller: sets[setIndex]['kg'],
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                        decoration: InputDecoration(
-                                          labelText: 'kg',
-                                          labelStyle: TextStyle(
-                                              color: Colors.grey[500]),
-                                          filled: true,
-                                          fillColor: const Color(0xFF252538),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            borderSide: BorderSide.none,
+                                      )
+                                    ] else ...[
+                                      Expanded(
+                                        child: TextField(
+                                          controller: sets[setIndex]['kg'],
+                                          style: const TextStyle(
+                                              color: Colors.white),
+                                          decoration: InputDecoration(
+                                            labelText: 'kg',
+                                            labelStyle: TextStyle(
+                                                color: Colors.grey[500]),
+                                            filled: true,
+                                            fillColor: const Color(0xFF252538),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            isDense: true,
+                                            contentPadding:
+                                                const EdgeInsets.all(8),
+                                            errorText: _validatePositive(
+                                                sets[setIndex]['kg']!.text,
+                                                'kg'),
                                           ),
-                                          isDense: true,
-                                          contentPadding:
-                                              const EdgeInsets.all(8),
-                                          errorText: _validatePositive(
-                                              sets[setIndex]['kg']!.text, 'kg'),
+                                          keyboardType: TextInputType.number,
                                         ),
-                                        keyboardType: TextInputType.number,
                                       ),
-                                    ), const SizedBox(width: 8), Expanded(
-                                      child: TextField(
-                                        controller: sets[setIndex]['reps'],
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                        decoration: InputDecoration(
-                                          labelText: 'reps',
-                                          labelStyle: TextStyle(
-                                              color: Colors.grey[500]),
-                                          filled: true,
-                                          fillColor: const Color(0xFF252538),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            borderSide: BorderSide.none,
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: sets[setIndex]['reps'],
+                                          style: const TextStyle(
+                                              color: Colors.white),
+                                          decoration: InputDecoration(
+                                            labelText: 'reps',
+                                            labelStyle: TextStyle(
+                                                color: Colors.grey[500]),
+                                            filled: true,
+                                            fillColor: const Color(0xFF252538),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            isDense: true,
+                                            contentPadding:
+                                                const EdgeInsets.all(8),
+                                            errorText: _validatePositive(
+                                                sets[setIndex]['reps']!.text,
+                                                'reps'),
                                           ),
-                                          isDense: true,
-                                          contentPadding:
-                                              const EdgeInsets.all(8),
-                                          errorText: _validatePositive(
-                                              sets[setIndex]['reps']!.text,
-                                              'reps'),
+                                          keyboardType: TextInputType.number,
                                         ),
-                                        keyboardType: TextInputType.number,
-                                      ),
-                                    )],
+                                      )
+                                    ],
                                     if (sets.length > 1)
                                       IconButton(
                                         icon: const Icon(Icons.remove_circle,
@@ -1221,19 +1239,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               ),
                             ),
                             if (workout['source'] == 'local')
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.redAccent, size: 20),
-                                  onPressed: () => _deleteRoutine(idx),
-                                  constraints: const BoxConstraints(),
-                                  padding: EdgeInsets.zero,
-                                )
-                              else
-                                Icon(
-                                  Icons.lock,
-                                  color: Colors.grey[500],
-                                  size: 18,
-                                ),
+                              IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.redAccent, size: 20),
+                                onPressed: () => _deleteRoutine(idx),
+                                constraints: const BoxConstraints(),
+                                padding: EdgeInsets.zero,
+                              )
+                            else
+                              Icon(
+                                Icons.lock,
+                                color: Colors.grey[500],
+                                size: 18,
+                              ),
                           ],
                         ),
                       ),

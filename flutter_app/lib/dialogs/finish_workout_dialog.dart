@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/streak_service.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
 
@@ -99,13 +100,19 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
         for (final set in widget.setControllers[i]!) {
           if (isCardio) {
             sets.add({
-              'time': set['time']?.text.isNotEmpty == true ? set['time']!.text : '0',
-              'calories': set['calories']?.text.isNotEmpty == true ? set['calories']!.text : '0',
+              'time': set['time']?.text.isNotEmpty == true
+                  ? set['time']!.text
+                  : '0',
+              'calories': set['calories']?.text.isNotEmpty == true
+                  ? set['calories']!.text
+                  : '0',
             });
           } else {
             sets.add({
               'kg': set['kg']?.text.isNotEmpty == true ? set['kg']!.text : '0',
-              'reps': set['reps']?.text.isNotEmpty == true ? set['reps']!.text : '0',
+              'reps': set['reps']?.text.isNotEmpty == true
+                  ? set['reps']!.text
+                  : '0',
             });
           }
         }
@@ -322,6 +329,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
       try {
         await WorkoutService.submitWorkout(exerciseData)
             .timeout(const Duration(seconds: 5));
+        await StreakService.updateStreak();
       } catch (_) {}
 
       widget.onSuccess({});
@@ -426,7 +434,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                       itemBuilder: (context, index) {
                         final exercise = exerciseData[index];
                         final sets = exercise['sets'] as List;
-                        final exerType = exercise['exer_type']?.toString() ?? 'strength';
+                        final exerType =
+                            exercise['exer_type']?.toString() ?? 'strength';
                         final isCardio = exerType.toLowerCase() == 'cardio';
 
                         return Padding(
@@ -494,12 +503,14 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       OutlinedButton(
-                        onPressed: _isLoading ? null : () => Navigator.pop(context),
+                        onPressed:
+                            _isLoading ? null : () => Navigator.pop(context),
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _showSaveConfirmationDialog,
+                        onPressed:
+                            _isLoading ? null : _showSaveConfirmationDialog,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                         ),
@@ -509,8 +520,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : const Text('Finish & Save'),

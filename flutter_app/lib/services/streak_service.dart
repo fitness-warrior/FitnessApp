@@ -1,10 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
 import 'auth_service.dart';
 
 class StreakService {
   static String get baseUrl => ApiConfig.baseUrl;
+  static final ValueNotifier<int> streakVersion = ValueNotifier<int>(0);
+
+  static void notifyStreakChanged() {
+    streakVersion.value++;
+  }
 
   /// Get user's current streak information
   static Future<Map<String, dynamic>> getStreak() async {
