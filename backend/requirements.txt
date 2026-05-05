@@ -3,3 +3,6 @@ uvicorn[standard]
 asyncpg
 python-dotenv
 httpx
+passlib[bcrypt]
+python-jose[cryptography]
+pydantic

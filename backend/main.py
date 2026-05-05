@@ -1,11 +1,15 @@
 import os
 from pathlib import Path
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 
 import asyncpg
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from passlib.context import CryptContext
+from jose import JWTError, jwt
 
 
 # Force-load project root .env
