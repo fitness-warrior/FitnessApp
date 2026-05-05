@@ -95,16 +95,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
         final exerId = ex['exer_id'];
         final reps = ex['reps'] ?? 0;
         final weight = ex['weight'] ?? 0;
+        final setCountRaw = ex['sets'];
+        final int setCount = (setCountRaw is int) ? setCountRaw : (int.tryParse(setCountRaw?.toString() ?? '1') ?? 1);
 
         return {
           'exer_id': exerId,
           'exer_name': ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
-          'sets': [
-            {
-              'kg': weight.toString(),
-              'reps': reps.toString(),
-            }
-          ],
+          'sets': List.generate(setCount > 0 ? setCount : 1, (index) => {
+            'kg': weight.toString(),
+            'reps': reps.toString(),
+          }),
         };
       }).toList();
 
