@@ -60,7 +60,8 @@ class _ProfilePageState extends State<ProfilePage> {
     if (confirmed ?? false) {
       await AuthService.logout();
       if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/auth', (route) => false);
       }
     }
   }
@@ -103,7 +104,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 radius: 50,
                                 backgroundColor: Colors.blue,
                                 child: Text(
-                                  (currentUser?['username'] ?? 'U')[0].toUpperCase(),
+                                  (currentUser?['username'] ?? 'U')[0]
+                                      .toUpperCase(),
                                   style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
@@ -222,7 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 4),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
     );
   }
 

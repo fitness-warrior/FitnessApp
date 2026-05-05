@@ -33,6 +33,7 @@ class MyApp extends StatelessWidget {
         '/game': (_) => const GamePage(),
         '/edit_avatar': (_) => const EditAvatarPage(),
         '/dashboard': (_) => const DashboardPage(),
+        '/profile': (_) => const ProfilePage(),
       },
     );
   }
