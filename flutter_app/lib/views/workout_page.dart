@@ -133,16 +133,26 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
         savedSets.forEach((indexStr, sets) {
           final index = int.tryParse(indexStr.toString()) ?? 0;
-          if (sets is List) {
+          if (sets is List && index < _workoutExercises.length) {
+            final exercise = _workoutExercises[index];
+            final exerType = exercise['exer_type']?.toString() ?? 'strength';
+            final isCardio = exerType.toLowerCase() == 'cardio';
             _setControllers[index] = [];
             for (final set in sets) {
               final setMap = set is Map ? Map<String, dynamic>.from(set) : {};
-              _setControllers[index]!.add({
-                'kg': _createAutoSaveController(
-                    initialText: setMap['kg']?.toString() ?? ''),
-                'reps': _createAutoSaveController(
-                    initialText: setMap['reps']?.toString() ?? ''),
-              });
+              _setControllers[index]!.add(isCardio
+                  ? {
+                      'time': _createAutoSaveController(
+                          initialText: setMap['time']?.toString() ?? ''),
+                      'calories': _createAutoSaveController(
+                          initialText: setMap['calories']?.toString() ?? ''),
+                    }
+                  : {
+                      'kg': _createAutoSaveController(
+                          initialText: setMap['kg']?.toString() ?? ''),
+                      'reps': _createAutoSaveController(
+                          initialText: setMap['reps']?.toString() ?? ''),
+                    });
             }
           }
         });
@@ -164,11 +174,21 @@ class _WorkoutPageState extends State<WorkoutPage> {
     try {
       final serializableSets = <int, List<Map<String, String>>>{};
       _setControllers.forEach((index, sets) {
+        final exercise = index < _workoutExercises.length
+            ? _workoutExercises[index]
+            : null;
+        final exerType = exercise?['exer_type']?.toString() ?? 'strength';
+        final isCardio = exerType.toLowerCase() == 'cardio';
         serializableSets[index] = sets
-            .map((set) => {
-                  'kg': set['kg']!.text,
-                  'reps': set['reps']!.text,
-                })
+            .map((set) => isCardio
+                ? {
+                    'time': set['time']!.text,
+                    'calories': set['calories']!.text,
+                  }
+                : {
+                    'kg': set['kg']!.text,
+                    'reps': set['reps']!.text,
+                  })
             .toList();
       });
 
@@ -209,11 +229,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
     setState(() {
       final normalizedExercise = _normalizeExercise(exercise);
       _workoutExercises.add(normalizedExercise);
+      final exerType = normalizedExercise['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
       _setControllers[_workoutExercises.length - 1] = [
-        {
-          'kg': _createAutoSaveController(),
-          'reps': _createAutoSaveController(),
-        },
+        isCardio
+            ? {
+                'time': _createAutoSaveController(),
+                'calories': _createAutoSaveController(),
+              }
+            : {
+                'kg': _createAutoSaveController(),
+                'reps': _createAutoSaveController(),
+              },
       ];
     });
     _saveCurrentWorkoutSession();
@@ -261,12 +288,22 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _addSet(int exerciseIndex) {
+    final exercise = exerciseIndex < _workoutExercises.length
+        ? _workoutExercises[exerciseIndex]
+        : null;
+    final exerType = exercise?['exer_type']?.toString() ?? 'strength';
+    final isCardio = exerType.toLowerCase() == 'cardio';
     setState(() {
       _setControllers[exerciseIndex]?.add(
-        {
-          'kg': _createAutoSaveController(),
-          'reps': _createAutoSaveController(),
-        },
+        isCardio
+            ? {
+                'time': _createAutoSaveController(),
+                'calories': _createAutoSaveController(),
+              }
+            : {
+                'kg': _createAutoSaveController(),
+                'reps': _createAutoSaveController(),
+              },
       );
     });
     _saveCurrentWorkoutSession();
@@ -276,8 +313,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
     if ((_setControllers[exerciseIndex]?.length ?? 0) <= 1) return;
     setState(() {
       final set = _setControllers[exerciseIndex]!.removeAt(setIndex);
-      set['kg']!.dispose();
-      set['reps']!.dispose();
+      final exercise = exerciseIndex < _workoutExercises.length
+          ? _workoutExercises[exerciseIndex]
+          : null;
+      final exerType = exercise?['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
+      if (isCardio) {
+        set['time']!.dispose();
+        set['calories']!.dispose();
+      } else {
+        set['kg']!.dispose();
+        set['reps']!.dispose();
+      }
     });
     _saveCurrentWorkoutSession();
   }
@@ -501,8 +548,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
   void dispose() {
     for (final sets in _setControllers.values) {
       for (final set in sets) {
-        set['kg']!.dispose();
-        set['reps']!.dispose();
+        set['kg']?.dispose();
+        set['reps']?.dispose();
+        set['time']?.dispose();
+        set['calories']?.dispose();
       }
     }
     super.dispose();
@@ -666,6 +715,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             ),
                             const SizedBox(height: 8),
                             ...List.generate(sets.length, (setIndex) {
+                              final exerType =
+                                  exercise['exer_type']?.toString() ?? 'strength';
+                              final isCardio = exerType.toLowerCase() == 'cardio';
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: Row(
@@ -675,7 +727,57 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                             color: Colors.grey[400],
                                             fontSize: 12)),
                                     const SizedBox(width: 8),
-                                    Expanded(
+                                    if (isCardio) ...[Expanded(
+                                      child: TextField(
+                                        controller: sets[setIndex]['time'],
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                        decoration: InputDecoration(
+                                          labelText: 'time (min)',
+                                          labelStyle: TextStyle(
+                                              color: Colors.grey[500]),
+                                          filled: true,
+                                          fillColor: const Color(0xFF252538),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                          isDense: true,
+                                          contentPadding:
+                                              const EdgeInsets.all(8),
+                                          errorText: _validatePositive(
+                                              sets[setIndex]['time']!.text,
+                                              'Time'),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                      ),
+                                    ), const SizedBox(width: 8), Expanded(
+                                      child: TextField(
+                                        controller: sets[setIndex]['calories'],
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                        decoration: InputDecoration(
+                                          labelText: 'calories',
+                                          labelStyle: TextStyle(
+                                              color: Colors.grey[500]),
+                                          filled: true,
+                                          fillColor: const Color(0xFF252538),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                          isDense: true,
+                                          contentPadding:
+                                              const EdgeInsets.all(8),
+                                          errorText: _validatePositive(
+                                              sets[setIndex]['calories']!.text,
+                                              'Calories'),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                      ),
+                                    )] else ...[Expanded(
                                       child: TextField(
                                         controller: sets[setIndex]['kg'],
                                         style: const TextStyle(
@@ -694,12 +796,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                           isDense: true,
                                           contentPadding:
                                               const EdgeInsets.all(8),
+                                          errorText: _validatePositive(
+                                              sets[setIndex]['kg']!.text, 'kg'),
                                         ),
                                         keyboardType: TextInputType.number,
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
+                                    ), const SizedBox(width: 8), Expanded(
                                       child: TextField(
                                         controller: sets[setIndex]['reps'],
                                         style: const TextStyle(
@@ -718,10 +820,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                           isDense: true,
                                           contentPadding:
                                               const EdgeInsets.all(8),
+                                          errorText: _validatePositive(
+                                              sets[setIndex]['reps']!.text,
+                                              'reps'),
                                         ),
                                         keyboardType: TextInputType.number,
                                       ),
-                                    ),
+                                    )],
                                     if (sets.length > 1)
                                       IconButton(
                                         icon: const Icon(Icons.remove_circle,
@@ -879,6 +984,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
+
+  String? _validatePositive(String value, String fieldName) {
+    if (value.isEmpty) return null;
+    final numValue = double.tryParse(value);
+    if (numValue == null) return 'Must be a valid number';
+    if (numValue <= 0) return '$fieldName must be > 0';
+    return null;
+  }
 
   Widget _buildActionCard({
     required String label,
