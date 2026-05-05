@@ -12,7 +12,7 @@ class WorkoutHistoryService {
   ) async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final payload = {
         'exercises': exercises.map((exercise) {
           return {
@@ -49,7 +49,7 @@ class WorkoutHistoryService {
   }) async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final queryParams = <String, String>{};
       if (limit != null) {
         queryParams['limit'] = limit.toString();
@@ -82,7 +82,7 @@ class WorkoutHistoryService {
   static Future<Map<String, dynamic>?> getWorkout(int workoutId) async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/workouts/$workoutId'),
         headers: headers,
@@ -104,7 +104,7 @@ class WorkoutHistoryService {
   static Future<bool> deleteWorkout(int workoutId) async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final response = await http.delete(
         Uri.parse('$baseUrl/workouts/$workoutId'),
         headers: headers,

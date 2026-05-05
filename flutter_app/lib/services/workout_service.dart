@@ -14,7 +14,7 @@ class WorkoutService {
   }) async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final payload = {
         'exercises': exercises.map((exercise) {
           return {

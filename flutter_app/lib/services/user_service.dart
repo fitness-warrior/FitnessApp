@@ -12,7 +12,7 @@ class UserService {
   ) async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/users/questionnaire'),
         headers: headers,
@@ -33,7 +33,7 @@ class UserService {
   static Future<Map<String, dynamic>?> getQuestionnaireResponse() async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/users/questionnaire'),
         headers: headers,
@@ -45,7 +45,8 @@ class UserService {
         // No questionnaire saved yet
         return null;
       } else {
-        throw Exception('Failed to fetch questionnaire: ${response.statusCode}');
+        throw Exception(
+            'Failed to fetch questionnaire: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error fetching questionnaire: $e');
@@ -56,7 +57,7 @@ class UserService {
   static Future<Map<String, dynamic>?> getUserProfile() async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/users/profile'),
         headers: headers,
@@ -78,7 +79,7 @@ class UserService {
   ) async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      
+
       final response = await http.put(
         Uri.parse('$baseUrl/users/profile'),
         headers: headers,

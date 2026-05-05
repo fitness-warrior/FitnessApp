@@ -556,8 +556,11 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       final goal = responses['Q003']?.toString() ?? 'Stay fit';
       final experience = responses['Q004']?.toString() ?? 'Beginner';
       final location = responses['Q005']?.toString() ?? 'Home';
-      final daysPerWeek = int.tryParse(responses['Q006']?.toString().split(' ')[0] ?? '3') ?? 3;
-      final sessionLength = int.tryParse(responses['Q007']?.toString().split(' ')[0] ?? '30') ?? 30;
+      final daysPerWeek =
+          int.tryParse(responses['Q006']?.toString().split(' ')[0] ?? '3') ?? 3;
+      final sessionLength =
+          int.tryParse(responses['Q007']?.toString().split(' ')[0] ?? '30') ??
+              30;
       final injuries = (responses['Q008'] as List?)?.cast<String>() ?? [];
       final dietPref = responses['Q009']?.toString() ?? 'non-veg';
       final allergies = (responses['Q010'] as List?)?.cast<String>() ?? [];

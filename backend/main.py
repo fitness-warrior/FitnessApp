@@ -58,7 +58,7 @@ app.add_middleware(
 
 
 # ==================== AUTH ENDPOINTS ====================
-@app.post("/api/auth/signup")
+@app.post("/auth/signup")
 async def signup(request: SignupRequest):
     """Register a new user"""
     try:
@@ -115,7 +115,7 @@ async def signup(request: SignupRequest):
         raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
 
 
-@app.post("/api/auth/login")
+@app.post("/auth/login")
 async def login(request: LoginRequest):
     """Log in an existing user"""
     try:
@@ -183,7 +183,7 @@ class QuestionnaireRequest(BaseModel):
     allergies: list
 
 
-@app.post("/api/users/questionnaire")
+@app.post("/users/questionnaire")
 async def save_questionnaire(
     request: QuestionnaireRequest,
     user_id: int = Depends(get_current_user_id),
@@ -238,7 +238,7 @@ async def save_questionnaire(
         raise HTTPException(status_code=500, detail=f"Failed to save questionnaire: {str(e)}")
 
 
-@app.get("/api/users/questionnaire")
+@app.get("/users/questionnaire")
 async def get_questionnaire(
     user_id: int = Depends(get_current_user_id),
 ):
@@ -270,7 +270,7 @@ async def get_questionnaire(
         raise HTTPException(status_code=500, detail=f"Failed to fetch questionnaire: {str(e)}")
 
 
-@app.get("/api/users/profile")
+@app.get("/users/profile")
 async def get_user_profile(
     user_id: int = Depends(get_current_user_id),
 ):
@@ -301,7 +301,7 @@ async def get_user_profile(
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
 
 
-@app.put("/api/users/profile")
+@app.put("/users/profile")
 async def update_user_profile(
     data: dict,
     user_id: int = Depends(get_current_user_id),
@@ -355,7 +355,7 @@ class WorkoutRequest(BaseModel):
     notes: str = ""
 
 
-@app.post("/api/workouts")
+@app.post("/workouts")
 async def save_workout(
     request: WorkoutRequest,
     user_id: int = Depends(get_current_user_id),
@@ -402,7 +402,7 @@ async def save_workout(
         raise HTTPException(status_code=500, detail=f"Failed to save workout: {str(e)}")
 
 
-@app.get("/api/workouts")
+@app.get("/workouts")
 async def get_workouts(
     limit: int = 50,
     user_id: int = Depends(get_current_user_id),
@@ -455,7 +455,7 @@ async def get_workouts(
         raise HTTPException(status_code=500, detail=f"Failed to fetch workouts: {str(e)}")
 
 
-@app.get("/api/workouts/{workout_id}")
+@app.get("/workouts/{workout_id}")
 async def get_workout(
     workout_id: int,
     user_id: int = Depends(get_current_user_id),
@@ -506,7 +506,7 @@ async def get_workout(
         raise HTTPException(status_code=500, detail=f"Failed to fetch workout: {str(e)}")
 
 
-@app.delete("/api/workouts/{workout_id}")
+@app.delete("/workouts/{workout_id}")
 async def delete_workout(
     workout_id: int,
     user_id: int = Depends(get_current_user_id),
@@ -548,7 +548,7 @@ def format_exercise(row: asyncpg.Record) -> dict:
         "video": row["video"],
     }
 
-@app.get("/api/exercises")
+@app.get("/exercises")
 async def get_exercises(name: str = None, area: str = None, type: str = None, equipment: str = None):
     filters = []
     values = []
@@ -587,7 +587,7 @@ async def get_exercises(name: str = None, area: str = None, type: str = None, eq
     return [format_exercise(row) for row in rows]
 
 
-@app.get("/api/exercises/search")
+@app.get("/exercises/search")
 async def search_exercises(q: str):
     query = """
         SELECT
@@ -608,7 +608,7 @@ async def search_exercises(q: str):
 
     return [format_exercise(row) for row in rows]
 
-@app.get("/api/exercises/{exercise_id}")
+@app.get("/exercises/{exercise_id}")
 async def get_exercise(exercise_id: int):
     query = """
         SELECT
