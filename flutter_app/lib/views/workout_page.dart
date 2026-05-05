@@ -68,7 +68,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-
   // ignore: unused_element
   List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
     List<Map<String, dynamic>> apiHistory,
@@ -83,15 +82,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
         final reps = ex['reps'] ?? 0;
         final weight = ex['weight'] ?? 0;
         final setCountRaw = ex['sets'];
-        final int setCount = (setCountRaw is int) ? setCountRaw : (int.tryParse(setCountRaw?.toString() ?? '1') ?? 1);
+        final int setCount = (setCountRaw is int)
+            ? setCountRaw
+            : (int.tryParse(setCountRaw?.toString() ?? '1') ?? 1);
 
         return {
           'exer_id': exerId,
           'exer_name': ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
-          'sets': List.generate(setCount > 0 ? setCount : 1, (index) => {
-            'kg': weight.toString(),
-            'reps': reps.toString(),
-          }),
+          'sets': List.generate(
+              setCount > 0 ? setCount : 1,
+              (index) => {
+                    'kg': weight.toString(),
+                    'reps': reps.toString(),
+                  }),
         };
       }).toList();
 
@@ -709,337 +712,343 @@ class _WorkoutPageState extends State<WorkoutPage> {
             if (_selectedTab == 0) ...[
               if (_workoutExercises.isNotEmpty) ...[
                 Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Current Workout',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '${_setControllers.values.fold<int>(0, (sum, sets) => sum + sets.length)} sets',
-                            style: const TextStyle(
-                              color: Colors.orange,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Current Workout',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ..._workoutExercises.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final exercise = entry.value;
-                      final sets = _setControllers[index] ?? [];
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1C1C2E),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    exercise['exer_name']?.toString() ??
-                                        'Unknown',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                            child: Text(
+                              '${_setControllers.values.fold<int>(0, (sum, sets) => sum + sets.length)} sets',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ..._workoutExercises.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final exercise = entry.value;
+                        final sets = _setControllers[index] ?? [];
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1C1C2E),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      exercise['exer_name']?.toString() ??
+                                          'Unknown',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      size: 18, color: Colors.redAccent),
-                                  onPressed: () => _removeExercise(index),
-                                  constraints: const BoxConstraints(),
-                                  padding: EdgeInsets.zero,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ...List.generate(sets.length, (setIndex) {
-                              final exerType =
-                                  exercise['exer_type']?.toString() ??
-                                      'strength';
-                              final isCardio =
-                                  exerType.toLowerCase() == 'cardio';
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Text('Set ${setIndex + 1}:',
-                                        style: TextStyle(
-                                            color: Colors.grey[400],
-                                            fontSize: 12)),
-                                    const SizedBox(width: 8),
-                                    if (isCardio) ...[
-                                      Expanded(
-                                        child: TextField(
-                                          controller: sets[setIndex]['time'],
-                                          style: const TextStyle(
-                                              color: Colors.white),
-                                          decoration: InputDecoration(
-                                            labelText: 'time (min)',
-                                            labelStyle: TextStyle(
-                                                color: Colors.grey[500]),
-                                            filled: true,
-                                            fillColor: const Color(0xFF252538),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              borderSide: BorderSide.none,
-                                            ),
-                                            isDense: true,
-                                            contentPadding:
-                                                const EdgeInsets.all(8),
-                                            errorText: _validatePositive(
-                                                sets[setIndex]['time']!.text,
-                                                'Time'),
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                        ),
-                                      ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete,
+                                        size: 18, color: Colors.redAccent),
+                                    onPressed: () => _removeExercise(index),
+                                    constraints: const BoxConstraints(),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              ...List.generate(sets.length, (setIndex) {
+                                final exerType =
+                                    exercise['exer_type']?.toString() ??
+                                        'strength';
+                                final isCardio =
+                                    exerType.toLowerCase() == 'cardio';
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Text('Set ${setIndex + 1}:',
+                                          style: TextStyle(
+                                              color: Colors.grey[400],
+                                              fontSize: 12)),
                                       const SizedBox(width: 8),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: sets[setIndex]
-                                              ['calories'],
-                                          style: const TextStyle(
-                                              color: Colors.white),
-                                          decoration: InputDecoration(
-                                            labelText: 'calories',
-                                            labelStyle: TextStyle(
-                                                color: Colors.grey[500]),
-                                            filled: true,
-                                            fillColor: const Color(0xFF252538),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              borderSide: BorderSide.none,
+                                      if (isCardio) ...[
+                                        Expanded(
+                                          child: TextField(
+                                            controller: sets[setIndex]['time'],
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                            decoration: InputDecoration(
+                                              labelText: 'time (min)',
+                                              labelStyle: TextStyle(
+                                                  color: Colors.grey[500]),
+                                              filled: true,
+                                              fillColor:
+                                                  const Color(0xFF252538),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.all(8),
+                                              errorText: _validatePositive(
+                                                  sets[setIndex]['time']!.text,
+                                                  'Time'),
                                             ),
-                                            isDense: true,
-                                            contentPadding:
-                                                const EdgeInsets.all(8),
-                                            errorText: _validatePositive(
-                                                sets[setIndex]['calories']!
-                                                    .text,
-                                                'Calories'),
+                                            keyboardType: TextInputType.number,
                                           ),
-                                          keyboardType: TextInputType.number,
                                         ),
-                                      )
-                                    ] else ...[
-                                      Expanded(
-                                        child: TextField(
-                                          controller: sets[setIndex]['kg'],
-                                          style: const TextStyle(
-                                              color: Colors.white),
-                                          decoration: InputDecoration(
-                                            labelText: 'kg',
-                                            labelStyle: TextStyle(
-                                                color: Colors.grey[500]),
-                                            filled: true,
-                                            fillColor: const Color(0xFF252538),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              borderSide: BorderSide.none,
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: sets[setIndex]
+                                                ['calories'],
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                            decoration: InputDecoration(
+                                              labelText: 'calories',
+                                              labelStyle: TextStyle(
+                                                  color: Colors.grey[500]),
+                                              filled: true,
+                                              fillColor:
+                                                  const Color(0xFF252538),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.all(8),
+                                              errorText: _validatePositive(
+                                                  sets[setIndex]['calories']!
+                                                      .text,
+                                                  'Calories'),
                                             ),
-                                            isDense: true,
-                                            contentPadding:
-                                                const EdgeInsets.all(8),
-                                            errorText: _validatePositive(
-                                                sets[setIndex]['kg']!.text,
-                                                'kg'),
+                                            keyboardType: TextInputType.number,
                                           ),
-                                          keyboardType: TextInputType.number,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: sets[setIndex]['reps'],
-                                          style: const TextStyle(
-                                              color: Colors.white),
-                                          decoration: InputDecoration(
-                                            labelText: 'reps',
-                                            labelStyle: TextStyle(
-                                                color: Colors.grey[500]),
-                                            filled: true,
-                                            fillColor: const Color(0xFF252538),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              borderSide: BorderSide.none,
+                                        )
+                                      ] else ...[
+                                        Expanded(
+                                          child: TextField(
+                                            controller: sets[setIndex]['kg'],
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                            decoration: InputDecoration(
+                                              labelText: 'kg',
+                                              labelStyle: TextStyle(
+                                                  color: Colors.grey[500]),
+                                              filled: true,
+                                              fillColor:
+                                                  const Color(0xFF252538),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.all(8),
+                                              errorText: _validatePositive(
+                                                  sets[setIndex]['kg']!.text,
+                                                  'kg'),
                                             ),
-                                            isDense: true,
-                                            contentPadding:
-                                                const EdgeInsets.all(8),
-                                            errorText: _validatePositive(
-                                                sets[setIndex]['reps']!.text,
-                                                'reps'),
+                                            keyboardType: TextInputType.number,
                                           ),
-                                          keyboardType: TextInputType.number,
                                         ),
-                                      )
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: sets[setIndex]['reps'],
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                            decoration: InputDecoration(
+                                              labelText: 'reps',
+                                              labelStyle: TextStyle(
+                                                  color: Colors.grey[500]),
+                                              filled: true,
+                                              fillColor:
+                                                  const Color(0xFF252538),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.all(8),
+                                              errorText: _validatePositive(
+                                                  sets[setIndex]['reps']!.text,
+                                                  'reps'),
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                          ),
+                                        )
+                                      ],
+                                      if (sets.length > 1)
+                                        IconButton(
+                                          icon: const Icon(Icons.remove_circle,
+                                              size: 18,
+                                              color: Colors.redAccent),
+                                          onPressed: () =>
+                                              _removeSet(index, setIndex),
+                                          constraints: const BoxConstraints(),
+                                          padding: EdgeInsets.zero,
+                                        ),
                                     ],
-                                    if (sets.length > 1)
-                                      IconButton(
-                                        icon: const Icon(Icons.remove_circle,
-                                            size: 18, color: Colors.redAccent),
-                                        onPressed: () =>
-                                            _removeSet(index, setIndex),
-                                        constraints: const BoxConstraints(),
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            TextButton.icon(
-                              onPressed: () => _addSet(index),
-                              icon: const Icon(Icons.add,
-                                  size: 16, color: Color(0xFF4A9FFF)),
-                              label: const Text('Add Set',
-                                  style: TextStyle(
-                                      fontSize: 12, color: Color(0xFF4A9FFF))),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _openFinishDialog,
-                        icon: const Icon(Icons.check),
-                        label: const Text('Finish & Save Workout'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4CAF50),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
+                                  ),
+                                );
+                              }),
+                              TextButton.icon(
+                                onPressed: () => _addSet(index),
+                                icon: const Icon(Icons.add,
+                                    size: 16, color: Color(0xFF4A9FFF)),
+                                label: const Text('Add Set',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF4A9FFF))),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _openFinishDialog,
+                          icon: const Icon(Icons.check),
+                          label: const Text('Finish & Save Workout'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4CAF50),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14)),
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              // ── Action Cards ──────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _buildActionCard(
+                  label: 'Exercise Library',
+                  icon: Icons.fitness_center,
+                  iconColor: const Color(0xFF4A9FFF),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ExerciseLibraryPage()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              // ── New Workout ───────────────────────────────────
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'New Workout',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildActionCard(
+                  label: 'Start Empty Workout',
+                  icon: Icons.assignment_outlined,
+                  iconColor: const Color(0xFFFFB74D),
+                  onTap: _openSearchDialog,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildActionCard(
+                  label: 'Generate Workout',
+                  icon: Icons.autorenew_rounded,
+                  iconColor: const Color(0xFF4CAF50),
+                  onTap: _openGenerateDialog,
+                ),
+              ),
+              const SizedBox(height: 28),
+              // ── Routines ──────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Routines',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.folder_outlined,
+                            color: Colors.grey[400], size: 22),
+                        const SizedBox(width: 14),
+                        Icon(Icons.add, color: Colors.grey[400], size: 22),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-            // ── Action Cards ──────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: _buildActionCard(
-                label: 'Exercise Library',
-                icon: Icons.fitness_center,
-                iconColor: const Color(0xFF4A9FFF),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const ExerciseLibraryPage()),
-                  );
-                },
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildRoutinesSection(),
               ),
-            ),
-            const SizedBox(height: 20),
-            // ── New Workout ───────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'New Workout',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildActionCard(
-                label: 'Start Empty Workout',
-                icon: Icons.assignment_outlined,
-                iconColor: const Color(0xFFFFB74D),
-                onTap: _openSearchDialog,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildActionCard(
-                label: 'Generate Workout',
-                icon: Icons.autorenew_rounded,
-                iconColor: const Color(0xFF4CAF50),
-                onTap: _openGenerateDialog,
-              ),
-            ),
-            const SizedBox(height: 28),
-            // ── Routines ──────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Routines',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.folder_outlined,
-                          color: Colors.grey[400], size: 22),
-                      const SizedBox(width: 14),
-                      Icon(Icons.add, color: Colors.grey[400], size: 22),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildRoutinesSection(),
-            ),
-            const SizedBox(height: 100),
+              const SizedBox(height: 100),
             ] else ...[
               WorkoutCalendarPage(
                 savedWorkouts: _savedWorkouts,

@@ -25,8 +25,15 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     'Legs': ['Legs', 'Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
     'Arms': ['Arms', 'Biceps', 'Triceps'],
     'Full Body': [
-      'Chest', 'Back', 'Shoulders', 'Triceps', 'Biceps',
-      'Quadriceps', 'Hamstrings', 'Calves', 'Glutes'
+      'Chest',
+      'Back',
+      'Shoulders',
+      'Triceps',
+      'Biceps',
+      'Quadriceps',
+      'Hamstrings',
+      'Calves',
+      'Glutes'
     ],
   };
 
@@ -100,7 +107,6 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
         _selectedMuscleGroup!,
         _selectedEquipmentType!,
       );
-
     } catch (e) {
       setState(() {
         _error = 'Something went wrong';
@@ -208,14 +214,12 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () => Navigator.pop(context),
+                        onPressed:
+                            _isLoading ? null : () => Navigator.pop(context),
                         child: const Text("Cancel"),
                       ),
                       ElevatedButton(
-                        onPressed:
-                            _isLoading ? null : _generateWorkout,
+                        onPressed: _isLoading ? null : _generateWorkout,
                         child: const Text("Generate"),
                       ),
                     ],
