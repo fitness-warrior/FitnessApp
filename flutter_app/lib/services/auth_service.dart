@@ -29,7 +29,7 @@ class AuthService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
+
         // Save token and user info
         if (data['access_token'] != null) {
           await _secureStorage.write(
@@ -43,7 +43,7 @@ class AuthService {
             value: jsonEncode(data['user']),
           );
         }
-        
+
         return {'success': true, 'user': data['user']};
       } else if (response.statusCode == 400) {
         final error = jsonDecode(response.body);
@@ -73,7 +73,7 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
+
         // Save token and user info
         if (data['access_token'] != null) {
           await _secureStorage.write(
@@ -87,7 +87,7 @@ class AuthService {
             value: jsonEncode(data['user']),
           );
         }
-        
+
         return {'success': true, 'user': data['user']};
       } else if (response.statusCode == 401) {
         throw Exception('Invalid email or password');
