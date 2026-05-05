@@ -12,12 +12,12 @@ class CollectedData:
         return unform.strftime("%Y-%m-%d")
     
     def _collect_rows(self,name):
-        row =  self._get_train_name
+        rows =  self._get_train_name
         if row is None:
             return None
-
-        row[0] = self._formatted_date(row[0])
-        return row 
+        for row in rows:
+            row[0] = self._formatted_date(row[0])
+        return rows
     
     def find_user_done(self):
         self.cur.execute("""
@@ -58,13 +58,19 @@ class CollectedData:
         return (row[0], row[1]) 
     
     def cardio_endurance(self,name):
-        row = self._collect_rows()
-        return (row[0], row[2])  
+        rows = self._collect_rows()
+        final_collection = []
+        for row in rows:
+            new_row = [row[0],row[2]]
+            final_collection.append (new_row)
+        return final_collection  
     
     def strength_total(self,name):
         row = self._collect_rows()
         total = row[2] * row[3]
         return (row[0], total)
+    
+
 
 
 if __name__ == "__main__":
