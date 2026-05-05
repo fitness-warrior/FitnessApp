@@ -26,7 +26,7 @@ class UserStatsService {
   }
 
   static Map<String, dynamic> calculateLevel(int xp) {
-    const int xpPerLevel = 1000;
+    const int xpPerLevel = 100;
     final int level = (xp / xpPerLevel).floor() + 1;
     final int xpInCurrentLevel = xp % xpPerLevel;
     final double progress = xpInCurrentLevel / xpPerLevel;
