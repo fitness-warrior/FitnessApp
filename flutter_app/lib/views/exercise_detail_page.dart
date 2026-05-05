@@ -264,8 +264,8 @@ class _BodyPainter extends CustomPainter {
 
     final cx = w / 2;
     // Head & Neck
-    drawPoly([Offset(cx, h*0.02), Offset(cx-w*0.15, h*0.02), Offset(cx-w*0.15, h*0.1), Offset(cx-w*0.1, h*0.13), Offset(cx, h*0.13)], false);
-    drawPoly([Offset(cx, h*0.13), Offset(cx-w*0.08, h*0.13), Offset(cx-w*0.1, h*0.16), Offset(cx, h*0.16)], false);
+    drawPoly([Offset(cx, h*0.02), Offset(cx-w*0.15, h*0.02), Offset(cx-w*0.15, h*0.1), Offset(cx-w*0.1, h*0.13), Offset(cx, h*0.13)], _h(_BodyPart.head));
+    drawPoly([Offset(cx, h*0.13), Offset(cx-w*0.08, h*0.13), Offset(cx-w*0.1, h*0.16), Offset(cx, h*0.16)], _h(_BodyPart.neck));
 
     if (isFront) {
       // Shoulders

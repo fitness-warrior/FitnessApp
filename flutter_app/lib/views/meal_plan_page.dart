@@ -68,6 +68,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
         ],
       };
 
+  // ignore: unused_element
   bool _isToday(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year &&
