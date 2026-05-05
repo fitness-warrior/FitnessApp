@@ -70,13 +70,53 @@ class _WorkoutDayViewState extends State<WorkoutDayView> {
     super.dispose();
   }
 
-  void _toggleSet(int rIndex, int eIndex, int sIndex, bool isCurrentlyComplete) {
+  void _toggleSet(int rIndex, int eIndex, int sIndex, bool isCurrentlyComplete, bool isCardio) {
     if (isCurrentlyComplete) {
       // Allow un-ticking
       HapticFeedback.lightImpact();
       setState(() {
         _completedSets[rIndex]![eIndex]![sIndex] = false;
       });
+      return;
+    }
+
+    // Validation before ticking
+    final controllers = _setControllers[rIndex]![eIndex]![sIndex];
+    bool isValid = true;
+    String errorMessage = '';
+
+    if (isCardio) {
+      final timeText = controllers['time']!.text.trim();
+      final caloriesText = controllers['calories']!.text.trim();
+      final time = double.tryParse(timeText);
+      final calories = double.tryParse(caloriesText);
+      
+      if ((timeText.isEmpty && caloriesText.isEmpty) ||
+          (time != null && time < 0) ||
+          (calories != null && calories < 0)) {
+        isValid = false;
+        errorMessage = 'Please enter valid time or calories.';
+      }
+    } else {
+      final kgText = controllers['kg']!.text.trim();
+      final repsText = controllers['reps']!.text.trim();
+      final kg = double.tryParse(kgText);
+      final reps = int.tryParse(repsText);
+      
+      if (kgText.isEmpty || repsText.isEmpty || kg == null || reps == null || kg < 0 || reps <= 0) {
+        isValid = false;
+        errorMessage = 'Please enter valid weight and reps (>0).';
+      }
+    }
+
+    if (!isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 2),
+        ),
+      );
       return;
     }
 
@@ -346,7 +386,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView> {
                                     GestureDetector(
                                       onTap: () {
                                         _toggleSet(rIndex, eIndex, sIndex,
-                                            isSetComplete);
+                                            isSetComplete, isCardio);
                                       },
                                       child: AnimatedContainer(
                                         duration:
