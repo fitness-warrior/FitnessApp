@@ -1,4 +1,4 @@
-from .login import CONN
+from login import CONN
 
 
 class CollectedData:
@@ -8,30 +8,45 @@ class CollectedData:
         self.conn = conn
         self.cur = self.conn.cursor()
 
+    def formatted_date(self,unform):
+        return unform.strftime("%Y-%m-%d")
+    
     def find_user_done(self):
         self.cur.execute("""
             SELECT e.exer_name, pe.plan_exer_PB
-            FROM exersise
+            FROM exercise e
             JOIN plan_exercise pe ON pe.exer_id = e.exer_id
-            JOIN training_exersise te ON te.exer_id = e.exer_id
+            JOIN training_exercise te ON te.exer_id = e.exer_id
             JOIN training t ON t.train_id = te.train_id 
             JOIN training_body tb ON tb.train_id = t.train_id
             WHERE t.train_data IS NOT NULL
             AND tb.body_id = %s
-            ORDER BY pe.plan_exer_PB
+            ORDER BY pe.plan_exer_PB DESC
         """, (self.body_id,))
         return self.cur.fetchall()
     
+    
     def cardio_speed(self,name):
         self.cur.execute("""
-            SELECT t.train_data
-            FROM exersise
+            SELECT t.train_data, t.train_mins, t.train_effort, t.reps 
+            FROM exercise e
             JOIN plan_exercise pe ON pe.exer_id = e.exer_id
-            JOIN training_exersise te ON te.exer_id = e.exer_id
+            JOIN training_exercise te ON te.exer_id = e.exer_id
             JOIN training t ON t.train_id = te.train_id 
             JOIN training_body tb ON tb.train_id = t.train_id
-            WHERE t.train_data IS NOT NULL
-            AND tb.body_id = %s
+            WHERE tb.body_id = %s
             ORDER BY pe.plan_exer_PB
         """, (self.body_id,))
-        return self.cur.fetchall()
+        row = self.cur.fetchone()
+        if row is None:
+            return None
+
+        date = self.formatted_date(row[0])
+        speed = (row[2]*1000) / row[1]
+        return (date, speed)
+
+
+if __name__ == "__main__":
+    CD = CollectedData(4)
+    print(CD.find_user_done())
+    print(CD.cardio_speed("Jump Rope"))
