@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fitness_app_flutter/services/recommendation_storage.dart';
+import 'package:fitness_app_flutter/services/auth_service.dart';
 import 'package:fitness_app_flutter/widgets/questionnaire/questionnaire_widget.dart';
 import 'package:fitness_app_flutter/views/workout_page.dart';
 import 'package:fitness_app_flutter/views/meal_plan_page.dart';
 import 'package:fitness_app_flutter/views/game_page.dart';
 import 'package:fitness_app_flutter/views/edit_avatar_page.dart';
 import 'package:fitness_app_flutter/views/dashboard_page.dart';
+import 'package:fitness_app_flutter/views/auth_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,14 +23,62 @@ class MyApp extends StatelessWidget {
       title: 'Fitness App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const QuestionnaireLauncher(),
+      home: const AuthLauncher(),
       routes: {
+        '/auth': (_) => const AuthPage(),
+        '/questionnaire': (_) => const QuestionnairePage(),
         '/my_workout': (_) => const WorkoutPage(),
         '/my_meal': (_) => const MealPlanPage(),
         '/game': (_) => const GamePage(),
         '/edit_avatar': (_) => const EditAvatarPage(),
         '/dashboard': (_) => const DashboardPage(),
       },
+    );
+  }
+}
+
+class AuthLauncher extends StatefulWidget {
+  const AuthLauncher({Key? key}) : super(key: key);
+
+  @override
+  State<AuthLauncher> createState() => _AuthLauncherState();
+}
+
+class _AuthLauncherState extends State<AuthLauncher> {
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAuth());
+  }
+
+  Future<void> _checkAuth() async {
+    if (_started) return;
+    _started = true;
+
+    // Check if user is logged in
+    final isLoggedIn = await AuthService.isLoggedIn();
+
+    if (!mounted) return;
+
+    if (isLoggedIn) {
+      // User is logged in, show questionnaire launcher
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const QuestionnaireLauncher()),
+      );
+    } else {
+      // User not logged in, show auth page
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AuthPage()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }
