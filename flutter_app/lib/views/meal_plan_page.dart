@@ -107,13 +107,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
       _loadingPlan = true;
     });
 
-    var plan = await MealStorage.loadPlan(normalizedDate);
-    final hasSavedItems = plan.slots.values.any((items) => items.isNotEmpty);
-
-    if (!hasSavedItems && _isToday(normalizedDate)) {
-      plan = _planFor(normalizedDate, useDemoTemplate: true);
-      await MealStorage.savePlan(plan);
-    }
+    final plan = await MealStorage.loadPlan(normalizedDate);
 
     if (!mounted) return;
     setState(() {
