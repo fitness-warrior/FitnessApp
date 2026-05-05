@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/daily_meal_plan.dart';
+import 'auth_service.dart';
 
 /// Persists daily meal plans to local storage using SharedPreferences.
 ///
@@ -7,15 +8,23 @@ import '../models/daily_meal_plan.dart';
 class MealStorage {
   static const _prefix = 'meal_plan_';
 
-  static String _keyFor(DateTime date) =>
-      '$_prefix${date.year.toString().padLeft(4, '0')}'
-      '-${date.month.toString().padLeft(2, '0')}'
-      '-${date.day.toString().padLeft(2, '0')}';
+  static Future<String> _userScope() async {
+    final user = await AuthService.getCurrentUser();
+    final userId = user?['user_id']?.toString();
+    return userId == null || userId.isEmpty ? 'guest' : userId;
+  }
+
+  static Future<String> _keyFor(DateTime date) async {
+    final scope = await _userScope();
+    return '$_prefix$scope-${date.year.toString().padLeft(4, '0')}'
+        '-${date.month.toString().padLeft(2, '0')}'
+        '-${date.day.toString().padLeft(2, '0')}';
+  }
 
   /// Load the plan for [date], or a fresh empty plan if none is saved.
   static Future<DailyMealPlan> loadPlan(DateTime date) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_keyFor(date));
+    final raw = prefs.getString(await _keyFor(date));
     if (raw == null) return DailyMealPlan(date: date);
     try {
       return DailyMealPlan.fromJson(raw);
@@ -27,23 +36,27 @@ class MealStorage {
   /// Persist [plan] to local storage.
   static Future<void> savePlan(DailyMealPlan plan) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyFor(plan.date), plan.toJson());
+    await prefs.setString(await _keyFor(plan.date), plan.toJson());
   }
 
   /// Delete the saved plan for [date].
   static Future<void> clearPlan(DateTime date) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyFor(date));
+    await prefs.remove(await _keyFor(date));
   }
 
   /// Returns all saved plan dates (newest first).
   static Future<List<DateTime>> savedDates() async {
     final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys().where((k) => k.startsWith(_prefix)).toList();
+    final scope = await _userScope();
+    final keys = prefs
+        .getKeys()
+        .where((k) => k.startsWith('$_prefix$scope-'))
+        .toList();
     final dates = keys
         .map((k) {
           try {
-            return DateTime.parse(k.substring(_prefix.length));
+            return DateTime.parse(k.substring('$_prefix$scope-'.length));
           } catch (_) {
             return null;
           }
