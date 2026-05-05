@@ -28,6 +28,23 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
   late AnimationController _successController;
   late Animation<double> _scaleAnimation;
 
+  // ── Elapsed timer ─────────────────────────────────────────────────────────
+  int _elapsedSeconds = 0;
+  Timer? _elapsedTimer;
+
+  String get _formattedTime {
+    final h = _elapsedSeconds ~/ 3600;
+    final m = (_elapsedSeconds % 3600) ~/ 60;
+    final s = _elapsedSeconds % 60;
+    if (h > 0) {
+      return '${h.toString().padLeft(2, '0')}:'
+          '${m.toString().padLeft(2, '0')}:'
+          '${s.toString().padLeft(2, '0')}';
+    }
+    return '${m.toString().padLeft(2, '0')}:'
+        '${s.toString().padLeft(2, '0')}';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +57,12 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
       parent: _successController,
       curve: Curves.elasticOut,
     );
+    // Start the elapsed workout timer
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && !_workoutFinished) {
+        setState(() => _elapsedSeconds++);
+      }
+    });
   }
 
   void _initializeState() {
@@ -76,6 +99,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
 
   @override
   void dispose() {
+    _elapsedTimer?.cancel();
     for (var routine in _setControllers.values) {
       for (var exercise in routine.values) {
         for (var set in exercise) {
@@ -254,10 +278,31 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D14),
         elevation: 0,
-        title: Text(
-          '${widget.dayName} Workout',
-          style:
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${widget.dayName} Workout',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.timer_outlined,
+                    size: 13, color: Color(0xFF4A9FFF)),
+                const SizedBox(width: 4),
+                Text(
+                  _formattedTime,
+                  style: const TextStyle(
+                      color: Color(0xFF4A9FFF),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ],
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -555,9 +600,9 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _statColumn(
-                          icon: Icons.fitness_center,
-                          label: 'Routines',
-                          value: '${widget.routines.length}',
+                          icon: Icons.access_time_rounded,
+                          label: 'Time',
+                          value: _formattedTime,
                         ),
                         _divider(),
                         _statColumn(
