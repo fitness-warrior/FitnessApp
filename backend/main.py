@@ -827,6 +827,72 @@ async def update_streak(user_id: int = Depends(get_current_user_id)):
         raise HTTPException(status_code=500, detail=f"Failed to update streak: {str(e)}")
 
 
+# ==================== MEAL PLAN ENDPOINTS ====================
+class MealPlanRequest(BaseModel):
+    plan_date: date
+    plan: dict
+
+
+@app.get("/api/meals")
+async def get_meal_plan(plan_date: date, user_id: int = Depends(get_current_user_id)):
+    """Fetch the user's meal plan for a given date (returns empty plan if none)."""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            row = await connection.fetchrow(
+                """
+                SELECT plan, created_at, updated_at
+                FROM user_meal_plan
+                WHERE user_id = $1 AND plan_date = $2
+                """,
+                user_id,
+                plan_date,
+            )
+
+            if not row:
+                return {"plan_date": str(plan_date), "plan": {}}
+
+            return {"plan_date": str(plan_date), "plan": row["plan"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch meal plan: {str(e)}")
+
+
+@app.post("/api/meals")
+async def save_meal_plan(request: MealPlanRequest, user_id: int = Depends(get_current_user_id)):
+    """Upsert the user's meal plan for a given date."""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            existing = await connection.fetchval(
+                "SELECT user_meal_plan_id FROM user_meal_plan WHERE user_id = $1 AND plan_date = $2",
+                user_id,
+                request.plan_date,
+            )
+
+            if existing:
+                await connection.execute(
+                    """
+                    UPDATE user_meal_plan
+                    SET plan = $1, updated_at = NOW()
+                    WHERE user_meal_plan_id = $2
+                    """,
+                    request.plan,
+                    existing,
+                )
+            else:
+                await connection.execute(
+                    """
+                    INSERT INTO user_meal_plan (user_id, plan_date, plan)
+                    VALUES ($1, $2, $3)
+                    """,
+                    user_id,
+                    request.plan_date,
+                    request.plan,
+                )
+
+            return {"success": True, "plan_date": str(request.plan_date)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save meal plan: {str(e)}")
+
+
 def format_exercise(row: asyncpg.Record) -> dict:
     return {
         "id": row["id"],

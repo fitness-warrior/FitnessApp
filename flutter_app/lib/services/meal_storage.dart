@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+
+import '../config/api_config.dart';
 import '../models/daily_meal_plan.dart';
 import 'auth_service.dart';
 
@@ -23,6 +28,25 @@ class MealStorage {
 
   /// Load the plan for [date], or a fresh empty plan if none is saved.
   static Future<DailyMealPlan> loadPlan(DateTime date) async {
+    // Prefer server copy when logged-in, fall back to local storage
+    try {
+      final loggedIn = await AuthService.isLoggedIn();
+      if (loggedIn) {
+        final dateStr = date.toIso8601String().split('T').first;
+        final uri = Uri.parse('${ApiConfig.baseUrl}/meals?plan_date=$dateStr');
+        final headers = await AuthService.getAuthHeaders();
+        final resp = await http.get(uri, headers: headers);
+        if (resp.statusCode == 200) {
+          final body = jsonDecode(resp.body) as Map<String, dynamic>;
+          final planObj = body['plan'] as Map<String, dynamic>?;
+          if (planObj == null || planObj.isEmpty) return DailyMealPlan(date: date);
+          return DailyMealPlan.fromMap(planObj);
+        }
+      }
+    } catch (_) {
+      // ignore network errors and fall back to local
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(await _keyFor(date));
     if (raw == null) return DailyMealPlan(date: date);
@@ -37,6 +61,24 @@ class MealStorage {
   static Future<void> savePlan(DailyMealPlan plan) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(await _keyFor(plan.date), plan.toJson());
+
+    // Try to sync to server when logged in (best-effort)
+    try {
+      final loggedIn = await AuthService.isLoggedIn();
+      if (!loggedIn) return;
+
+      final dateStr = plan.date.toIso8601String().split('T').first;
+      final uri = Uri.parse('${ApiConfig.baseUrl}/meals');
+      final headers = await AuthService.getAuthHeaders();
+      final body = jsonEncode({
+        'plan_date': dateStr,
+        'plan': plan.toMap(),
+      });
+
+      await http.post(uri, headers: headers, body: body);
+    } catch (_) {
+      // ignore network/save errors — local copy remains authoritative until sync succeeds
+    }
   }
 
   /// Delete the saved plan for [date].

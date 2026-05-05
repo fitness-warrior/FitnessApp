@@ -251,6 +251,17 @@ CREATE TABLE user_streak (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Per-user meal plans (syncable across devices)
+CREATE TABLE user_meal_plan (
+    user_meal_plan_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    plan_date DATE NOT NULL,
+    plan JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, plan_date)
+);
+
 INSERT INTO game_char
 (game_char_level, game_char_colour, game_char_type,
  game_char_hp, game_char_attack, game_char_speed)
