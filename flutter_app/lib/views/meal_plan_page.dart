@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/daily_meal_plan.dart';
 import '../models/meal_item.dart';
+import '../services/meal_storage.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/navbar.dart';
 import 'recipe_list_page.dart';
@@ -17,53 +18,66 @@ class MealPlanPage extends StatefulWidget {
 }
 
 class _MealPlanPageState extends State<MealPlanPage> {
-  DateTime _selectedDate = DateTime.now();
+  DateTime _selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  DailyMealPlan _currentPlan = DailyMealPlan(date: DateTime.now());
+  bool _loadingPlan = true;
 
-  // ── Static demo data ────────────────────────────────────────────────────
-  final Map<MealSlot, List<MealItem>> _demoSlots = {
-    MealSlot.breakfast: [
-      const MealItem(
+    Map<MealSlot, List<MealItem>> _demoSlotsFor(DateTime date) => {
+      MealSlot.breakfast: [
+        const MealItem(
           id: 8, name: 'Oats (40 g dry)', type: 'Carb', calories: 150),
-      const MealItem(
+        const MealItem(
           id: 2, name: 'Egg (1 large)', type: 'Protein', calories: 72),
-      const MealItem(
+        const MealItem(
           id: 23, name: 'Blueberries (100 g)', type: 'Fruit', calories: 57),
-    ],
-    MealSlot.lunch: [
-      const MealItem(
+      ],
+      MealSlot.lunch: [
+        const MealItem(
           id: 1,
           name: 'Chicken Breast (100 g)',
           type: 'Protein',
           calories: 165),
-      const MealItem(
+        const MealItem(
           id: 7,
           name: 'Brown Rice (100 g cooked)',
           type: 'Carb',
           calories: 112),
-      const MealItem(
+        const MealItem(
           id: 16, name: 'Broccoli (100 g)', type: 'Vegetable', calories: 34),
-    ],
-    MealSlot.dinner: [
-      const MealItem(
+      ],
+      MealSlot.dinner: [
+        const MealItem(
           id: 6, name: 'Salmon Fillet (100 g)', type: 'Protein', calories: 208),
-      const MealItem(
+        const MealItem(
           id: 9, name: 'Sweet Potato (100 g)', type: 'Carb', calories: 86),
-      const MealItem(
+        const MealItem(
           id: 17, name: 'Spinach (100 g)', type: 'Vegetable', calories: 23),
-    ],
-    MealSlot.snack: [
-      const MealItem(
+      ],
+      MealSlot.snack: [
+        const MealItem(
           id: 13, name: 'Almonds (30 g)', type: 'Fat', calories: 170),
-      const MealItem(
+        const MealItem(
           id: 22, name: 'Apple (1 medium)', type: 'Fruit', calories: 95),
-    ],
-  };
+      ],
+      };
 
-  double get _totalCalories => _demoSlots.values
-      .expand((items) => items)
-      .fold(0, (s, i) => s + i.calories);
+    bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+      date.month == now.month &&
+      date.day == now.day;
+    }
 
-  double _caloriesForType(String type) => _demoSlots.values
+    DailyMealPlan _planFor(DateTime date, {bool useDemoTemplate = false}) {
+    return DailyMealPlan(
+      date: date,
+      slots: useDemoTemplate ? _demoSlotsFor(date) : null,
+    );
+    }
+
+    double get _totalCalories => _currentPlan.totalCalories;
+
+    double _caloriesForType(String type) => _currentPlan.slots.values
       .expand((items) => items)
       .where((item) => item.type == type)
       .fold(0, (sum, item) => sum + item.calories);
@@ -72,18 +86,50 @@ class _MealPlanPageState extends State<MealPlanPage> {
   double get _carbCalories => _caloriesForType('Carb');
   double get _fatCalories => _caloriesForType('Fat');
 
-  void _deleteFood(MealSlot slot, int index) {
+  @override
+  void initState() {
+    super.initState();
+    _loadPlanForDate(_selectedDate);
+  }
+
+  Future<void> _loadPlanForDate(DateTime date) async {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+
     setState(() {
-      _demoSlots[slot]?.removeAt(index);
+      _selectedDate = normalizedDate;
+      _loadingPlan = true;
+    });
+
+    var plan = await MealStorage.loadPlan(normalizedDate);
+    final hasSavedItems = plan.slots.values.any((items) => items.isNotEmpty);
+
+    if (!hasSavedItems && _isToday(normalizedDate)) {
+      plan = _planFor(normalizedDate, useDemoTemplate: true);
+      await MealStorage.savePlan(plan);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _currentPlan = plan;
+      _loadingPlan = false;
     });
   }
 
-  void _clearDay() {
+  Future<void> _saveCurrentPlan(DailyMealPlan plan) async {
     setState(() {
-      for (final slot in MealSlot.values) {
-        _demoSlots[slot]?.clear();
-      }
+      _currentPlan = plan;
     });
+    await MealStorage.savePlan(plan);
+  }
+
+  void _deleteFood(MealSlot slot, int index) {
+    final updatedPlan = _currentPlan.copyWithoutItem(slot, index);
+    _saveCurrentPlan(updatedPlan);
+  }
+
+  void _clearDay() {
+    final clearedPlan = _planFor(_selectedDate);
+    _saveCurrentPlan(clearedPlan);
   }
 
   Future<void> _addFood(MealSlot slot) async {
@@ -95,22 +141,17 @@ class _MealPlanPageState extends State<MealPlanPage> {
     );
 
     if (selectedFood != null) {
-      setState(() {
-        _demoSlots[slot]?.add(selectedFood);
-      });
+      final updatedPlan = _currentPlan.copyWithItem(slot, selectedFood);
+      await _saveCurrentPlan(updatedPlan);
     }
   }
 
   void _previousDay() {
-    setState(() {
-      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-    });
+    _loadPlanForDate(_selectedDate.subtract(const Duration(days: 1)));
   }
 
   void _nextDay() {
-    setState(() {
-      _selectedDate = _selectedDate.add(const Duration(days: 1));
-    });
+    _loadPlanForDate(_selectedDate.add(const Duration(days: 1)));
   }
 
   String _getDateLabel() {
@@ -149,6 +190,12 @@ class _MealPlanPageState extends State<MealPlanPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingPlan) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -211,7 +258,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
             SliverToBoxAdapter(
               child: MealSlotCard(
                 slot: slot,
-                items: _demoSlots[slot] ?? [],
+                items: _currentPlan.itemsFor(slot),
                 onDeleteFood: (index) => _deleteFood(slot, index),
                 onAddFood: () => _addFood(slot),
               ),
