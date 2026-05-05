@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/weekly_plan_service.dart';
 import 'workout_day_view.dart';
 
 class WorkoutCalendarPage extends StatefulWidget {
@@ -20,176 +19,150 @@ class WorkoutCalendarPage extends StatefulWidget {
 }
 
 class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
-  final List<String> _days = [
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-    'sunday'
+  static const List<String> _days = [
+    'monday', 'tuesday', 'wednesday', 'thursday',
+    'friday', 'saturday', 'sunday',
   ];
 
-  final Map<String, String> _dayNames = {
-    'monday': 'Monday',
-    'tuesday': 'Tuesday',
-    'wednesday': 'Wednesday',
-    'thursday': 'Thursday',
-    'friday': 'Friday',
-    'saturday': 'Saturday',
-    'sunday': 'Sunday'
+  static const Map<String, String> _dayNames = {
+    'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday',
+    'thursday': 'Thursday', 'friday': 'Friday',
+    'saturday': 'Saturday', 'sunday': 'Sunday',
   };
 
-  final Map<String, List<Map<String, dynamic>>> _weeklyPlan = {
-    'monday': [],
-    'tuesday': [],
-    'wednesday': [],
-    'thursday': [],
-    'friday': [],
-    'saturday': [],
-    'sunday': [],
+  // Only routine *names* are stored — resolved to full objects at render time.
+  final Map<String, List<String>> _weeklyPlanNames = {
+    for (final d in ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']) d: [],
   };
 
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadWeeklyPlan();
+    _loadFromApi();
   }
 
-  Future<void> _loadWeeklyPlan() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final planString = prefs.getString('workout_weekly_plan');
-      if (planString != null) {
-        final decoded = jsonDecode(planString) as Map<String, dynamic>;
-        setState(() {
-          for (final day in _days) {
-            if (decoded.containsKey(day)) {
-              final routinesRaw = decoded[day] as List;
-              _weeklyPlan[day] = routinesRaw
-                  .map((e) => Map<String, dynamic>.from(e as Map))
-                  .toList();
-            }
-          }
-        });
-      }
-    } catch (e) {
-      print('Error loading weekly plan: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+  // ── API calls ─────────────────────────────────────────────────────────────
+
+  Future<void> _loadFromApi() async {
+    setState(() { _isLoading = true; _errorMessage = null; });
+    final plan = await WeeklyPlanService.getWeeklyPlan();
+    if (!mounted) return;
+    if (plan != null) {
+      setState(() {
+        for (final day in _days) {
+          _weeklyPlanNames[day] = List<String>.from(plan[day] ?? []);
+        }
+      });
+    } else {
+      setState(() => _errorMessage = 'Could not load plan. Are you logged in?');
+    }
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _saveToApi() async {
+    final snapshot = Map<String, List<String>>.fromEntries(
+      _days.map((d) => MapEntry(d, List<String>.from(_weeklyPlanNames[d] ?? []))),
+    );
+    final ok = await WeeklyPlanService.saveWeeklyPlan(snapshot);
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to save plan — check your connection'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
-  Future<void> _saveWeeklyPlan() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final planString = jsonEncode(_weeklyPlan);
-      await prefs.setString('workout_weekly_plan', planString);
-    } catch (e) {
-      print('Error saving weekly plan: $e');
-    }
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  List<Map<String, dynamic>> _resolvedRoutines(String day) {
+    final names = _weeklyPlanNames[day] ?? [];
+    return names
+        .map((name) => widget.savedWorkouts.firstWhere(
+              (w) => w['name']?.toString() == name,
+              orElse: () => <String, dynamic>{},
+            ))
+        .where((w) => w.isNotEmpty)
+        .toList();
   }
 
-  void _openAssignRoutineDialog(String day) {
-    List<Map<String, dynamic>> selectedRoutines =
-        List.from(_weeklyPlan[day] ?? []);
+  // ── Dialogs ───────────────────────────────────────────────────────────────
+
+  void _openAssignDialog(String day) {
+    List<String> selected = List<String>.from(_weeklyPlanNames[day] ?? []);
 
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF1C1C2E),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: Text(
-                'Assign to ${_dayNames[day]}',
-                style: const TextStyle(color: Colors.white),
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: widget.savedWorkouts.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Text(
-                          "No saved routines found. Create a routine first.",
-                          style: TextStyle(color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: widget.savedWorkouts.length,
-                        itemBuilder: (context, index) {
-                          final workout = widget.savedWorkouts[index];
-                          final routineName =
-                              workout['name']?.toString() ?? 'Workout ${index + 1}';
-                          // Compare by name
-                          final isSelected = selectedRoutines
-                              .any((r) => r['name'] == workout['name']);
-
-                          return CheckboxListTile(
-                            title: Text(
-                              routineName,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            value: isSelected,
-                            activeColor: const Color(0xFF4A9FFF),
-                            checkColor: Colors.white,
-                            side: const BorderSide(color: Colors.grey),
-                            onChanged: (bool? checked) {
-                              setDialogState(() {
-                                if (checked == true) {
-                                  selectedRoutines.add(workout);
-                                } else {
-                                  selectedRoutines.removeWhere(
-                                      (r) => r['name'] == workout['name']);
-                                }
-                              });
-                            },
-                          );
-                        },
-                      ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel',
-                      style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _weeklyPlan[day] = selectedRoutines;
-                    });
-                    _saveWeeklyPlan();
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A9FFF),
-                    foregroundColor: Colors.white,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          backgroundColor: const Color(0xFF1C1C2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Assign to ${_dayNames[day]}',
+            style: const TextStyle(color: Colors.white),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: widget.savedWorkouts.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      'No saved routines. Finish a workout first.',
+                      style: TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: widget.savedWorkouts.length,
+                    itemBuilder: (_, i) {
+                      final name = widget.savedWorkouts[i]['name']?.toString()
+                          ?? 'Workout ${i + 1}';
+                      return CheckboxListTile(
+                        title: Text(name, style: const TextStyle(color: Colors.white)),
+                        value: selected.contains(name),
+                        activeColor: const Color(0xFF4A9FFF),
+                        checkColor: Colors.white,
+                        side: const BorderSide(color: Colors.grey),
+                        onChanged: (v) => setD(() {
+                          if (v == true) { if (!selected.contains(name)) selected.add(name); }
+                          else { selected.remove(name); }
+                        }),
+                      );
+                    },
                   ),
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                setState(() => _weeklyPlanNames[day] = List<String>.from(selected));
+                Navigator.pop(ctx);
+                await _saveToApi();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A9FFF),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  void _openDayDetailsDialog(String day) {
-    final routines = _weeklyPlan[day] ?? [];
+  void _openDayView(String day) {
+    final routines = _resolvedRoutines(day);
     if (routines.isEmpty) return;
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -201,121 +174,133 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     );
   }
 
+  // ── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(
-          child: Padding(
-        padding: EdgeInsets.all(32.0),
-        child: CircularProgressIndicator(),
-      ));
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
-    // DateTime.now().weekday returns 1 for Monday, 7 for Sunday
-    final int currentWeekday = DateTime.now().weekday;
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, color: Colors.grey, size: 48),
+              const SizedBox(height: 12),
+              Text(_errorMessage!, style: const TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadFromApi,
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A9FFF)),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-    return ListView.builder(
-      shrinkWrap: widget.shrinkWrap,
-      physics: widget.physics,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: _days.length,
-      itemBuilder: (context, index) {
-        final day = _days[index];
-        final isToday = (index + 1) == currentWeekday;
-        final routines = _weeklyPlan[day] ?? [];
+    final int todayWeekday = DateTime.now().weekday; // 1=Mon, 7=Sun
 
-        return GestureDetector(
-          onLongPress: () => _openAssignRoutineDialog(day),
-          onTap: () {
-            if (routines.isEmpty) {
-              _openAssignRoutineDialog(day);
-            } else {
-              _openDayDetailsDialog(day);
-            }
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1C1C2E),
-              borderRadius: BorderRadius.circular(16),
-              border: isToday
-                  ? Border.all(color: const Color(0xFF4A9FFF), width: 1.5)
-                  : null,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+    return RefreshIndicator(
+      onRefresh: _loadFromApi,
+      child: ListView.builder(
+        shrinkWrap: widget.shrinkWrap,
+        physics: widget.physics,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: _days.length,
+        itemBuilder: (_, i) {
+          final day = _days[i];
+          final isToday = (i + 1) == todayWeekday;
+          final assignedCount = (_weeklyPlanNames[day] ?? []).length;
+          final resolved = _resolvedRoutines(day);
+
+          return GestureDetector(
+            onLongPress: () => _openAssignDialog(day),
+            onTap: () => assignedCount == 0 ? _openAssignDialog(day) : _openDayView(day),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C2E),
+                borderRadius: BorderRadius.circular(16),
+                border: isToday
+                    ? Border.all(color: const Color(0xFF4A9FFF), width: 1.5)
+                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(children: [
+                          Text(
+                            _dayNames[day]!,
+                            style: TextStyle(
+                              color: isToday ? const Color(0xFF4A9FFF) : Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (isToday) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4A9FFF).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text('Today',
+                                  style: TextStyle(
+                                      color: Color(0xFF4A9FFF),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ]),
+                        const SizedBox(height: 6),
                         Text(
-                          _dayNames[day]!,
+                          assignedCount == 0
+                              ? 'No routines assigned'
+                              : '${resolved.length} routine${resolved.length != 1 ? 's' : ''}',
                           style: TextStyle(
-                            color: isToday
-                                ? const Color(0xFF4A9FFF)
-                                : Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            color: assignedCount == 0 ? Colors.grey[500] : Colors.grey[300],
+                            fontSize: 14,
                           ),
                         ),
-                        if (isToday) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4A9FFF).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'Today',
-                              style: TextStyle(
-                                  color: Color(0xFF4A9FFF),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      routines.isEmpty
-                          ? 'No routines assigned'
-                          : '${routines.length} routine${routines.length > 1 ? 's' : ''}',
-                      style: TextStyle(
-                        color: routines.isEmpty
-                            ? Colors.grey[500]
-                            : Colors.grey[300],
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                Icon(
-                  routines.isEmpty
-                      ? Icons.add_circle_outline
-                      : Icons.chevron_right,
-                  color: routines.isEmpty
-                      ? const Color(0xFF4A9FFF)
-                      : Colors.grey[400],
-                  size: 28,
-                ),
-              ],
+                  ),
+                  Icon(
+                    assignedCount == 0 ? Icons.add_circle_outline : Icons.chevron_right,
+                    color: assignedCount == 0 ? const Color(0xFF4A9FFF) : Colors.grey[400],
+                    size: 28,
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
