@@ -90,6 +90,26 @@ CREATE TABLE exercise (
     exer_met Float NOT NULL
 );
 
+---------------- USER WORKOUTS ----------------
+
+CREATE TABLE user_workout (
+    workout_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    duration_minutes INT,
+    notes TEXT
+);
+
+CREATE TABLE user_workout_exercise (
+    id SERIAL PRIMARY KEY,
+    workout_id INT NOT NULL REFERENCES user_workout(workout_id) ON DELETE CASCADE,
+    exer_id INT NOT NULL REFERENCES exercise(exer_id),
+    sets INT,
+    reps INT,
+    weight FLOAT,
+    notes TEXT
+);
+
 CREATE TABLE training (
     train_id SERIAL PRIMARY KEY,
     train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -3,8 +3,10 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 import asyncpg
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from jose import JWTError, jwt
 
 from auth import (
     SignupRequest,
@@ -12,6 +14,8 @@ from auth import (
     create_access_token,
     hash_password,
     verify_password,
+    SECRET_KEY,
+    ALGORITHM,
 )
 
 
@@ -145,6 +149,392 @@ async def login(request: LoginRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+
+# ==================== DEPENDENCY: Get Current User ====================
+async def get_current_user_id(authorization: str = Header(None)) -> int:
+    """Extract user ID from JWT token in Authorization header"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+    
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return int(user_id)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+# ==================== USER ENDPOINTS ====================
+class QuestionnaireRequest(BaseModel):
+    age: int
+    height: float
+    weight: float
+    goal: str
+    experience: str
+    location: str
+    days_per_week: int
+    session_length: int
+    injuries: list
+    diet_preference: str
+    allergies: list
+
+
+@app.post("/api/users/questionnaire")
+async def save_questionnaire(
+    request: QuestionnaireRequest,
+    user_id: int = Depends(get_current_user_id),
+):
+    """Save user's questionnaire responses"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Check if questionnaire already exists for this user
+            existing = await connection.fetchval(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id
+            )
+            
+            if existing:
+                # Update existing questionnaire
+                await connection.execute(
+                    """
+                    UPDATE body_metrics
+                    SET body_age = $1, body_height = $2, body_weight = $3,
+                        body_goal = $4, body_gender = $5
+                    WHERE user_id = $6
+                    """,
+                    request.age,
+                    request.height,
+                    request.weight,
+                    request.goal,
+                    'male',  # Default, can be extended later
+                    user_id
+                )
+            else:
+                # Create new body metrics entry
+                await connection.execute(
+                    """
+                    INSERT INTO body_metrics 
+                    (user_id, body_age, body_height, body_weight, body_goal, body_gender)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    """,
+                    user_id,
+                    request.age,
+                    request.height,
+                    request.weight,
+                    request.goal,
+                    'male'  # Default
+                )
+            
+            return {
+                "success": True,
+                "message": "Questionnaire saved successfully",
+                "user_id": user_id
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save questionnaire: {str(e)}")
+
+
+@app.get("/api/users/questionnaire")
+async def get_questionnaire(
+    user_id: int = Depends(get_current_user_id),
+):
+    """Get user's saved questionnaire responses"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            result = await connection.fetchrow(
+                """
+                SELECT body_age, body_height, body_weight, body_goal, body_gender
+                FROM body_metrics
+                WHERE user_id = $1
+                """,
+                user_id
+            )
+            
+            if not result:
+                raise HTTPException(status_code=404, detail="Questionnaire not found")
+            
+            return {
+                "age": result["body_age"],
+                "height": result["body_height"],
+                "weight": result["body_weight"],
+                "goal": result["body_goal"],
+                "gender": result["body_gender"]
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch questionnaire: {str(e)}")
+
+
+@app.get("/api/users/profile")
+async def get_user_profile(
+    user_id: int = Depends(get_current_user_id),
+):
+    """Get user profile information"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            user = await connection.fetchrow(
+                """
+                SELECT user_id, user_email, user_name, user_surname
+                FROM users
+                WHERE user_id = $1
+                """,
+                user_id
+            )
+            
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            return {
+                "user_id": user["user_id"],
+                "email": user["user_email"],
+                "username": user["user_name"],
+                "surname": user["user_surname"]
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
+
+
+@app.put("/api/users/profile")
+async def update_user_profile(
+    data: dict,
+    user_id: int = Depends(get_current_user_id),
+):
+    """Update user profile information"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            updates = []
+            values = []
+            param_count = 1
+            
+            if "username" in data:
+                param_count += 1
+                updates.append(f"user_name = ${param_count - 1}")
+                values.append(data["username"])
+            
+            if "surname" in data:
+                param_count += 1
+                updates.append(f"user_surname = ${param_count - 1}")
+                values.append(data["surname"])
+            
+            if not updates:
+                return {"message": "No updates provided"}
+            
+            values.append(user_id)
+            update_clause = ", ".join(updates)
+            
+            await connection.execute(
+                f"UPDATE users SET {update_clause} WHERE user_id = ${param_count}",
+                *values
+            )
+            
+            return {"success": True, "message": "Profile updated"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
+
+
+# ==================== WORKOUT ENDPOINTS ====================
+class WorkoutExercise(BaseModel):
+    exer_id: int
+    exer_name: str
+    sets: int = 0
+    reps: int = 0
+    weight: float = 0
+    notes: str = ""
+
+
+class WorkoutRequest(BaseModel):
+    exercises: list[WorkoutExercise]
+    duration_minutes: int = 0
+    notes: str = ""
+
+
+@app.post("/api/workouts")
+async def save_workout(
+    request: WorkoutRequest,
+    user_id: int = Depends(get_current_user_id),
+):
+    """Save a completed workout for the user"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Insert the workout record
+            workout = await connection.fetchrow(
+                """
+                INSERT INTO user_workout (user_id, created_at, duration_minutes, notes)
+                VALUES ($1, NOW(), $2, $3)
+                RETURNING workout_id
+                """,
+                user_id,
+                request.duration_minutes,
+                request.notes
+            )
+            workout_id = workout["workout_id"]
+            
+            # Insert each exercise in the workout
+            for exc in request.exercises:
+                await connection.execute(
+                    """
+                    INSERT INTO user_workout_exercise 
+                    (workout_id, exer_id, sets, reps, weight, notes)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    """,
+                    workout_id,
+                    exc.exer_id,
+                    exc.sets,
+                    exc.reps,
+                    exc.weight,
+                    exc.notes
+                )
+            
+            return {
+                "success": True,
+                "workout_id": workout_id,
+                "exercises_count": len(request.exercises),
+                "message": "Workout saved successfully"
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save workout: {str(e)}")
+
+
+@app.get("/api/workouts")
+async def get_workouts(
+    limit: int = 50,
+    user_id: int = Depends(get_current_user_id),
+):
+    """Get user's workout history"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            workouts = await connection.fetch(
+                """
+                SELECT workout_id, created_at, duration_minutes, notes
+                FROM user_workout
+                WHERE user_id = $1
+                ORDER BY created_at DESC
+                LIMIT $2
+                """,
+                user_id,
+                limit
+            )
+            
+            result = []
+            for w in workouts:
+                exercises = await connection.fetch(
+                    """
+                    SELECT exer_id, sets, reps, weight, notes
+                    FROM user_workout_exercise
+                    WHERE workout_id = $1
+                    """,
+                    w["workout_id"]
+                )
+                
+                result.append({
+                    "workout_id": w["workout_id"],
+                    "created_at": str(w["created_at"]),
+                    "duration_minutes": w["duration_minutes"],
+                    "notes": w["notes"],
+                    "exercises": [
+                        {
+                            "exer_id": e["exer_id"],
+                            "sets": e["sets"],
+                            "reps": e["reps"],
+                            "weight": e["weight"],
+                            "notes": e["notes"]
+                        }
+                        for e in exercises
+                    ]
+                })
+            
+            return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch workouts: {str(e)}")
+
+
+@app.get("/api/workouts/{workout_id}")
+async def get_workout(
+    workout_id: int,
+    user_id: int = Depends(get_current_user_id),
+):
+    """Get a specific workout by ID"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            workout = await connection.fetchrow(
+                """
+                SELECT * FROM user_workout
+                WHERE workout_id = $1 AND user_id = $2
+                """,
+                workout_id,
+                user_id
+            )
+            
+            if not workout:
+                raise HTTPException(status_code=404, detail="Workout not found")
+            
+            exercises = await connection.fetch(
+                """
+                SELECT exer_id, sets, reps, weight, notes
+                FROM user_workout_exercise
+                WHERE workout_id = $1
+                """,
+                workout_id
+            )
+            
+            return {
+                "workout_id": workout["workout_id"],
+                "created_at": str(workout["created_at"]),
+                "duration_minutes": workout["duration_minutes"],
+                "notes": workout["notes"],
+                "exercises": [
+                    {
+                        "exer_id": e["exer_id"],
+                        "sets": e["sets"],
+                        "reps": e["reps"],
+                        "weight": e["weight"],
+                        "notes": e["notes"]
+                    }
+                    for e in exercises
+                ]
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch workout: {str(e)}")
+
+
+@app.delete("/api/workouts/{workout_id}")
+async def delete_workout(
+    workout_id: int,
+    user_id: int = Depends(get_current_user_id),
+):
+    """Delete a saved workout"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Check if workout belongs to user
+            workout = await connection.fetchval(
+                "SELECT workout_id FROM user_workout WHERE workout_id = $1 AND user_id = $2",
+                workout_id,
+                user_id
+            )
+            
+            if not workout:
+                raise HTTPException(status_code=404, detail="Workout not found")
+            
+            # Delete workout (cascade will delete exercises)
+            await connection.execute(
+                "DELETE FROM user_workout WHERE workout_id = $1",
+                workout_id
+            )
+            
+            return {"success": True, "message": "Workout deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete workout: {str(e)}")
 
 
 def format_exercise(row: asyncpg.Record) -> dict:
