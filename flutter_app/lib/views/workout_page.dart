@@ -29,8 +29,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
   List<Map<String, dynamic>> _savedWorkouts = [];
   bool _loadingSavedWorkouts = true;
   int _streakRefreshToken = 0;
-  /// Names of routines currently assigned to at least one day in the weekly plan.
-  Set<String> _assignedRoutineNames = {};
+  /// Maps routine name -> list of day names it is assigned to.
+  Map<String, List<String>> _assignedRoutineDays = {};
 
   @override
   void initState() {
@@ -50,11 +50,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
     try {
       final plan = await WeeklyPlanService.getWeeklyPlan();
       if (plan != null && mounted) {
-        final assigned = <String>{};
-        for (final names in plan.values) {
-          assigned.addAll(names);
-        }
-        setState(() => _assignedRoutineNames = assigned);
+        const dayLabels = {
+          'monday': 'Mon', 'tuesday': 'Tue', 'wednesday': 'Wed',
+          'thursday': 'Thu', 'friday': 'Fri',
+          'saturday': 'Sat', 'sunday': 'Sun',
+        };
+        final Map<String, List<String>> result = {};
+        plan.forEach((day, names) {
+          final label = dayLabels[day] ?? day;
+          for (final name in names) {
+            result.putIfAbsent(name, () => []).add(label);
+          }
+        });
+        setState(() => _assignedRoutineDays = result);
       }
     } catch (_) {}
   }
@@ -1344,8 +1352,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     final workoutNumber = _savedWorkouts.length - idx;
                     final routineName =
                         workout['name']?.toString() ?? 'Workout $workoutNumber';
-                    final isAssigned =
-                        _assignedRoutineNames.contains(routineName);
+                    final assignedDays =
+                        _assignedRoutineDays[routineName] ?? [];
+                    final isAssigned = assignedDays.isNotEmpty;
 
                     return GestureDetector(
                       onTap: () =>
@@ -1398,18 +1407,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                               width: 1,
                                             ),
                                           ),
-                                          child: const Row(
+                                          child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(
+                                              const Icon(
                                                 Icons.calendar_today_rounded,
                                                 size: 11,
                                                 color: Color(0xFFB39DDB),
                                               ),
-                                              SizedBox(width: 4),
+                                              const SizedBox(width: 4),
                                               Text(
-                                                'Assigned',
-                                                style: TextStyle(
+                                                assignedDays.join(', '),
+                                                style: const TextStyle(
                                                   color: Color(0xFFB39DDB),
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w600,
