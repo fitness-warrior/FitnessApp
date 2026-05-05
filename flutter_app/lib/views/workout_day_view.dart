@@ -338,6 +338,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView> {
                                           controller: controllers['reps']!,
                                           label: 'reps',
                                           isComplete: isSetComplete,
+                                          isInteger: true,
                                         ),
                                       ),
                                     ],
@@ -388,11 +389,17 @@ class _WorkoutDayViewState extends State<WorkoutDayView> {
     required TextEditingController controller,
     required String label,
     required bool isComplete,
+    bool isInteger = false,
   }) {
     return TextField(
       controller: controller,
       enabled: !isComplete,
-      keyboardType: TextInputType.number,
+      keyboardType: isInteger ? TextInputType.number : const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        isInteger 
+            ? FilteringTextInputFormatter.digitsOnly 
+            : FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+      ],
       style: TextStyle(
         color: isComplete ? Colors.grey[600] : Colors.white,
         fontSize: 16,
