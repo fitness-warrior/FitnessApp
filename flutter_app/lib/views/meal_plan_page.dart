@@ -18,66 +18,73 @@ class MealPlanPage extends StatefulWidget {
 }
 
 class _MealPlanPageState extends State<MealPlanPage> {
-  DateTime _selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  DateTime _selectedDate =
+      DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
   DailyMealPlan _currentPlan = DailyMealPlan(date: DateTime.now());
   bool _loadingPlan = true;
 
-    Map<MealSlot, List<MealItem>> _demoSlotsFor(DateTime date) => {
-      MealSlot.breakfast: [
-        const MealItem(
-          id: 8, name: 'Oats (40 g dry)', type: 'Carb', calories: 150),
-        const MealItem(
-          id: 2, name: 'Egg (1 large)', type: 'Protein', calories: 72),
-        const MealItem(
-          id: 23, name: 'Blueberries (100 g)', type: 'Fruit', calories: 57),
-      ],
-      MealSlot.lunch: [
-        const MealItem(
-          id: 1,
-          name: 'Chicken Breast (100 g)',
-          type: 'Protein',
-          calories: 165),
-        const MealItem(
-          id: 7,
-          name: 'Brown Rice (100 g cooked)',
-          type: 'Carb',
-          calories: 112),
-        const MealItem(
-          id: 16, name: 'Broccoli (100 g)', type: 'Vegetable', calories: 34),
-      ],
-      MealSlot.dinner: [
-        const MealItem(
-          id: 6, name: 'Salmon Fillet (100 g)', type: 'Protein', calories: 208),
-        const MealItem(
-          id: 9, name: 'Sweet Potato (100 g)', type: 'Carb', calories: 86),
-        const MealItem(
-          id: 17, name: 'Spinach (100 g)', type: 'Vegetable', calories: 23),
-      ],
-      MealSlot.snack: [
-        const MealItem(
-          id: 13, name: 'Almonds (30 g)', type: 'Fat', calories: 170),
-        const MealItem(
-          id: 22, name: 'Apple (1 medium)', type: 'Fruit', calories: 95),
-      ],
+  Map<MealSlot, List<MealItem>> _demoSlotsFor(DateTime date) => {
+        MealSlot.breakfast: [
+          const MealItem(
+              id: 8, name: 'Oats (40 g dry)', type: 'Carb', calories: 150),
+          const MealItem(
+              id: 2, name: 'Egg (1 large)', type: 'Protein', calories: 72),
+          const MealItem(
+              id: 23, name: 'Blueberries (100 g)', type: 'Fruit', calories: 57),
+        ],
+        MealSlot.lunch: [
+          const MealItem(
+              id: 1,
+              name: 'Chicken Breast (100 g)',
+              type: 'Protein',
+              calories: 165),
+          const MealItem(
+              id: 7,
+              name: 'Brown Rice (100 g cooked)',
+              type: 'Carb',
+              calories: 112),
+          const MealItem(
+              id: 16,
+              name: 'Broccoli (100 g)',
+              type: 'Vegetable',
+              calories: 34),
+        ],
+        MealSlot.dinner: [
+          const MealItem(
+              id: 6,
+              name: 'Salmon Fillet (100 g)',
+              type: 'Protein',
+              calories: 208),
+          const MealItem(
+              id: 9, name: 'Sweet Potato (100 g)', type: 'Carb', calories: 86),
+          const MealItem(
+              id: 17, name: 'Spinach (100 g)', type: 'Vegetable', calories: 23),
+        ],
+        MealSlot.snack: [
+          const MealItem(
+              id: 13, name: 'Almonds (30 g)', type: 'Fat', calories: 170),
+          const MealItem(
+              id: 22, name: 'Apple (1 medium)', type: 'Fruit', calories: 95),
+        ],
       };
 
-    bool _isToday(DateTime date) {
+  bool _isToday(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year &&
-      date.month == now.month &&
-      date.day == now.day;
-    }
+        date.month == now.month &&
+        date.day == now.day;
+  }
 
-    DailyMealPlan _planFor(DateTime date, {bool useDemoTemplate = false}) {
+  DailyMealPlan _planFor(DateTime date, {bool useDemoTemplate = false}) {
     return DailyMealPlan(
       date: date,
       slots: useDemoTemplate ? _demoSlotsFor(date) : null,
     );
-    }
+  }
 
-    double get _totalCalories => _currentPlan.totalCalories;
+  double get _totalCalories => _currentPlan.totalCalories;
 
-    double _caloriesForType(String type) => _currentPlan.slots.values
+  double _caloriesForType(String type) => _currentPlan.slots.values
       .expand((items) => items)
       .where((item) => item.type == type)
       .fold(0, (sum, item) => sum + item.calories);
