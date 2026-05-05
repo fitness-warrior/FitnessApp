@@ -42,7 +42,20 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
           final kg = set['kg']!.text.trim();
           final reps = set['reps']!.text.trim();
 
+          // Check if fields are empty
           if (kg.isEmpty || reps.isEmpty) {
+            return false;
+          }
+
+          // Validate kg: must be between 0 and 500
+          final kgValue = double.tryParse(kg);
+          if (kgValue == null || kgValue <= 0 || kgValue >= 500) {
+            return false;
+          }
+
+          // Validate reps: must be positive integer
+          final repsValue = int.tryParse(reps);
+          if (repsValue == null || repsValue <= 0) {
             return false;
           }
         }
@@ -80,7 +93,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
   Future<void> _showSaveConfirmationDialog() async {
     if (!_validateWorkoutData()) {
       setState(() {
-        _error = 'Please fill in all kg and reps fields for all exercises';
+        _error = 'Invalid values: kg must be 0-500, reps must be positive integers';
       });
       return;
     }
