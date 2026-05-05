@@ -33,21 +33,29 @@ class MealStorage {
       final loggedIn = await AuthService.isLoggedIn();
       if (loggedIn) {
         final dateStr = date.toIso8601String().split('T').first;
-        final uri = Uri.parse('${ApiConfig.baseUrl}/meals?plan_date=$dateStr');
+        final uri = Uri.parse('${ApiConfig.baseUrl}/meals').replace(
+          queryParameters: {'plan_date': dateStr},
+        );
         final headers = await AuthService.getAuthHeaders();
-        final resp = await http.get(uri, headers: headers);
-        if (resp.statusCode == 200) {
-          final body = jsonDecode(resp.body) as Map<String, dynamic>;
-          final planObj = body['plan'] as Map<String, dynamic>?;
-          if (planObj == null || planObj.isEmpty)
+        final response = await http.get(uri, headers: headers);
+        
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final planObj = data['plan'] as Map<String, dynamic>?;
+          
+          if (planObj == null || planObj.isEmpty) {
             return DailyMealPlan(date: date);
+          }
           return DailyMealPlan.fromMap(planObj);
+        } else {
+          print('Failed to fetch meal plan: ${response.statusCode}');
         }
       }
-    } catch (_) {
-      // ignore network errors and fall back to local
+    } catch (e) {
+      print('Error fetching meal plan: $e');
     }
 
+    // Fallback to local storage
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(await _keyFor(date));
     if (raw == null) return DailyMealPlan(date: date);
@@ -58,12 +66,12 @@ class MealStorage {
     }
   }
 
-  /// Persist [plan] to local storage.
+  /// Persist [plan] to local storage and sync to backend.
   static Future<void> savePlan(DailyMealPlan plan) async {
+    // Always save locally first as a fallback
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(await _keyFor(plan.date), plan.toJson());
 
-    // Try to sync to server when logged in (best-effort)
     try {
       final loggedIn = await AuthService.isLoggedIn();
       if (!loggedIn) return;
@@ -71,14 +79,24 @@ class MealStorage {
       final dateStr = plan.date.toIso8601String().split('T').first;
       final uri = Uri.parse('${ApiConfig.baseUrl}/meals');
       final headers = await AuthService.getAuthHeaders();
-      final body = jsonEncode({
+      
+      final payload = {
         'plan_date': dateStr,
         'plan': plan.toMap(),
-      });
+      };
 
-      await http.post(uri, headers: headers, body: body);
-    } catch (_) {
-      // ignore network/save errors — local copy remains authoritative until sync succeeds
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to save meal plan: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Error saving meal plan to backend: $e');
+      throw Exception('Error saving meal plan: $e');
     }
   }
 

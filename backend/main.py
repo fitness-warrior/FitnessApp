@@ -851,7 +851,12 @@ async def get_meal_plan(plan_date: date, user_id: int = Depends(get_current_user
             if not row:
                 return {"plan_date": str(plan_date), "plan": {}}
 
-            return {"plan_date": str(plan_date), "plan": row["plan"]}
+            import json
+            plan_data = row["plan"]
+            if isinstance(plan_data, str):
+                plan_data = json.loads(plan_data)
+                
+            return {"plan_date": str(plan_date), "plan": plan_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch meal plan: {str(e)}")
 
@@ -867,25 +872,28 @@ async def save_meal_plan(request: MealPlanRequest, user_id: int = Depends(get_cu
                 request.plan_date,
             )
 
+            import json
+            plan_str = json.dumps(request.plan)
+
             if existing:
                 await connection.execute(
                     """
                     UPDATE user_meal_plan
-                    SET plan = $1, updated_at = NOW()
+                    SET plan = $1::jsonb, updated_at = NOW()
                     WHERE user_meal_plan_id = $2
                     """,
-                    request.plan,
+                    plan_str,
                     existing,
                 )
             else:
                 await connection.execute(
                     """
                     INSERT INTO user_meal_plan (user_id, plan_date, plan)
-                    VALUES ($1, $2, $3)
+                    VALUES ($1, $2, $3::jsonb)
                     """,
                     user_id,
                     request.plan_date,
-                    request.plan,
+                    plan_str,
                 )
 
             return {"success": True, "plan_date": str(request.plan_date)}
