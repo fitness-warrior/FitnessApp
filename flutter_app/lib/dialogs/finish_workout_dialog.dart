@@ -325,11 +325,17 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
         );
       }
 
-      // Best-effort sync to API (skip if backend unreachable)
+      // Best-effort sync to API
       try {
         await WorkoutService.submitWorkout(exerciseData)
             .timeout(const Duration(seconds: 5));
-        await StreakService.updateStreak();
+      } catch (_) {}
+
+      // Streak update is independent — always attempt it even if the
+      // workout API call above failed or timed out
+      try {
+        await StreakService.updateStreak()
+            .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
       widget.onSuccess({});

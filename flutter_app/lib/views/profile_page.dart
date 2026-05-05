@@ -26,28 +26,33 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadData() async {
     setState(() => isLoading = true);
 
-    // Load auth user and fitness profile in parallel
-    final userFuture = AuthService.getCurrentUser();
-    final fitnessFuture =
-        UserService.getQuestionnaireResponse().catchError((_) => null);
+    // 1. Load user identity
+    final user = await AuthService.getCurrentUser();
 
-    final user = await userFuture;
-    var fitness = await fitnessFuture;
+    // 2. Local cache first — always available after questionnaire
+    final cached = await RecommendationStorage.loadProfile();
+    Map<String, dynamic>? fitness;
+    if (cached != null) {
+      fitness = {
+        'goal': cached.goal,
+        'experience': cached.experience,
+        'location':
+            cached.equipment.contains('gym_machines') ? 'Gym' : 'Home',
+        'session_length': cached.workoutLengthMinutes,
+        'age': cached.age > 0 ? cached.age : null,
+        'injuries': cached.injuredAreas,
+      };
+    }
 
-    // Fallback: if API returned nothing, use the local cache
-    if (fitness == null) {
-      final cached = await RecommendationStorage.loadProfile();
-      if (cached != null) {
-        fitness = {
-          'age': cached.age,
-          'goal': cached.goal,
-          'experience': cached.experience,
-          'location': cached.equipment.contains('gym_machines') ? 'Gym' : 'Home',
-          'days_per_week': null,
-          'session_length': cached.workoutLengthMinutes,
-          'injuries': cached.injuredAreas,
-        };
+    // 3. Try enriching with API data (has extra fields like height/weight/diet)
+    try {
+      final apiFitness = await UserService.getQuestionnaireResponse()
+          .timeout(const Duration(seconds: 4));
+      if (apiFitness != null && apiFitness.isNotEmpty) {
+        fitness = apiFitness; // API is richer — prefer it
       }
+    } catch (_) {
+      // Keep local cache if API is unavailable
     }
 
     if (mounted) {
@@ -136,12 +141,54 @@ class _ProfilePageState extends State<ProfilePage> {
       final items = raw.cast<String>().where((s) => s.isNotEmpty).toList();
       return items.isEmpty ? 'None' : items.join(', ');
     }
-    if (key == 'session_length') return '$raw min';
-    if (key == 'height') return '$raw cm';
-    if (key == 'weight') return '$raw kg';
-    if (key == 'age') return '$raw yrs';
-    return raw.toString();
+    final s = raw.toString();
+    if (s.isEmpty) return '—';
+
+    if (key == 'goal') return _prettifyGoal(s);
+    if (key == 'experience') return _prettifyExperience(s);
+    if (key == 'diet_preference') return _prettifyDiet(s);
+    if (key == 'session_length') return '$s min';
+    if (key == 'days_per_week') return '$s / week';
+    if (key == 'height') return '$s cm';
+    if (key == 'weight') return '$s kg';
+    if (key == 'age') return '$s yrs';
+    return s;
   }
+
+  // ── prettifiers ─────────────────────────────────────────────────────────────
+
+  String _prettifyGoal(String raw) {
+    const map = {
+      'fat_loss': 'Lose Weight',
+      'lose weight': 'Lose Weight',
+      'strength': 'Build Muscle',
+      'build muscle': 'Build Muscle',
+      'general_fitness': 'Stay Fit',
+      'stay fit': 'Stay Fit',
+      'weight_gain': 'Gain Weight',
+      'gain weight': 'Gain Weight',
+    };
+    return map[raw.toLowerCase()] ?? raw;
+  }
+
+  String _prettifyExperience(String raw) {
+    const map = {
+      'beginner': 'Beginner',
+      'intermediate': 'Intermediate',
+      'advanced': 'Advanced',
+    };
+    return map[raw.toLowerCase()] ?? raw;
+  }
+
+  String _prettifyDiet(String raw) {
+    const map = {
+      'veg': 'Vegetarian',
+      'non-veg': 'Non-Vegetarian',
+      'non_veg': 'Non-Vegetarian',
+    };
+    return map[raw.toLowerCase()] ?? raw;
+  }
+
 
   // Keys we want to surface and the order to show them in
   static const _fitnessKeys = [
