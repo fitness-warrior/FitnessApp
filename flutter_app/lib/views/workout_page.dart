@@ -5,6 +5,7 @@ import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_history_service.dart';
 import '../services/streak_service.dart';
+import '../services/weekly_plan_service.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
 import '../widgets/common/streak_display.dart';
@@ -432,17 +433,72 @@ class _WorkoutPageState extends State<WorkoutPage> {
     final routineName = workout['name']?.toString() ?? 'Workout';
     final pageContext = context;
 
+    // Check if this routine is assigned to any days in the weekly plan
+    List<String> assignedDays = [];
+    try {
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      if (plan != null) {
+        const dayNames = {
+          'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday',
+          'thursday': 'Thursday', 'friday': 'Friday',
+          'saturday': 'Saturday', 'sunday': 'Sunday',
+        };
+        for (final entry in plan.entries) {
+          if (entry.value.contains(routineName)) {
+            assignedDays.add(dayNames[entry.key] ?? entry.key);
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1C1C2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Delete Routine',
           style: TextStyle(color: Colors.white),
         ),
-        content: Text(
-          'Are you sure you want to delete "$routineName"?',
-          style: const TextStyle(color: Colors.grey),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete "$routineName"?',
+              style: const TextStyle(color: Colors.grey),
+            ),
+            if (assignedDays.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.orange, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This routine is assigned to: '
+                        '${assignedDays.join(', ')}.\n'
+                        'It will be removed from those days.',
+                        style: const TextStyle(
+                            color: Colors.orange, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
         actions: [
           ElevatedButton(
@@ -457,6 +513,17 @@ class _WorkoutPageState extends State<WorkoutPage> {
               Navigator.pop(context);
 
               try {
+                // Remove from weekly plan first if assigned
+                if (assignedDays.isNotEmpty) {
+                  final plan = await WeeklyPlanService.getWeeklyPlan();
+                  if (plan != null) {
+                    for (final day in plan.keys) {
+                      plan[day]?.remove(routineName);
+                    }
+                    await WeeklyPlanService.saveWeeklyPlan(plan);
+                  }
+                }
+
                 if (workout['source'] == 'local') {
                   final localWorkouts = _savedWorkouts
                       .where((w) => w['source'] == 'local')
@@ -467,7 +534,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   }
                 } else if (workout['source'] == 'api') {
                   if (workout['id'] != null) {
-                    final success = await WorkoutHistoryService.deleteWorkout(workout['id'] as int);
+                    final success = await WorkoutHistoryService.deleteWorkout(
+                        workout['id'] as int);
                     if (!success) throw Exception('API returned failure');
                   }
                 }
@@ -483,7 +551,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   );
                 }
               } catch (e) {
-                print('Error deleting workout: $e');
                 if (mounted) {
                   ScaffoldMessenger.of(pageContext).showSnackBar(
                     SnackBar(
@@ -503,6 +570,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       ),
     );
   }
+
 
   void _openRoutineDetailsDialog(
       Map<String, dynamic> workout, String routineName) {
