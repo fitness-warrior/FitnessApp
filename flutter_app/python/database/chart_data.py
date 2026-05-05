@@ -49,13 +49,21 @@ class CollectedData:
         return self.cur.fetchall()
         
     def cardio_speed(self,name):
-        row = self._collect_rows()
-        speed = (row[2]*1000) / row[1]
-        return (row[0], speed)
+        rows = self._collect_rows()
+        final_collection = []
+        for row in rows:
+            speed = (row[2]*1000) / row[1]
+            new_row = [row[0],speed]
+            final_collection.append (new_row)
+        return final_collection  
     
     def cardio_endurance(self,name):
-        row = self._collect_rows()
-        return (row[0], row[1]) 
+        rows = self._collect_rows()
+        final_collection = []
+        for row in rows:
+            new_row = [row[0],row[1]]
+            final_collection.append (new_row)
+        return final_collection 
     
     def cardio_endurance(self,name):
         rows = self._collect_rows()
@@ -66,12 +74,22 @@ class CollectedData:
         return final_collection  
     
     def strength_total(self,name):
-        row = self._collect_rows()
-        total = row[2] * row[3]
-        return (row[0], total)
+        rows = self._collect_rows()
+        final_collection = []
+        for row in rows:
+            total = row[2] * row[3]
+            new_row = [row[0],total]
+            final_collection.append (new_row)
+        return final_collection  
     
-
-
+    def strength_max(self,name):
+        rows = self._collect_rows()
+        final_collection = []
+        for row in rows:
+            new_row = [row[0],row[2]]
+            final_collection.append (new_row)
+        return final_collection  
+#
 
 if __name__ == "__main__":
     CD = CollectedData(4)
