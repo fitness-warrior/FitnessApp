@@ -351,22 +351,30 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
-      // Grant XP: 20 XP per exercise
-      final xpEarned = exerciseData.length * 20;
+      // Grant XP: 10 XP per exercise
+      final xpEarned = exerciseData.length * 10;
       await UserStatsService.addXP(xpEarned);
 
       widget.onSuccess({});
       Navigator.pop(context);
 
       if (mounted) {
+        final message = saveAsRoutine
+            ? 'Workout saved! +$xpEarned XP earned!'
+            : 'Workout completed! +$xpEarned XP earned!';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              saveAsRoutine
-                  ? 'Workout saved successfully!'
-                  : 'Workout completed!',
+            content: Row(
+              children: [
+                const Icon(Icons.star_rounded, color: Color(0xFF66BB6A), size: 20),
+                const SizedBox(width: 10),
+                Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
             ),
-            duration: const Duration(seconds: 2),
+            backgroundColor: const Color(0xFF1C1C2E),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
