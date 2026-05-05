@@ -3,6 +3,7 @@ import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
 import '../services/workout_storage.dart';
+import '../services/workout_history_service.dart';
 import '../services/streak_service.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
@@ -44,9 +45,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Future<void> _loadSavedWorkouts() async {
     try {
-      // Routines list = only locally saved workouts.
-      // API history is used for streak/calendar — NOT merged here to avoid
-      // duplicate entries (every finish saves locally AND to the API).
       final localWorkouts = (await WorkoutStorage.getWorkouts())
           .map((w) => {
                 ...w,
@@ -54,9 +52,42 @@ class _WorkoutPageState extends State<WorkoutPage> {
               })
           .toList();
 
+      List<Map<String, dynamic>> apiWorkouts = [];
+      try {
+        final apiHistory = await WorkoutHistoryService.getWorkoutHistory();
+        apiWorkouts = _mapApiWorkoutsToRoutines(apiHistory);
+      } catch (e) {
+        print('Error fetching API workouts: $e');
+      }
+
+      final List<Map<String, dynamic>> combined = [];
+      final Set<String> seenHashes = {};
+
+      // Merge and deduplicate
+      for (final w in [...localWorkouts, ...apiWorkouts]) {
+        final name = w['name']?.toString() ?? 'Workout';
+        final dateStr = w['date']?.toString() ?? '';
+        final datePrefix = dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
+        final exercises = w['exercises'] as List? ?? [];
+        
+        // Hash based on name, day, and exercise count to reliably deduplicate
+        final hash = '$name-$datePrefix-${exercises.length}';
+        
+        if (!seenHashes.contains(hash)) {
+          seenHashes.add(hash);
+          combined.add(w);
+        }
+      }
+
+      combined.sort((a, b) {
+        final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA); // Newest first
+      });
+
       if (!mounted) return;
       setState(() {
-        _savedWorkouts = localWorkouts;
+        _savedWorkouts = combined;
         _loadingSavedWorkouts = false;
       });
     } catch (e) {
@@ -257,9 +288,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   void _removeExercise(int index) {
     if (_setControllers.containsKey(index)) {
+      final exercise = _workoutExercises[index];
+      final exerType = exercise['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
+
       for (final set in _setControllers[index]!) {
-        set['kg']!.dispose();
-        set['reps']!.dispose();
+        if (isCardio) {
+          set['time']?.dispose();
+          set['calories']?.dispose();
+        } else {
+          set['kg']?.dispose();
+          set['reps']?.dispose();
+        }
       }
       _setControllers.remove(index);
     }

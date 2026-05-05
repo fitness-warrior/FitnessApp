@@ -8,7 +8,8 @@ class WorkoutStorage {
 
   static Future<String> _getNamespacedKey(String baseKey) async {
     final user = await AuthService.getCurrentUser();
-    final userId = user?['id']?.toString() ?? 'anonymous';
+    // Use user_id if present, else id, else fallback
+    final userId = user?['user_id']?.toString() ?? user?['id']?.toString() ?? 'anonymous';
     return '${baseKey}_$userId';
   }
 
@@ -63,7 +64,19 @@ class WorkoutStorage {
     }
 
     final key = await _getNamespacedKey(_currentWorkoutsKey);
-    final sessionsJson = prefs.getString(key);
+    String? sessionsJson = prefs.getString(key);
+
+    // Migrate from old global key if namespaced key is empty
+    final migratedSessionsKey = '${key}_migrated';
+    if (prefs.getBool(migratedSessionsKey) != true) {
+      final oldSessionsJson = prefs.getString(_currentWorkoutsKey);
+      if (oldSessionsJson != null && (sessionsJson == null || sessionsJson == '[]')) {
+        sessionsJson = oldSessionsJson;
+        await prefs.setString(key, sessionsJson);
+      }
+      await prefs.setBool(migratedSessionsKey, true);
+    }
+
     if (sessionsJson == null) return [];
     
     try {
@@ -122,7 +135,23 @@ class WorkoutStorage {
   static Future<List<Map<String, dynamic>>> getWorkouts() async {
     final prefs = await SharedPreferences.getInstance();
     final key = await _getNamespacedKey(_key);
-    final existing = prefs.getString(key);
+    String? existing = prefs.getString(key);
+
+    // Migration: Copy over the old shared data to this user's profile
+    final migratedKey = '${key}_migrated';
+    if (prefs.getBool(migratedKey) != true) {
+      final oldExisting = prefs.getString(_key);
+      if (oldExisting != null) {
+        final List<dynamic> oldList = jsonDecode(oldExisting);
+        final List<dynamic> currentList = existing != null ? jsonDecode(existing) : [];
+        
+        currentList.insertAll(0, oldList);
+        existing = jsonEncode(currentList);
+        await prefs.setString(key, existing);
+      }
+      await prefs.setBool(migratedKey, true);
+    }
+
     if (existing == null) return [];
     final List<dynamic> all = jsonDecode(existing);
     return all.reversed
