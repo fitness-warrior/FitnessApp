@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 import 'auth_service.dart';
 
 class UserStatsService {
@@ -7,11 +9,27 @@ class UserStatsService {
 
   static Future<String> _getNamespacedKey() async {
     final user = await AuthService.getCurrentUser();
-    final userId = user?['user_id']?.toString() ?? user?['id']?.toString() ?? 'anonymous';
+    final userId = user?['user_id']?.toString() ??
+        user?['id']?.toString() ??
+        'anonymous';
     return '${_xpKey}_$userId';
   }
 
+  static String get baseUrl => ApiConfig.baseUrl;
+
   static Future<int> getXP() async {
+    // Try to fetch from API first for accuracy
+    try {
+      final apiXP = await fetchXPFromApi();
+      if (apiXP != null) {
+        // Save to local as backup
+        final prefs = await SharedPreferences.getInstance();
+        final key = await _getNamespacedKey();
+        await prefs.setInt(key, apiXP);
+        return apiXP;
+      }
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
     final key = await _getNamespacedKey();
     return prefs.getInt(key) ?? 0;
@@ -22,7 +40,39 @@ class UserStatsService {
     final prefs = await SharedPreferences.getInstance();
     final key = await _getNamespacedKey();
     final currentXP = prefs.getInt(key) ?? 0;
-    await prefs.setInt(key, currentXP + amount);
+    final newXP = currentXP + amount;
+    await prefs.setInt(key, newXP);
+
+    // Sync to API in background
+    _syncXPToApi(amount).catchError((_) {});
+  }
+
+  static Future<int?> fetchXPFromApi() async {
+    try {
+      final headers = await AuthService.getAuthHeaders();
+      final response = await http
+          .get(Uri.parse('$baseUrl/user/stats'), headers: headers)
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['xp'] as int?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static Future<void> _syncXPToApi(int amount) async {
+    try {
+      final headers = await AuthService.getAuthHeaders();
+      await http
+          .post(
+            Uri.parse('$baseUrl/user/stats/xp'),
+            headers: headers,
+            body: jsonEncode({'amount': amount}),
+          )
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {}
   }
 
   static Map<String, dynamic> calculateLevel(int xp) {
