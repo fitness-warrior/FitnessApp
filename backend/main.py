@@ -44,6 +44,16 @@ async def lifespan(app: FastAPI):
                 UNIQUE (user_id)
             )
         """)
+        await _conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_stats (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                xp INT NOT NULL DEFAULT 0,
+                level INT NOT NULL DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (user_id)
+            )
+        """)
     try:
         yield
     finally:
@@ -424,6 +434,81 @@ async def update_user_profile(
             return {"success": True, "message": "Profile updated"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
+
+
+# ==================== USER STATS ENDPOINTS ====================
+
+@app.get("/api/user/stats")
+async def get_user_stats(user_id: int = Depends(get_current_user_id)):
+    """Get user's XP and level stats"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            stats = await connection.fetchrow(
+                "SELECT xp, level FROM user_stats WHERE user_id = $1",
+                user_id
+            )
+            
+            if not stats:
+                # Initialize stats if they don't exist
+                await connection.execute(
+                    "INSERT INTO user_stats (user_id, xp, level) VALUES ($1, 0, 1) ON CONFLICT (user_id) DO NOTHING",
+                    user_id
+                )
+                return {"xp": 0, "level": 1}
+            
+            return {"xp": stats["xp"], "level": stats["level"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch stats: {str(e)}")
+
+
+class XPRequest(BaseModel):
+    amount: int
+
+
+@app.post("/api/user/stats/xp")
+async def add_user_xp(
+    request: XPRequest,
+    user_id: int = Depends(get_current_user_id)
+):
+    """Add XP to user and update level if necessary"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Get current stats
+            stats = await connection.fetchrow(
+                "SELECT xp, level FROM user_stats WHERE user_id = $1",
+                user_id
+            )
+            
+            if not stats:
+                current_xp = 0
+                current_level = 1
+            else:
+                current_xp = stats["xp"]
+                current_level = stats["level"]
+            
+            new_xp = current_xp + request.amount
+            
+            # Simple level calculation: 100 XP per level
+            new_level = (new_xp // 100) + 1
+            
+            await connection.execute(
+                """
+                INSERT INTO user_stats (user_id, xp, level, updated_at)
+                VALUES ($1, $2, $3, NOW())
+                ON CONFLICT (user_id) DO UPDATE
+                SET xp = $2, level = $3, updated_at = NOW()
+                """,
+                user_id, new_xp, new_level
+            )
+            
+            return {
+                "success": True,
+                "xp": new_xp,
+                "level": new_level,
+                "leveled_up": new_level > current_level
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add XP: {str(e)}")
 
 
 # ==================== WORKOUT ENDPOINTS ====================
