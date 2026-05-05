@@ -8,7 +8,7 @@ class CollectedData:
         self.conn = conn
         self.cur = self.conn.cursor()
 
-    def formatted_date(self,unform):
+    def _formatted_date(self,unform):
         return unform.strftime("%Y-%m-%d")
     
     def find_user_done(self):
@@ -26,7 +26,7 @@ class CollectedData:
         return self.cur.fetchall()
     
     
-    def cardio_speed(self,name):
+    def _get_train_name(self,name):
         self.cur.execute("""
             SELECT t.train_data, t.train_mins, t.train_effort, t.reps 
             FROM exercise e
@@ -36,12 +36,16 @@ class CollectedData:
             JOIN training_body tb ON tb.train_id = t.train_id
             WHERE tb.body_id = %s
             ORDER BY pe.plan_exer_PB
+            LIMIT 7
         """, (self.body_id,))
-        row = self.cur.fetchone()
+        return self.cur.fetchall()
+        
+    def cardio_speed(self,name)
+        row =  self._get_train_name
         if row is None:
             return None
 
-        date = self.formatted_date(row[0])
+        date = self._formatted_date(row[0])
         speed = (row[2]*1000) / row[1]
         return (date, speed)
 
