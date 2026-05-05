@@ -278,8 +278,8 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
       await StreakService.updateStreak();
     } catch (_) {}
 
-    // Grant XP: 20 XP per exercise
-    final xpEarned = allExercises.length * 20;
+    // Grant XP: 10 XP per exercise
+    final xpEarned = allExercises.length * 10;
     await UserStatsService.addXP(xpEarned);
   }
 
@@ -797,11 +797,17 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                           label: 'Exercises',
                           value: '${_totalExercises()}',
                         ),
-                        _divider(),
+                         _divider(),
                         _statColumn(
                           icon: Icons.repeat,
                           label: 'Sets',
                           value: '${_totalSets()}',
+                        ),
+                        _divider(),
+                        _statColumn(
+                          icon: Icons.star_rounded,
+                          label: 'XP',
+                          value: '+${_totalExercises() * 10}',
                         ),
                       ],
                     ),
