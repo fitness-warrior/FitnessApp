@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
+import '../services/recommendation_storage.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/questionnaire/questionnaire_widget.dart';
 
@@ -31,7 +32,23 @@ class _ProfilePageState extends State<ProfilePage> {
         UserService.getQuestionnaireResponse().catchError((_) => null);
 
     final user = await userFuture;
-    final fitness = await fitnessFuture;
+    var fitness = await fitnessFuture;
+
+    // Fallback: if API returned nothing, use the local cache
+    if (fitness == null) {
+      final cached = await RecommendationStorage.loadProfile();
+      if (cached != null) {
+        fitness = {
+          'age': cached.age,
+          'goal': cached.goal,
+          'experience': cached.experience,
+          'location': cached.equipment.contains('gym_machines') ? 'Gym' : 'Home',
+          'days_per_week': null,
+          'session_length': cached.workoutLengthMinutes,
+          'injuries': cached.injuredAreas,
+        };
+      }
+    }
 
     if (mounted) {
       setState(() {

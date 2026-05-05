@@ -248,7 +248,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     if (_index > 0) setState(() => _index--);
   }
 
-  void _buildAndShowResult() {
+  Future<void> _buildAndShowResult() async {
     // Ensure final question is persisted
     final last = _questions[_index];
     if (last.type == QuestionType.number || last.type == QuestionType.text) {
@@ -338,31 +338,43 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       injuredAreas: mapInjuries(injuriesRaw),
     );
 
-    // Persist profile locally (offline cache)
-    RecommendationStorage.saveProfile(profile);
+    // Persist profile locally (offline cache) — awaited so it's done before nav
+    await RecommendationStorage.saveProfile(profile);
 
-    // Save questionnaire to backend (source of truth)
-    _saveToBackend(_responses);
+    // Save questionnaire to backend (source of truth) — awaited so Profile
+    // page sees the data as soon as we navigate there
+    await _saveToBackend(_responses);
+
+    if (!mounted) return;
 
     // Get recommendations then navigate
-    RecommendationService.getRecommendations(profile).then((rec) {
+    try {
+      final rec = await RecommendationService.getRecommendations(profile);
       if (!mounted) return;
 
       final tags =
           (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
 
       if (widget.isOnboarding) {
-        // New user — go to WorkoutPage with their personalised tags
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => WorkoutPage(initialRecommendationTags: tags),
           ),
         );
       } else {
-        // Returning user editing their profile — pop back to Profile page
-        Navigator.of(context).pop(true); // pass true = profile was updated
+        Navigator.of(context).pop(true);
       }
-    });
+    } catch (_) {
+      // Recommendations unavailable — navigate anyway without tags
+      if (!mounted) return;
+      if (widget.isOnboarding) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const WorkoutPage()),
+        );
+      } else {
+        Navigator.of(context).pop(true);
+      }
+    }
   }
 
   Widget _buildCurrent() {
@@ -549,8 +561,8 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
           int.tryParse(responses['Q007']?.toString().split(' ')[0] ?? '30') ??
               30;
       final injuries = (responses['Q008'] as List?)?.cast<String>() ?? [];
-      final dietPref = responses['Q009']?.toString() ?? 'non-veg';
-      final allergies = (responses['Q010'] as List?)?.cast<String>() ?? [];
+      final dietPref = responses['Q010']?.toString() ?? 'non-veg';
+      final allergies = (responses['Q011'] as List?)?.cast<String>() ?? [];
 
       await UserService.saveQuestionnaireResponse({
         'age': age,
