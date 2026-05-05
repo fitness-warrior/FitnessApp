@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
-import '../services/auth_service.dart';
-import '../services/workout_history_service.dart';
 import '../services/workout_storage.dart';
 import '../services/streak_service.dart';
 import '../widgets/common/navbar.dart';
@@ -46,32 +44,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Future<void> _loadSavedWorkouts() async {
     try {
+      // Routines list = only locally saved workouts.
+      // API history is used for streak/calendar — NOT merged here to avoid
+      // duplicate entries (every finish saves locally AND to the API).
       final localWorkouts = (await WorkoutStorage.getWorkouts())
           .map((w) => {
                 ...w,
                 'source': 'local',
               })
           .toList();
-      var mergedWorkouts = List<Map<String, dynamic>>.from(localWorkouts);
-
-      try {
-        final isLoggedIn = await AuthService.isLoggedIn();
-        if (isLoggedIn) {
-          final apiHistory =
-              await WorkoutHistoryService.getWorkoutHistory(limit: 50);
-          final apiWorkouts = _mapApiWorkoutsToRoutines(apiHistory);
-          mergedWorkouts = [
-            ...apiWorkouts,
-            ...localWorkouts,
-          ];
-        }
-      } catch (_) {
-        // Fallback to local routines if API is temporarily unavailable.
-      }
 
       if (!mounted) return;
       setState(() {
-        _savedWorkouts = mergedWorkouts;
+        _savedWorkouts = localWorkouts;
         _loadingSavedWorkouts = false;
       });
     } catch (e) {
@@ -83,43 +68,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
-    List<Map<String, dynamic>> apiHistory,
-  ) {
-    return apiHistory.map((workout) {
-      final exercisesRaw = workout['exercises'];
-      final exercisesList = exercisesRaw is List ? exercisesRaw : <dynamic>[];
-
-      final mappedExercises = exercisesList.map((e) {
-        final ex = Map<String, dynamic>.from(e as Map);
-        final exerId = ex['exer_id'];
-        final reps = ex['reps'] ?? 0;
-        final weight = ex['weight'] ?? 0;
-
-        return {
-          'exer_id': exerId,
-          'exer_name': ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
-          'sets': [
-            {
-              'kg': weight.toString(),
-              'reps': reps.toString(),
-            }
-          ],
-        };
-      }).toList();
-
-      return {
-        'id': workout['workout_id'],
-        'date': workout['created_at']?.toString() ??
-            DateTime.now().toIso8601String(),
-        'name': workout['notes']?.toString().isNotEmpty == true
-            ? workout['notes']
-            : 'Workout ${workout['workout_id'] ?? ''}',
-        'exercises': mappedExercises,
-        'source': 'api',
-      };
-    }).toList();
-  }
 
   Future<void> _loadSavedWorkoutSession() async {
     try {
@@ -425,11 +373,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   final localIndex = localWorkouts.indexOf(workout);
                   if (localIndex != -1) {
                     await WorkoutStorage.deleteWorkout(localIndex);
-                  }
-                } else if (workout['source'] == 'api') {
-                  final workoutId = workout['id'];
-                  if (workoutId != null) {
-                    await WorkoutHistoryService.deleteWorkout(workoutId as int);
                   }
                 }
 

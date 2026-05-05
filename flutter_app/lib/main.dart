@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fitness_app_flutter/services/auth_service.dart';
 import 'package:fitness_app_flutter/views/workout_page.dart';
 import 'package:fitness_app_flutter/views/meal_plan_page.dart';
-import 'package:fitness_app_flutter/views/game_page.dart';
-import 'package:fitness_app_flutter/views/edit_avatar_page.dart';
 import 'package:fitness_app_flutter/views/dashboard_page.dart';
 import 'package:fitness_app_flutter/views/auth_page.dart';
 import 'package:fitness_app_flutter/views/profile_page.dart';
@@ -29,8 +27,6 @@ class MyApp extends StatelessWidget {
         '/questionnaire': (_) => const QuestionnairePage(isOnboarding: false),
         '/my_workout': (_) => const WorkoutPage(),
         '/my_meal': (_) => const MealPlanPage(),
-        '/game': (_) => const GamePage(),
-        '/edit_avatar': (_) => const EditAvatarPage(),
         '/dashboard': (_) => const DashboardPage(),
         '/profile': (_) => const ProfilePage(),
       },
