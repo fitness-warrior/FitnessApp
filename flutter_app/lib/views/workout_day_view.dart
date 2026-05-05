@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/workout_storage.dart';
+import '../services/streak_service.dart';
 
 class WorkoutDayView extends StatefulWidget {
   final String dayName;
@@ -231,10 +233,49 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
     Navigator.of(context).pop();
   }
 
-  void _finishWorkout() {
+  void _finishWorkout() async {
     HapticFeedback.heavyImpact();
     setState(() => _workoutFinished = true);
     _successController.forward();
+
+    // Prepare data to save to history
+    final List<Map<String, dynamic>> allExercises = [];
+    for (int rIndex = 0; rIndex < widget.routines.length; rIndex++) {
+      final routine = widget.routines[rIndex];
+      final exercises =
+          routine['exercises'] is List ? routine['exercises'] as List : [];
+
+      for (int eIndex = 0; eIndex < exercises.length; eIndex++) {
+        final exercise = exercises[eIndex];
+        final sets = <Map<String, dynamic>>[];
+        final controllers = _setControllers[rIndex]?[eIndex] ?? [];
+
+        for (var setControllers in controllers) {
+          sets.add({
+            'kg': setControllers['kg']?.text ?? '0',
+            'reps': setControllers['reps']?.text ?? '0',
+          });
+        }
+
+        allExercises.add({
+          'exer_id': exercise['exer_id'] ?? 0,
+          'exer_name': exercise['exer_name'] ?? 'Unknown',
+          'exer_type': exercise['exer_type'] ?? 'strength',
+          'sets': sets,
+        });
+      }
+    }
+
+    // Save to local history so the app knows we did a workout today
+    await WorkoutStorage.saveWorkout(
+      allExercises,
+      workoutName: widget.dayName,
+    );
+
+    // Update streak for the user
+    try {
+      await StreakService.updateStreak();
+    } catch (_) {}
   }
 
   // ── Dialogs ───────────────────────────────────────────────────────────────
