@@ -78,7 +78,12 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  Future<void> _removeRoutineFromDay(String day, String name) async {
+    setState(() => _weeklyPlanNames[day]?.remove(name));
+    await _saveToApi();
+  }
+
+
 
   List<Map<String, dynamic>> _resolvedRoutines(String day) {
     final names = _weeklyPlanNames[day] ?? [];
@@ -290,8 +295,9 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                             runSpacing: 4,
                             children: (_weeklyPlanNames[day] ?? [])
                                 .map((name) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.only(
+                                          left: 10, right: 4,
+                                          top: 3, bottom: 3),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF4A9FFF)
                                             .withOpacity(0.15),
@@ -303,13 +309,29 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                           width: 1,
                                         ),
                                       ),
-                                      child: Text(
-                                        name,
-                                        style: const TextStyle(
-                                          color: Color(0xFF4A9FFF),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              color: Color(0xFF4A9FFF),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          GestureDetector(
+                                            onTap: () =>
+                                                _removeRoutineFromDay(
+                                                    day, name),
+                                            child: const Icon(
+                                              Icons.close,
+                                              size: 14,
+                                              color: Color(0xFF4A9FFF),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ))
                                 .toList(),
