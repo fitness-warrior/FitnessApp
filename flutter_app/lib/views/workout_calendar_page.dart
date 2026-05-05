@@ -278,15 +278,42 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                           ],
                         ]),
                         const SizedBox(height: 6),
-                        Text(
-                          assignedCount == 0
-                              ? 'No routines assigned'
-                              : '${resolved.length} routine${resolved.length != 1 ? 's' : ''}',
-                          style: TextStyle(
-                            color: assignedCount == 0 ? Colors.grey[500] : Colors.grey[300],
-                            fontSize: 14,
+                        if (assignedCount == 0)
+                          Text(
+                            'No routines assigned',
+                            style: TextStyle(
+                                color: Colors.grey[500], fontSize: 14),
+                          )
+                        else
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: (_weeklyPlanNames[day] ?? [])
+                                .map((name) => Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF4A9FFF)
+                                            .withOpacity(0.15),
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: const Color(0xFF4A9FFF)
+                                              .withOpacity(0.4),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(
+                                          color: Color(0xFF4A9FFF),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
                           ),
-                        ),
                       ],
                     ),
                   ),
