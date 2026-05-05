@@ -5,11 +5,11 @@
 
 import 'package:flutter/material.dart';
 import 'dart:async'; // Need this for the Timer
-import 'dart:math';  // Step 8.2: Need this for the sine wave shake math
+import 'dart:math'; // Step 8.2: Need this for the sine wave shake math
 import '../widgets/common/navbar.dart';
 import '../data/demo_bosses.dart';
-import '../models/game_state.dart';      // Step 11
-import '../services/game_storage.dart';  // Step 11
+import '../models/game_state.dart'; // Step 11
+import '../services/game_storage.dart'; // Step 11
 
 class GamePage extends StatefulWidget {
   const GamePage({Key? key}) : super(key: key);
@@ -18,20 +18,22 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin {
+class _GamePageState extends State<GamePage>
+    with SingleTickerProviderStateMixin {
   // --- Step 11 & 12: Game State & Progression ---
   GameState _state = GameState(); // Player's inventory/coins
-  int _bossIndex = 0;             // Which boss we're fighting
-  bool _showVictory = false;      // Should we show the "You Win" overlay?
-  bool _showGameOver = false;     // Step 12: Time ran out!
-  bool _allDefeated = false;      // Did they beat the final boss?
-  
+  int _bossIndex = 0; // Which boss we're fighting
+  bool _showVictory = false; // Should we show the "You Win" overlay?
+  bool _showGameOver = false; // Step 12: Time ran out!
+  bool _allDefeated = false; // Did they beat the final boss?
+
   // --- Step 8.1: Health tracking ---
   int _bossHp = 0; // Will be set to max health when round starts
-  
+
   // --- Step 9 & 16: Player Animation & Costumes ---
   String _playerFrame = ''; // Set dynamically in _loadState
-  bool _isAnimating = false; // prevents animation from glitching if clicked too fast
+  bool _isAnimating =
+      false; // prevents animation from glitching if clicked too fast
 
   // --- Step 10: Floating Damage Numbers ---
   final List<Map<String, dynamic>> _damages = [];
@@ -51,11 +53,11 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   void initState() {
     super.initState();
     _loadState(); // Step 11: Load player save data
-    
+
     // The controller runs for a split second (150ms)
     _shakeCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 150));
-        
+
     // A simple 0 -> 1 curve we'll use to drive a sine wave offset
     _shake = Tween<double>(begin: 0.0, end: 1.0)
         .animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeOut));
@@ -67,7 +69,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     if (!mounted) return;
     setState(() {
       _state = state;
-      _playerFrame = _getFramePath('idle'); // Set their equipped costume on load!
+      _playerFrame =
+          _getFramePath('idle'); // Set their equipped costume on load!
     });
   }
 
@@ -75,8 +78,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   String _getFramePath(String action) {
     // If they have nothing equipped (or ""), use the default 'character' prefix.
     // Otherwise, use the costume key (e.g. 'earth', 'water').
-    final prefix = (_state.equippedCostume?.isNotEmpty == true) 
-        ? _state.equippedCostume! 
+    final prefix = (_state.equippedCostume?.isNotEmpty == true)
+        ? _state.equippedCostume!
         : 'character';
     return 'images/game_costume/game_chars/player_stances/${prefix}_$action.png';
   }
@@ -110,30 +113,29 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     _roundTimer?.cancel(); // cancel any old timer just in case
     _roundTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-      
+
       setState(() {
         if (_timeLeft > 0) {
           _timeLeft--;
-          
+
           // --- Step 14: Auto Clicker Logic ---
           if (_state.hasAutoClick && _bossHp > 0) {
             final autoDmg = 5; // As defined in the shop
             _bossHp -= autoDmg;
-            
+
             // Trigger animation & damage popup just like a real tap
             _triggerAttackAnimation();
             _shakeCtrl.forward(from: 0.0);
-            
+
             final rnd = Random();
             _damages.add({
               'id': ValueKey(_dmgCounter++),
               'pos': Offset(220.0 + rnd.nextInt(60), 350.0 + rnd.nextInt(40)),
               'dmg': autoDmg,
             });
-            
+
             _checkVictory(); // check if the auto clicker killed the boss
           }
-          
         } else {
           // --- Step 12: Time ran out, Game Over ---
           _isRoundRunning = false;
@@ -149,7 +151,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     // Don't interrupt an animation that's already playing
     if (_isAnimating) return;
     _isAnimating = true;
-    
+
     // Frame 1: Wind up
     setState(() => _playerFrame = _getFramePath('3'));
     await Future.delayed(const Duration(milliseconds: 80));
@@ -181,9 +183,9 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
 
     setState(() {
       // Step 14: Use the player's true tapped damage
-      final dmg = _state.tapDamage; 
-      _bossHp -= dmg; 
-      
+      final dmg = _state.tapDamage;
+      _bossHp -= dmg;
+
       // Step 8.2: Trigger the shake animation from the beginning whenever hit
       _shakeCtrl.forward(from: 0.0);
 
@@ -195,13 +197,13 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
         220.0 + rnd.nextInt(60), // X coordinate
         350.0 + rnd.nextInt(40), // Y coordinate
       );
-      
+
       _damages.add({
         'id': ValueKey(_dmgCounter++),
         'pos': startPos,
         'dmg': dmg,
       });
-      
+
       _checkVictory();
     });
   }
@@ -213,7 +215,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
       _bossHp = 0;
       _isRoundRunning = false;
       _roundTimer?.cancel();
-      
+
       // --- Step 11: Boss Defeated Reward Logic ---
       _showVictory = true;
       final boss = demoBosses[_bossIndex];
@@ -225,7 +227,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
         _allDefeated = true;
         _state.ownedCostumes.add(windCostumeKey); // Bonus reward!
       }
-      
+
       // Save the game so they don't lose that hard-earned unlock
       GameStorage.save(_state);
     }
@@ -249,8 +251,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
               errorBuilder: (_, __, ___) => Container(color: Colors.grey[900]),
             ),
           ),
-          
-          // 2. A dark gradient overlay so the white text/HUD is readable 
+
+          // 2. A dark gradient overlay so the white text/HUD is readable
           // against busy backgrounds, especially at the top and bottom.
           Positioned.fill(
             child: Container(
@@ -278,10 +280,15 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Row(
                     children: [
-                      const Icon(Icons.monetization_on, color: Colors.amber, size: 20),
+                      const Icon(Icons.monetization_on,
+                          color: Colors.amber, size: 20),
                       const SizedBox(width: 8),
                       // Hardcoded coin value for now
-                      Text('${_state.coins}', style: const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('${_state.coins}',
+                          style: const TextStyle(
+                              color: Colors.amber,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
                       const Spacer(),
                       // Boost badges will go here later
                     ],
@@ -292,9 +299,12 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                 const SizedBox(height: 10),
                 Text(
                   '⚔️ ${boss.name}',
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
                 ),
-                
+
                 // HP Bar Placeholder (now wired to state!)
                 const SizedBox(height: 10),
                 Padding(
@@ -302,16 +312,23 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('HP', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-                      Text('$_bossHp / ${boss.maxHealth}', style: const TextStyle(color: Colors.white)),
+                      const Text('HP',
+                          style: TextStyle(
+                              color: Colors.greenAccent,
+                              fontWeight: FontWeight.bold)),
+                      Text('$_bossHp / ${boss.maxHealth}',
+                          style: const TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                   child: LinearProgressIndicator(
                     // Protect against division by zero just in case
-                    value: boss.maxHealth > 0 ? (_bossHp / boss.maxHealth).clamp(0.0, 1.0) : 0.0, 
+                    value: boss.maxHealth > 0
+                        ? (_bossHp / boss.maxHealth).clamp(0.0, 1.0)
+                        : 0.0,
                     color: Colors.greenAccent,
                     backgroundColor: Colors.white24,
                     minHeight: 12,
@@ -322,109 +339,135 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                 const SizedBox(height: 10),
                 Text(
                   '⏱️ $_timeLeft seconds left',
-                  style: const TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.orange,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
                 ),
 
                 // Main Battle Scene
                 Expanded(
                   child: GestureDetector(
                     onTap: _onTap, // Tapping anywhere in here damages the boss!
-                    behavior: HitTestBehavior.opaque, // Ensures taps register anywhere in the box
+                    behavior: HitTestBehavior
+                        .opaque, // Ensures taps register anywhere in the box
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                      // Make characters take up a good chunk of the screen height
-                      final charSize = (constraints.maxHeight * 0.45).clamp(120.0, 250.0);
-                      
-                      return Stack(
-                        children: [
-                          // Player (bottom left)
-                          Positioned(
-                            left: 20,
-                            bottom: 60, // floating a bit above the start button
-                            child: _playerFrame.isEmpty 
-                              ? const SizedBox.shrink() // Hide until state loads
-                              : Image.asset(
-                                  _playerFrame,
+                        // Make characters take up a good chunk of the screen height
+                        final charSize =
+                            (constraints.maxHeight * 0.45).clamp(120.0, 250.0);
+
+                        return Stack(
+                          children: [
+                            // Player (bottom left)
+                            Positioned(
+                              left: 20,
+                              bottom:
+                                  60, // floating a bit above the start button
+                              child: _playerFrame.isEmpty
+                                  ? const SizedBox
+                                      .shrink() // Hide until state loads
+                                  : Image.asset(
+                                      _playerFrame,
+                                      width: charSize,
+                                      height: charSize,
+                                      fit: BoxFit.contain,
+                                      filterQuality: FilterQuality
+                                          .none, // keeps pixel art crisp!
+                                      // Step 16: Add fallback if the player hasn't added the sprite files yet
+                                      errorBuilder: (_, __, ___) => Icon(
+                                          Icons.person_outline,
+                                          size: charSize,
+                                          color: Colors.white54),
+                                    ),
+                            ),
+
+                            // Boss (bottom right)
+                            Positioned(
+                              right: 20,
+                              bottom:
+                                  60, // same bottom value = same ground level!
+                              // Step 8.2: Wrap the image in an AnimatedBuilder
+                              child: AnimatedBuilder(
+                                animation: _shake,
+                                builder: (context, child) {
+                                  // Translate pushes the widget left/right using a sine wave
+                                  // Notice the dart:math pi import at the top!
+                                  return Transform.translate(
+                                    // Shake gets smaller as the animation reaches 1.0
+                                    offset: Offset(
+                                        (1 - _shake.value) *
+                                            15 *
+                                            sin(_shake.value * pi * 4),
+                                        0),
+                                    child: child,
+                                  );
+                                },
+                                child: Image.asset(
+                                  boss.imagePath,
                                   width: charSize,
                                   height: charSize,
                                   fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.none, // keeps pixel art crisp!
-                                  // Step 16: Add fallback if the player hasn't added the sprite files yet
-                                  errorBuilder: (_, __, ___) => Icon(Icons.person_outline, size: charSize, color: Colors.white54),
+                                  filterQuality: FilterQuality.none,
+                                  // If we don't have the boss image yet, show a fallback icon
+                                  errorBuilder: (_, __, ___) => Icon(
+                                      Icons.fastfood,
+                                      size: charSize,
+                                      color: Colors.redAccent),
                                 ),
-                          ),
-
-                          // Boss (bottom right)
-                          Positioned(
-                            right: 20,
-                            bottom: 60, // same bottom value = same ground level!
-                            // Step 8.2: Wrap the image in an AnimatedBuilder
-                            child: AnimatedBuilder(
-                              animation: _shake,
-                              builder: (context, child) {
-                                // Translate pushes the widget left/right using a sine wave
-                                // Notice the dart:math pi import at the top!
-                                return Transform.translate(
-                                  // Shake gets smaller as the animation reaches 1.0
-                                  offset: Offset((1 - _shake.value) * 15 * sin(_shake.value * pi * 4), 0),
-                                  child: child,
-                                );
-                              },
-                              child: Image.asset(
-                                boss.imagePath,
-                                width: charSize,
-                                height: charSize,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.none,
-                                // If we don't have the boss image yet, show a fallback icon
-                                errorBuilder: (_, __, ___) => Icon(Icons.fastfood, size: charSize, color: Colors.redAccent),
                               ),
                             ),
-                          ),
 
-                          // Start Button
-                          Positioned(
-                            left: 20,
-                            right: 20,
-                            bottom: 10,
-                            child: ElevatedButton(
-                              // Start a completely fresh run if not running
-                              onPressed: _isRoundRunning ? null : _startRun,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _isRoundRunning ? Colors.grey : Colors.greenAccent,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: Text(
-                                _isRoundRunning ? 'Run in progress...' : 'Start Run',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            // Start Button
+                            Positioned(
+                              left: 20,
+                              right: 20,
+                              bottom: 10,
+                              child: ElevatedButton(
+                                // Start a completely fresh run if not running
+                                onPressed: _isRoundRunning ? null : _startRun,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _isRoundRunning
+                                      ? Colors.grey
+                                      : Colors.greenAccent,
+                                  foregroundColor: Colors.black,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                child: Text(
+                                  _isRoundRunning
+                                      ? 'Run in progress...'
+                                      : 'Start Run',
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ), // Close GestureDetector
-              ), // Close Expanded
-            ],
-          ), // Close Column
-        ), // Close SafeArea
+                          ],
+                        );
+                      },
+                    ),
+                  ), // Close GestureDetector
+                ), // Close Expanded
+              ],
+            ), // Close Column
+          ), // Close SafeArea
 
-        // --- Step 10: Draw all active damage numbers on top ---
-        ..._damages.map((d) => _FloatingDamage(
-              key: d['id'] as Key,
-              position: d['pos'] as Offset,
-              damage: d['dmg'] as int,
-              onDone: () => setState(() => _damages.remove(d)),
-            )),
-            
-        // --- Step 11: Victory Screen Overlay ---
-        if (_showVictory) _buildVictoryOverlay(),
+          // --- Step 10: Draw all active damage numbers on top ---
+          ..._damages.map((d) => _FloatingDamage(
+                key: d['id'] as Key,
+                position: d['pos'] as Offset,
+                damage: d['dmg'] as int,
+                onDone: () => setState(() => _damages.remove(d)),
+              )),
 
-        // --- Step 12: Game Over Overlay ---
-        if (_showGameOver) _buildGameOverOverlay(),
-      ],
+          // --- Step 11: Victory Screen Overlay ---
+          if (_showVictory) _buildVictoryOverlay(),
+
+          // --- Step 12: Game Over Overlay ---
+          if (_showGameOver) _buildGameOverOverlay(),
+        ],
       ),
       // Keeping the standard app bottom nav bar
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
@@ -447,12 +490,23 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('TIME IS UP', style: TextStyle(color: Colors.redAccent, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              const Text('TIME IS UP',
+                  style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2)),
               const SizedBox(height: 16),
-              const Text('The boss was too strong this time...', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
+              const Text('The boss was too strong this time...',
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                  textAlign: TextAlign.center),
               const SizedBox(height: 8),
-              const Text('Buy upgrades in the Shop and try again!', style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-              
+              const Text('Buy upgrades in the Shop and try again!',
+                  style: TextStyle(
+                      color: Colors.amber,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
@@ -464,9 +518,12 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
-                child: const Text('Try Again', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Text('Try Again',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -493,23 +550,29 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🎉 BOSS DEFEATED! 🎉', style: TextStyle(color: Colors.greenAccent, fontSize: 24, fontWeight: FontWeight.w900)),
+              const Text('🎉 BOSS DEFEATED! 🎉',
+                  style: TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900)),
               const SizedBox(height: 16),
-              
-              Text('+${boss.coinReward} Coins', style: const TextStyle(color: Colors.amber, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('+${boss.coinReward} Coins',
+                  style: const TextStyle(
+                      color: Colors.amber,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              
-              const Text('Unlocked Costume:', style: TextStyle(color: Colors.white70)),
+              const Text('Unlocked Costume:',
+                  style: TextStyle(color: Colors.white70)),
               const SizedBox(height: 8),
               Image.asset(boss.rewardImagePath, height: 60, width: 60),
-              
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   setState(() {
                     _showVictory = false;
                     _damages.clear(); // clean up any leftover floating text
-                    
+
                     if (!_allDefeated) {
                       _bossIndex++; // Move to next boss
                     } else {
@@ -523,9 +586,12 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.greenAccent,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
-                child: Text(_allDefeated ? 'Play Again 🏆' : 'Next Boss ➔', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(_allDefeated ? 'Play Again 🏆' : 'Next Boss ➔',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -554,7 +620,8 @@ class _FloatingDamage extends StatefulWidget {
   State<_FloatingDamage> createState() => _FloatingDamageState();
 }
 
-class _FloatingDamageState extends State<_FloatingDamage> with SingleTickerProviderStateMixin {
+class _FloatingDamageState extends State<_FloatingDamage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _opacity;
   late Animation<double> _dy;
@@ -563,7 +630,8 @@ class _FloatingDamageState extends State<_FloatingDamage> with SingleTickerProvi
   void initState() {
     super.initState();
     // It exists for 600 milliseconds
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
 
     // Fades out from 1.0 to 0.0
     _opacity = Tween<double>(begin: 1.0, end: 0.0)
@@ -605,7 +673,9 @@ class _FloatingDamageState extends State<_FloatingDamage> with SingleTickerProvi
             color: Colors.redAccent,
             fontSize: 28,
             fontWeight: FontWeight.w900,
-            shadows: [Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1))],
+            shadows: [
+              Shadow(color: Colors.black, blurRadius: 4, offset: Offset(1, 1))
+            ],
           ),
         ),
       ),

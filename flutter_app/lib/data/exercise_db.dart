@@ -12,8 +12,7 @@ class ExerciseDb {
     final Map<String, dynamic> m = Map<String, dynamic>.from(row);
     m['exer_id'] = m['exer_id'] ?? m['id'];
     m['exer_name'] = m['exer_name'] ?? m['name'] ?? m['title'];
-    m['exer_body_area'] =
-        m['exer_body_area'] ?? m['body_area'] ?? m['area'];
+    m['exer_body_area'] = m['exer_body_area'] ?? m['body_area'] ?? m['area'];
     m['exer_type'] = m['exer_type'] ?? m['type'];
     m['exer_descrip'] = m['exer_descrip'] ?? m['description'] ?? m['desc'];
     m['exer_vid'] = m['exer_vid'] ?? m['video_url'] ?? m['vid'];
