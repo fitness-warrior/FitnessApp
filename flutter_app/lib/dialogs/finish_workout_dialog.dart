@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/streak_service.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
 
@@ -37,26 +38,48 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
 
   bool _validateWorkoutData() {
     for (int i = 0; i < widget.exercises.length; i++) {
+      final exercise = widget.exercises[i];
+      final exerType = exercise['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
+
       if (widget.setControllers.containsKey(i)) {
         for (final set in widget.setControllers[i]!) {
-          final kg = set['kg']!.text.trim();
-          final reps = set['reps']!.text.trim();
+          if (isCardio) {
+            // Validate cardio fields
+            final time = set['time']?.text.trim() ?? '';
+            final calories = set['calories']?.text.trim() ?? '';
 
-          // Check if fields are empty
-          if (kg.isEmpty || reps.isEmpty) {
-            return false;
-          }
+            if (time.isEmpty || calories.isEmpty) {
+              return false;
+            }
 
-          // Validate kg: must be between 0 and 500
-          final kgValue = double.tryParse(kg);
-          if (kgValue == null || kgValue <= 0 || kgValue >= 500) {
-            return false;
-          }
+            final timeValue = double.tryParse(time);
+            if (timeValue == null || timeValue <= 0) {
+              return false;
+            }
 
-          // Validate reps: must be positive integer
-          final repsValue = int.tryParse(reps);
-          if (repsValue == null || repsValue <= 0) {
-            return false;
+            final caloriesValue = double.tryParse(calories);
+            if (caloriesValue == null || caloriesValue <= 0) {
+              return false;
+            }
+          } else {
+            // Validate strength fields
+            final kg = set['kg']?.text.trim() ?? '';
+            final reps = set['reps']?.text.trim() ?? '';
+
+            if (kg.isEmpty || reps.isEmpty) {
+              return false;
+            }
+
+            final kgValue = double.tryParse(kg);
+            if (kgValue == null || kgValue <= 0 || kgValue >= 500) {
+              return false;
+            }
+
+            final repsValue = int.tryParse(reps);
+            if (repsValue == null || repsValue <= 0) {
+              return false;
+            }
           }
         }
       }
@@ -69,20 +92,36 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
 
     for (int i = 0; i < widget.exercises.length; i++) {
       final exercise = widget.exercises[i];
+      final exerType = exercise['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
       final sets = <Map<String, dynamic>>[];
 
       if (widget.setControllers.containsKey(i)) {
         for (final set in widget.setControllers[i]!) {
-          sets.add({
-            'kg': set['kg']!.text.isNotEmpty ? set['kg']!.text : '0',
-            'reps': set['reps']!.text.isNotEmpty ? set['reps']!.text : '0',
-          });
+          if (isCardio) {
+            sets.add({
+              'time': set['time']?.text.isNotEmpty == true
+                  ? set['time']!.text
+                  : '0',
+              'calories': set['calories']?.text.isNotEmpty == true
+                  ? set['calories']!.text
+                  : '0',
+            });
+          } else {
+            sets.add({
+              'kg': set['kg']?.text.isNotEmpty == true ? set['kg']!.text : '0',
+              'reps': set['reps']?.text.isNotEmpty == true
+                  ? set['reps']!.text
+                  : '0',
+            });
+          }
         }
       }
 
       data.add({
         'exer_id': exercise['exer_id'] ?? 0,
         'exer_name': exercise['exer_name'] ?? 'Unknown',
+        'exer_type': exerType,
         'sets': sets,
       });
     }
@@ -93,7 +132,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
   Future<void> _showSaveConfirmationDialog() async {
     if (!_validateWorkoutData()) {
       setState(() {
-        _error = 'Invalid values: kg must be 0-500, reps must be positive integers';
+        _error = 'Invalid values: All fields must be positive numbers';
       });
       return;
     }
@@ -286,9 +325,18 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
         );
       }
 
-      // Best-effort sync to API (skip if backend unreachable)
+      // Best-effort sync to API
       try {
-        await WorkoutService.submitWorkout(exerciseData)
+        await WorkoutService.submitWorkout(
+          exerciseData,
+          notes: workoutName.isNotEmpty ? workoutName : null,
+        ).timeout(const Duration(seconds: 5));
+      } catch (_) {}
+
+      // Streak update is independent — always attempt it even if the
+      // workout API call above failed or timed out
+      try {
+        await StreakService.updateStreak()
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
@@ -394,6 +442,9 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                       itemBuilder: (context, index) {
                         final exercise = exerciseData[index];
                         final sets = exercise['sets'] as List;
+                        final exerType =
+                            exercise['exer_type']?.toString() ?? 'strength';
+                        final isCardio = exerType.toLowerCase() == 'cardio';
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
@@ -416,7 +467,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  '${sets.length} set${sets.length > 1 ? 's' : ''}: ${sets.map((s) => '${s['reps']}x${s['kg']}kg').join(', ')}',
+                                  '${sets.length} set${sets.length > 1 ? 's' : ''}: ${sets.map((s) => isCardio ? '${s['time']}min, ${s['calories']}cal' : '${s['reps']}x${s['kg']}kg').join(', ')}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.shade600,
@@ -460,12 +511,14 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       OutlinedButton(
-                        onPressed: _isLoading ? null : () => Navigator.pop(context),
+                        onPressed:
+                            _isLoading ? null : () => Navigator.pop(context),
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _showSaveConfirmationDialog,
+                        onPressed:
+                            _isLoading ? null : _showSaveConfirmationDialog,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                         ),
@@ -475,8 +528,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : const Text('Finish & Save'),
