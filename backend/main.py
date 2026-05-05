@@ -1,15 +1,18 @@
 import os
 from pathlib import Path
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
-
 import asyncpg
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from passlib.context import CryptContext
-from jose import JWTError, jwt
+
+from auth import (
+    SignupRequest,
+    LoginRequest,
+    create_access_token,
+    hash_password,
+    verify_password,
+)
 
 
 # Force-load project root .env
@@ -48,6 +51,100 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ==================== AUTH ENDPOINTS ====================
+@app.post("/api/auth/signup")
+async def signup(request: SignupRequest):
+    """Register a new user"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Check if user already exists
+            existing_user = await connection.fetchrow(
+                "SELECT user_id FROM users WHERE user_email = $1",
+                request.email
+            )
+            if existing_user:
+                raise HTTPException(status_code=400, detail="Email already registered")
+
+            # Hash password
+            hashed_password = hash_password(request.password)
+            
+            # Create a default game character for compatibility
+            game_char = await connection.fetchrow(
+                """
+                INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, 
+                                       game_char_hp, game_char_attack, game_char_speed)
+                VALUES (1, 'blue', 'a', 100, 10, 5)
+                RETURNING game_char_id
+                """
+            )
+            
+            # Insert new user
+            user = await connection.fetchrow(
+                """
+                INSERT INTO users (game_char_id, user_name, user_email, user_password)
+                VALUES ($1, $2, $3, $4)
+                RETURNING user_id, user_email, user_name
+                """,
+                game_char["game_char_id"],
+                request.username,
+                request.email,
+                hashed_password
+            )
+
+            # Create access token
+            access_token = create_access_token(data={"sub": str(user["user_id"])})
+
+            return {
+                "access_token": access_token,
+                "token_type": "bearer",
+                "user": {
+                    "user_id": user["user_id"],
+                    "email": user["user_email"],
+                    "username": user["user_name"]
+                }
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
+
+
+@app.post("/api/auth/login")
+async def login(request: LoginRequest):
+    """Log in an existing user"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Find user by email
+            user = await connection.fetchrow(
+                "SELECT user_id, user_email, user_name, user_password FROM users WHERE user_email = $1",
+                request.email
+            )
+            
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Verify password
+            if not verify_password(request.password, user["user_password"]):
+                raise HTTPException(status_code=401, detail="Invalid password")
+
+            # Create access token
+            access_token = create_access_token(data={"sub": str(user["user_id"])})
+
+            return {
+                "access_token": access_token,
+                "token_type": "bearer",
+                "user": {
+                    "user_id": user["user_id"],
+                    "email": user["user_email"],
+                    "username": user["user_name"]
+                }
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
 
 def format_exercise(row: asyncpg.Record) -> dict:

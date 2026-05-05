@@ -44,10 +44,11 @@ CREATE TABLE game_char (
 
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
-    game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
+    game_char_id INT REFERENCES game_char(game_char_id),
     user_name VARCHAR(40) NOT NULL,
-    user_surname VARCHAR(40) NOT NULL,
-    user_email VARCHAR(40) UNIQUE NOT NULL
+    user_surname VARCHAR(40),
+    user_email VARCHAR(40) UNIQUE NOT NULL,
+    user_password VARCHAR(255) NOT NULL
 );
 
 ---------------- EQUIPMENT ----------------
