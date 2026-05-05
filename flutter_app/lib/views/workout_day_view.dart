@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/workout_storage.dart';
 import '../services/streak_service.dart';
+import '../services/user_stats_service.dart';
 
 class WorkoutDayView extends StatefulWidget {
   final String dayName;
@@ -276,6 +277,10 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
     try {
       await StreakService.updateStreak();
     } catch (_) {}
+
+    // Grant XP: 20 XP per exercise
+    final xpEarned = allExercises.length * 20;
+    await UserStatsService.addXP(xpEarned);
   }
 
   // ── Dialogs ───────────────────────────────────────────────────────────────

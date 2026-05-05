@@ -11,6 +11,8 @@ import '../widgets/common/finish_button.dart';
 import '../widgets/common/streak_display.dart';
 import 'exercise_library_page.dart';
 import 'workout_calendar_page.dart';
+import '../services/user_stats_service.dart';
+import '../widgets/xp_bar.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -31,6 +33,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   int _streakRefreshToken = 0;
   /// Maps routine name -> list of day names it is assigned to.
   Map<String, List<String>> _assignedRoutineDays = {};
+  int _currentXP = 0;
 
   @override
   void initState() {
@@ -38,6 +41,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
     _loadSavedWorkoutSession();
     _loadSavedWorkouts();
     _loadAssignedRoutines();
+    _loadXP();
     if (widget.initialRecommendationTags != null &&
         widget.initialRecommendationTags!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -124,6 +128,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
         _loadingSavedWorkouts = false;
       });
     }
+  }
+
+  Future<void> _loadXP() async {
+    final xp = await UserStatsService.getXP();
+    if (mounted) setState(() => _currentXP = xp);
   }
 
   List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
@@ -788,6 +797,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
           await _saveCurrentWorkoutSession();
           // Refresh the routines list to show the newly saved workout
           await _loadSavedWorkouts();
+          await _loadXP();
           StreakService.notifyStreakChanged();
         },
       ),
@@ -884,6 +894,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ],
                 ),
               ),
+            ),
+            // XP Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: XPBar(xp: _currentXP),
             ),
             // Current Workout Section
             if (_selectedTab == 0) ...[
@@ -1231,7 +1246,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 savedWorkouts: _savedWorkouts,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                onRefresh: _loadSavedWorkouts,
+                onRefresh: () {
+                  _loadSavedWorkouts();
+                  _loadXP();
+                },
               ),
               const SizedBox(height: 100),
             ],
