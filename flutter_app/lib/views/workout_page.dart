@@ -10,6 +10,7 @@ import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
 import '../widgets/common/streak_display.dart';
 import 'exercise_library_page.dart';
+import 'workout_calendar_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -108,6 +109,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       }).toList();
 
       return {
+        'id': workout['workout_id'],
         'date': workout['created_at']?.toString() ??
             DateTime.now().toIso8601String(),
         'name': workout['notes']?.toString().isNotEmpty == true
@@ -391,16 +393,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
     final routineName = workout['name']?.toString() ?? 'Workout';
     final pageContext = context;
 
-    // ❌ Prevent deleting API workouts
-    if (workout['source'] != 'local') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You can only delete locally saved workouts'),
-        ),
-      );
-      return;
-    }
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -426,17 +418,21 @@ class _WorkoutPageState extends State<WorkoutPage> {
               Navigator.pop(context);
 
               try {
-                // ✅ Get ONLY local workouts
-                final localWorkouts = _savedWorkouts
-                    .where((w) => w['source'] == 'local')
-                    .toList();
+                if (workout['source'] == 'local') {
+                  final localWorkouts = _savedWorkouts
+                      .where((w) => w['source'] == 'local')
+                      .toList();
+                  final localIndex = localWorkouts.indexOf(workout);
+                  if (localIndex != -1) {
+                    await WorkoutStorage.deleteWorkout(localIndex);
+                  }
+                } else if (workout['source'] == 'api') {
+                  final workoutId = workout['id'];
+                  if (workoutId != null) {
+                    await WorkoutHistoryService.deleteWorkout(workoutId as int);
+                  }
+                }
 
-                // ✅ Find correct index inside local list
-                final localIndex = localWorkouts.indexOf(workout);
-
-                if (localIndex == -1) return;
-
-                await WorkoutStorage.deleteWorkout(localIndex);
                 await _loadSavedWorkouts();
 
                 if (mounted) {
@@ -449,6 +445,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 }
               } catch (e) {
                 print('Error deleting workout: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -720,8 +724,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
               ),
             ),
             // Current Workout Section
-            if (_workoutExercises.isNotEmpty) ...[
-              Padding(
+            if (_selectedTab == 0) ...[
+              if (_workoutExercises.isNotEmpty) ...[
+                Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1053,6 +1058,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
               child: _buildRoutinesSection(),
             ),
             const SizedBox(height: 100),
+            ] else ...[
+              WorkoutCalendarPage(
+                savedWorkouts: _savedWorkouts,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+              ),
+              const SizedBox(height: 100),
+            ],
           ],
         ),
       ),
@@ -1238,20 +1251,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 ],
                               ),
                             ),
-                            if (workout['source'] == 'local')
-                              IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.redAccent, size: 20),
-                                onPressed: () => _deleteRoutine(idx),
-                                constraints: const BoxConstraints(),
-                                padding: EdgeInsets.zero,
-                              )
-                            else
-                              Icon(
-                                Icons.lock,
-                                color: Colors.grey[500],
-                                size: 18,
-                              ),
+                            IconButton(
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.redAccent, size: 20),
+                              onPressed: () => _deleteRoutine(idx),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                            ),
                           ],
                         ),
                       ),
