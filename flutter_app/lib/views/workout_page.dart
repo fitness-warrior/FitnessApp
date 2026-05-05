@@ -458,6 +458,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   if (localIndex != -1) {
                     await WorkoutStorage.deleteWorkout(localIndex);
                   }
+                } else if (workout['source'] == 'api') {
+                  if (workout['id'] != null) {
+                    final success = await WorkoutHistoryService.deleteWorkout(workout['id'] as int);
+                    if (!success) throw Exception('API returned failure');
+                  }
                 }
 
                 await _loadSavedWorkouts();
