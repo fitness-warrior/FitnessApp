@@ -204,14 +204,25 @@ async def save_questionnaire(
                     """
                     UPDATE body_metrics
                     SET body_age = $1, body_height = $2, body_weight = $3,
-                        body_goal = $4, body_gender = $5
-                    WHERE user_id = $6
+                        body_goal = $4, body_gender = $5,
+                        body_experience = $6, body_location = $7,
+                        body_days_per_week = $8, body_session_length = $9,
+                        body_injuries = $10, body_diet_preference = $11,
+                        body_allergies = $12
+                    WHERE user_id = $13
                     """,
                     request.age,
                     request.height,
                     request.weight,
                     request.goal,
                     'male',  # Default, can be extended later
+                    request.experience,
+                    request.location,
+                    request.days_per_week,
+                    request.session_length,
+                    request.injuries,
+                    request.diet_preference,
+                    request.allergies,
                     user_id
                 )
             else:
@@ -219,15 +230,24 @@ async def save_questionnaire(
                 await connection.execute(
                     """
                     INSERT INTO body_metrics 
-                    (user_id, body_age, body_height, body_weight, body_goal, body_gender)
-                    VALUES ($1, $2, $3, $4, $5, $6)
+                    (user_id, body_age, body_height, body_weight, body_goal, body_gender,
+                     body_experience, body_location, body_days_per_week, body_session_length,
+                     body_injuries, body_diet_preference, body_allergies)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                     """,
                     user_id,
                     request.age,
                     request.height,
                     request.weight,
                     request.goal,
-                    'male'  # Default
+                    'male',  # Default
+                    request.experience,
+                    request.location,
+                    request.days_per_week,
+                    request.session_length,
+                    request.injuries,
+                    request.diet_preference,
+                    request.allergies
                 )
             
             # Save fitness profile with weekly gym days goal
@@ -293,7 +313,10 @@ async def get_questionnaire(
         async with app.state.db_pool.acquire() as connection:
             result = await connection.fetchrow(
                 """
-                SELECT body_age, body_height, body_weight, body_goal, body_gender
+                SELECT body_age, body_height, body_weight, body_goal, body_gender,
+                       body_experience, body_location, body_days_per_week,
+                       body_session_length, body_injuries, body_diet_preference,
+                       body_allergies
                 FROM body_metrics
                 WHERE user_id = $1
                 """,
@@ -308,7 +331,14 @@ async def get_questionnaire(
                 "height": result["body_height"],
                 "weight": result["body_weight"],
                 "goal": result["body_goal"],
-                "gender": result["body_gender"]
+                "gender": result["body_gender"],
+                "experience": result["body_experience"],
+                "location": result["body_location"],
+                "days_per_week": result["body_days_per_week"],
+                "session_length": result["body_session_length"],
+                "injuries": result["body_injuries"] or [],
+                "diet_preference": result["body_diet_preference"],
+                "allergies": result["body_allergies"] or []
             }
     except HTTPException:
         raise
