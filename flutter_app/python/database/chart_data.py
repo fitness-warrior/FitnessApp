@@ -11,6 +11,14 @@ class CollectedData:
     def _formatted_date(self,unform):
         return unform.strftime("%Y-%m-%d")
     
+    def _collect_rows(self,name):
+        rows =  self._get_train_name
+        if row is None:
+            return None
+        for row in rows:
+            row[0] = self._formatted_date(row[0])
+        return rows
+    
     def find_user_done(self):
         self.cur.execute("""
             SELECT e.exer_name, pe.plan_exer_PB
@@ -28,7 +36,7 @@ class CollectedData:
     
     def _get_train_name(self,name):
         self.cur.execute("""
-            SELECT t.train_data, t.train_mins, t.train_effort, t.reps 
+            SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps 
             FROM exercise e
             JOIN plan_exercise pe ON pe.exer_id = e.exer_id
             JOIN training_exercise te ON te.exer_id = e.exer_id
@@ -40,14 +48,29 @@ class CollectedData:
         """, (self.body_id,))
         return self.cur.fetchall()
         
-    def cardio_speed(self,name)
-        row =  self._get_train_name
-        if row is None:
-            return None
-
-        date = self._formatted_date(row[0])
+    def cardio_speed(self,name):
+        row = self._collect_rows()
         speed = (row[2]*1000) / row[1]
-        return (date, speed)
+        return (row[0], speed)
+    
+    def cardio_endurance(self,name):
+        row = self._collect_rows()
+        return (row[0], row[1]) 
+    
+    def cardio_endurance(self,name):
+        rows = self._collect_rows()
+        final_collection = []
+        for row in rows:
+            new_row = [row[0],row[2]]
+            final_collection.append (new_row)
+        return final_collection  
+    
+    def strength_total(self,name):
+        row = self._collect_rows()
+        total = row[2] * row[3]
+        return (row[0], total)
+    
+
 
 
 if __name__ == "__main__":
