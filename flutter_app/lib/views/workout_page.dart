@@ -402,7 +402,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openSearchDialog() {
-    if (_checkAlreadyDoneToday()) return;
     showDialog(
       context: context,
       builder: (context) => ExerciseSearchDialog(
@@ -416,7 +415,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openSearchDialogWithTags(List<String> tags) {
-    if (_checkAlreadyDoneToday()) return;
     showDialog(
       context: context,
       builder: (context) => ExerciseSearchDialog(
@@ -431,7 +429,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openGenerateDialog() {
-    if (_checkAlreadyDoneToday()) return;
     if (_workoutExercises.isNotEmpty) {
       _showWorkoutActiveDialog();
       return;
@@ -1269,43 +1266,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-
-  bool _checkAlreadyDoneToday() {
-    final now = DateTime.now();
-    final todayStr =
-        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-
-    final alreadyDone = _savedWorkouts.any((w) {
-      final date = w['date']?.toString() ?? '';
-      return date.startsWith(todayStr);
-    });
-
-    if (alreadyDone) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
-              const SizedBox(width: 12),
-              const Text(
-                'Rest you did your workout',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFF1C1C2E),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      return true;
-    }
-    return false;
-  }
 
   String? _validatePositive(String value, String fieldName) {
     if (value.isEmpty) return null;
