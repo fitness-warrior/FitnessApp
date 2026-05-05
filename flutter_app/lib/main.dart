@@ -27,6 +27,7 @@ class MyApp extends StatelessWidget {
       home: const AuthLauncher(),
       routes: {
         '/auth': (_) => const AuthPage(),
+        '/launcher': (_) => const QuestionnaireLauncher(),
         '/questionnaire': (_) => const QuestionnairePage(),
         '/my_workout': (_) => const WorkoutPage(),
         '/my_meal': (_) => const MealPlanPage(),

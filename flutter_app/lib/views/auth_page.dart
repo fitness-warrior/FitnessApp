@@ -60,8 +60,8 @@ class _AuthPageState extends State<AuthPage> {
       }
 
       if (mounted) {
-        // Navigate to questionnaire or home
-        Navigator.of(context).pushReplacementNamed('/questionnaire');
+        // Navigate to questionnaire launcher
+        Navigator.of(context).pushReplacementNamed('/launcher');
       }
     } catch (e) {
       setState(() => error = e.toString().replaceAll('Exception: ', ''));
