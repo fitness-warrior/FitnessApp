@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from contextlib import asynccontextmanager
+from datetime import date
 import asyncpg
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Header
@@ -262,7 +263,6 @@ async def save_questionnaire(
             )
             
             if not streak_exists:
-                from datetime import date
                 today = date.today()
                 await connection.execute(
                     """
