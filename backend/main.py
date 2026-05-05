@@ -33,6 +33,17 @@ DATABASE_URL = os.getenv(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+    # Ensure weekly plan table exists on startup
+    async with app.state.db_pool.acquire() as _conn:
+        await _conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_weekly_plan (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                plan JSONB NOT NULL DEFAULT '{}'::jsonb,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (user_id)
+            )
+        """)
     try:
         yield
     finally:
@@ -416,6 +427,10 @@ async def update_user_profile(
 
 
 # ==================== WORKOUT ENDPOINTS ====================
+class WeeklyPlanRequest(BaseModel):
+    plan: dict
+
+
 class WorkoutExercise(BaseModel):
     exer_id: int
     exer_name: str
@@ -929,6 +944,46 @@ async def save_meal_plan(request: MealPlanRequest, user_id: int = Depends(get_cu
             return {"success": True, "plan_date": str(request.plan_date)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save meal plan: {str(e)}")
+
+
+# ==================== WEEKLY PLAN ENDPOINTS ====================
+
+@app.get("/api/weekly-plan")
+async def get_weekly_plan(user_id: int = Depends(get_current_user_id)):
+    """Get the user's weekly workout plan (day -> list of routine names)."""
+    try:
+        import json
+        async with app.state.db_pool.acquire() as connection:
+            row = await connection.fetchrow(
+                "SELECT plan FROM user_weekly_plan WHERE user_id = $1",
+                user_id,
+            )
+            if not row:
+                return {"plan": {}}
+            plan_data = row["plan"]
+            if isinstance(plan_data, str):
+                plan_data = json.loads(plan_data)
+            return {"plan": plan_data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch weekly plan: {str(e)}")
+
+
+@app.post("/api/weekly-plan")
+async def save_weekly_plan(request: WeeklyPlanRequest, user_id: int = Depends(get_current_user_id)):
+    """Upsert the user's weekly workout plan."""
+    try:
+        import json
+        plan_str = json.dumps(request.plan)
+        async with app.state.db_pool.acquire() as connection:
+            await connection.execute("""
+                INSERT INTO user_weekly_plan (user_id, plan, updated_at)
+                VALUES ($1, $2::jsonb, NOW())
+                ON CONFLICT (user_id) DO UPDATE
+                    SET plan = $2::jsonb, updated_at = NOW()
+            """, user_id, plan_str)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save weekly plan: {str(e)}")
 
 
 def format_exercise(row: asyncpg.Record) -> dict:
