@@ -8,6 +8,7 @@ import 'package:fitness_app_flutter/views/game_page.dart';
 import 'package:fitness_app_flutter/views/edit_avatar_page.dart';
 import 'package:fitness_app_flutter/views/dashboard_page.dart';
 import 'package:fitness_app_flutter/views/auth_page.dart';
+import 'package:fitness_app_flutter/views/profile_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
