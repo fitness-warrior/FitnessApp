@@ -261,20 +261,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const SizedBox(height: 24),
 
-                          // ── Account section ──────────────────────────────
-                          const _SectionHeader(title: 'Account'),
-                          const SizedBox(height: 10),
-                          _buildActionButton(
-                            icon: Icons.settings,
-                            label: 'Settings',
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Settings coming soon')),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 24),
 
                           // ── Logout ───────────────────────────────────────
                           ElevatedButton.icon(
@@ -301,35 +287,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1F1F2E),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.blue),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 16, color: Colors.white),
-            ),
-            const Spacer(),
-            const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ── Sub-widgets ──────────────────────────────────────────────────────────────
