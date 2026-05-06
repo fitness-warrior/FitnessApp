@@ -564,7 +564,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       final dietPref = responses['Q010']?.toString() ?? 'non-veg';
       final allergies = (responses['Q011'] as List?)?.cast<String>() ?? [];
 
-      await UserService.saveQuestionnaireResponse({
+      final payload = {
         'age': age,
         'height': height,
         'weight': weight,
@@ -576,7 +576,10 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         'injuries': injuries,
         'diet_preference': dietPref,
         'allergies': allergies,
-      });
+      };
+
+      await RecommendationStorage.saveQuestionnaireResponse(payload);
+      await UserService.saveQuestionnaireResponse(payload);
     } catch (e) {
       // Silently fail - questionnaire still progresses
     }

@@ -44,12 +44,25 @@ class _ProfilePageState extends State<ProfilePage> {
       };
     }
 
-    // 3. Try enriching with API data (has extra fields like height/weight/diet)
+    // 3. Merge cached questionnaire response if available
+    final cachedQuestionnaire =
+        await RecommendationStorage.loadQuestionnaireResponse();
+    if (cachedQuestionnaire != null && cachedQuestionnaire.isNotEmpty) {
+      fitness = {
+        ...?fitness,
+        ...cachedQuestionnaire,
+      };
+    }
+
+    // 4. Try enriching with API data (has extra fields like height/weight/diet)
     try {
       final apiFitness = await UserService.getQuestionnaireResponse()
           .timeout(const Duration(seconds: 4));
       if (apiFitness != null && apiFitness.isNotEmpty) {
-        fitness = apiFitness; // API is richer — prefer it
+        fitness = {
+          ...?fitness,
+          ...apiFitness,
+        };
       }
     } catch (_) {
       // Keep local cache if API is unavailable
@@ -189,6 +202,118 @@ class _ProfilePageState extends State<ProfilePage> {
     return map[raw.toLowerCase()] ?? raw;
   }
 
+  double? _toDouble(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw.toString());
+  }
+
+  int? _toInt(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is int) return raw;
+    if (raw is num) return raw.round();
+    return int.tryParse(raw.toString());
+  }
+
+  String _bmiCategory(double? bmi) {
+    if (bmi == null) return '—';
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25.0) return 'Normal';
+    if (bmi < 30.0) return 'Overweight';
+    return 'Obese';
+  }
+
+  double _experienceMultiplier(String? raw) {
+    final s = (raw ?? '').toLowerCase();
+    if (s.contains('beginner')) return 1.3;
+    if (s.contains('intermediate')) return 1.5;
+    if (s.contains('advanced')) return 1.7;
+    return 1.3;
+  }
+
+  String _goalKey(String? raw) {
+    final s = (raw ?? '').toLowerCase();
+    if (s.contains('lose') || s.contains('fat_loss')) return 'weight_loss';
+    if (s.contains('gain') || s.contains('weight_gain')) return 'weight_gain';
+    if (s.contains('build') || s.contains('strength')) return 'build_muscle';
+    if (s.contains('stay') || s.contains('general_fitness')) return 'stay_fit';
+    return 'stay_fit';
+  }
+
+  Map<String, dynamic>? _buildRecommendations(Map<String, dynamic>? profile) {
+    if (profile == null) return null;
+
+    final age = _toInt(profile['age']) ?? _toInt(profile['body_age']) ?? 0;
+    final height = _toDouble(profile['height']) ??
+        _toDouble(profile['body_height']);
+    final weight = _toDouble(profile['weight']) ??
+        _toDouble(profile['body_weight']);
+    if (age <= 0 || height == null || weight == null) {
+      return {
+        'error': 'Missing age/height/weight',
+        'age': age,
+        'height': height,
+        'weight': weight,
+      };
+    }
+
+    final meters = height / 100.0;
+    if (meters <= 0) return null;
+
+    final bmi = weight / (meters * meters);
+    final bmiClass = _bmiCategory(bmi);
+    final bmr = (10 * weight) + (6.25 * height) - (5 * age);
+    final exp = profile['experience']?.toString() ??
+        profile['body_experience']?.toString();
+    final tdee = bmr * _experienceMultiplier(exp);
+
+    final goal = _goalKey(
+        profile['goal']?.toString() ?? profile['body_goal']?.toString());
+
+    String deficitOrSurplusLabel = 'Deficit';
+    double deficitOrSurplus = 0;
+    double mealCalories = tdee;
+    double burnCalories = 0;
+
+    if (goal == 'weight_loss') {
+      double deficit = 400;
+      if (bmiClass == 'Overweight') deficit = 600;
+      if (bmiClass == 'Obese') deficit = 800;
+
+      final exerciseBurn = deficit * 0.4;
+      final mealReduction = deficit * 0.6;
+      mealCalories = tdee - mealReduction;
+      burnCalories = exerciseBurn;
+      deficitOrSurplus = deficit;
+      deficitOrSurplusLabel = 'Deficit';
+    } else if (goal == 'weight_gain') {
+      mealCalories = tdee + 400;
+      burnCalories = 150;
+      deficitOrSurplus = 400;
+      deficitOrSurplusLabel = 'Surplus';
+    } else if (goal == 'build_muscle') {
+      mealCalories = tdee + 250;
+      burnCalories = 300;
+      deficitOrSurplus = 250;
+      deficitOrSurplusLabel = 'Surplus';
+    } else {
+      mealCalories = tdee;
+      burnCalories = 250;
+      deficitOrSurplus = 0;
+      deficitOrSurplusLabel = 'Deficit';
+    }
+
+    return {
+      'bmi': bmi,
+      'bmi_class': bmiClass,
+      'bmr': bmr,
+      'deficit_or_surplus': deficitOrSurplus,
+      'deficit_or_surplus_label': deficitOrSurplusLabel,
+      'meal_calories': mealCalories,
+      'burn_calories': burnCalories,
+    };
+  }
+
 
   // Keys we want to surface and the order to show them in
   static const _fitnessKeys = [
@@ -209,6 +334,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final recommendations = _buildRecommendations(fitnessProfile);
     return Scaffold(
       backgroundColor: const Color(0xFF13131F),
       appBar: AppBar(
@@ -259,6 +385,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             valueFn: _value,
                             onSetUp: _openEditFitnessProfile,
                           ),
+                          const SizedBox(height: 24),
+
+                          _SectionHeader(title: 'Recommendations'),
+                          const SizedBox(height: 10),
+                          _RecommendationsCard(data: recommendations),
                           const SizedBox(height: 24),
 
 
@@ -476,6 +607,94 @@ class _FitnessRow extends StatelessWidget {
               textAlign: TextAlign.right,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecommendationsCard extends StatelessWidget {
+  final Map<String, dynamic>? data;
+  const _RecommendationsCard({required this.data});
+
+  String _fmtNumber(double? v, {int decimals = 0}) {
+    if (v == null) return '—';
+    return v.toStringAsFixed(decimals);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (data == null) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1F1F2E),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Add age, height, and weight to see recommendations.',
+          style: TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+      );
+    }
+
+    if (data!['error'] != null) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1F1F2E),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'Missing data: age=${data!['age'] ?? '—'}, '
+          'height=${data!['height'] ?? '—'}, '
+          'weight=${data!['weight'] ?? '—'}',
+          style: const TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+      );
+    }
+
+    final rows = [
+      _FitnessRow(
+        label: 'BMI',
+        value: _fmtNumber(data!['bmi'] as double?, decimals: 1),
+      ),
+      _FitnessRow(
+        label: 'BMI Category',
+        value: data!['bmi_class']?.toString() ?? '—',
+      ),
+      _FitnessRow(
+        label: 'BMR',
+        value: '${_fmtNumber(data!['bmr'] as double?)} kcal',
+      ),
+      _FitnessRow(
+        label: data!['deficit_or_surplus_label']?.toString() ?? 'Deficit',
+        value:
+            '${_fmtNumber(data!['deficit_or_surplus'] as double?)} kcal',
+      ),
+      _FitnessRow(
+        label: 'Recommended Meal Calories',
+        value: '${_fmtNumber(data!['meal_calories'] as double?)} kcal',
+      ),
+      _FitnessRow(
+        label: 'Recommended Burn Calories',
+        value: '${_fmtNumber(data!['burn_calories'] as double?)} kcal',
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F1F2E),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < rows.length; i++) ...[
+            rows[i],
+            if (i < rows.length - 1)
+              const Divider(color: Color(0xFF2A2A3D), height: 1),
+          ],
         ],
       ),
     );
