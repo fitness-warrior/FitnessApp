@@ -44,7 +44,7 @@ CREATE TABLE game_char (
 
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
-    game_char_id INT REFERENCES game_char(game_char_id),
+    game_char_id INT REFERENCES game_char (game_char_id),
     user_name VARCHAR(40) NOT NULL,
     user_surname VARCHAR(40),
     user_email VARCHAR(40) UNIQUE NOT NULL,
@@ -59,9 +59,9 @@ CREATE TABLE equipment (
 );
 
 CREATE TABLE user_equip (
-    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    equip_id INT REFERENCES equipment(equip_id),
-    PRIMARY KEY (user_id,equip_id)
+    user_id INT REFERENCES users (user_id) ON DELETE CASCADE,
+    equip_id INT REFERENCES equipment (equip_id),
+    PRIMARY KEY (user_id, equip_id)
 );
 
 ---------------- BODY METRICS ----------------
@@ -101,7 +101,7 @@ CREATE TABLE exercise (
 
 CREATE TABLE user_workout (
     workout_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES users (user_id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     duration_minutes INT,
     notes TEXT
@@ -109,8 +109,8 @@ CREATE TABLE user_workout (
 
 CREATE TABLE user_workout_exercise (
     id SERIAL PRIMARY KEY,
-    workout_id INT NOT NULL REFERENCES user_workout(workout_id) ON DELETE CASCADE,
-    exer_id INT NOT NULL REFERENCES exercise(exer_id),
+    workout_id INT NOT NULL REFERENCES user_workout (workout_id) ON DELETE CASCADE,
+    exer_id INT NOT NULL REFERENCES exercise (exer_id),
     sets INT,
     reps INT,
     weight FLOAT,
@@ -127,21 +127,21 @@ CREATE TABLE training (
 
 CREATE TABLE training_exercise (
     training_exercise_id SERIAL PRIMARY KEY,
-    train_id INT REFERENCES training(train_id),
-    exer_id INT REFERENCES exercise(exer_id)
+    train_id INT REFERENCES training (train_id),
+    exer_id INT REFERENCES exercise (exer_id)
 );
 
 CREATE TABLE training_body (
     training_body_id SERIAL PRIMARY KEY,
-    train_id INT REFERENCES training(train_id),
-    body_id INT REFERENCES body_metrics(body_id)
+    train_id INT REFERENCES training (train_id),
+    body_id INT REFERENCES body_metrics (body_id)
 );
 
 ---------------- WORK PLAN ----------------
 
 CREATE TABLE work_plan (
     work_id SERIAL PRIMARY KEY,
-    body_id INT REFERENCES body_metrics(body_id),
+    body_id INT REFERENCES body_metrics (body_id),
     work_name VARCHAR(50) NOT NULL,
     work_descrip TEXT,
     work_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -151,8 +151,8 @@ CREATE TABLE work_plan (
 
 CREATE TABLE plan_exercise (
     plan_exer_id SERIAL PRIMARY KEY,
-    work_id INT REFERENCES work_plan(work_id),
-    exer_id INT REFERENCES exercise(exer_id),
+    work_id INT REFERENCES work_plan (work_id),
+    exer_id INT REFERENCES exercise (exer_id),
     plan_exer_amount INT NOT NULL,
     plan_exer_set INT NOT NULL,
     plan_exer_PB INT,
@@ -163,7 +163,7 @@ CREATE TABLE plan_exercise (
 
 CREATE TABLE meal_plan (
     meal_id SERIAL PRIMARY KEY,
-    body_id INT REFERENCES body_metrics(body_id),
+    body_id INT REFERENCES body_metrics (body_id),
     meal_day TIMESTAMP,
     meal_name VARCHAR(20) NOT NULL
 );
@@ -180,8 +180,8 @@ CREATE TABLE food (
 
 CREATE TABLE food_plan (
     food_plan_id SERIAL PRIMARY KEY,
-    food_id INT REFERENCES food(food_id),
-    meal_id INT REFERENCES meal_plan(meal_id)
+    food_id INT REFERENCES food (food_id),
+    meal_id INT REFERENCES meal_plan (meal_id)
 );
 
 ---------------- GAME ITEMS ----------------
@@ -195,16 +195,16 @@ CREATE TABLE custom_items (
 );
 
 CREATE TABLE game_items (
-    item_id INT REFERENCES custom_items(item_id),
-    game_char_id INT REFERENCES game_char(game_char_id),
-    PRIMARY KEY (item_id,game_char_id)
+    item_id INT REFERENCES custom_items (item_id),
+    game_char_id INT REFERENCES game_char (game_char_id),
+    PRIMARY KEY (item_id, game_char_id)
 );
 
 ---------------- ENEMY ----------------
 
 CREATE TABLE enemy (
     enemy_id SERIAL PRIMARY KEY,
-    game_char_id INT REFERENCES game_char(game_char_id),
+    game_char_id INT REFERENCES game_char (game_char_id),
     enemy_name VARCHAR(20) NOT NULL,
     enemy_health FLOAT NOT NULL,
     enemy_attack FLOAT NOT NULL,
@@ -213,7 +213,7 @@ CREATE TABLE enemy (
 
 CREATE TABLE rewards (
     reward_id SERIAL PRIMARY KEY,
-    enemy_id INT REFERENCES enemy(enemy_id),
+    enemy_id INT REFERENCES enemy (enemy_id),
     reward_level INT NOT NULL,
     reward_name VARCHAR(20) NOT NULL,
     reward_type reward_type NOT NULL,
@@ -232,23 +232,23 @@ CREATE TABLE meal_collection (
 );
 
 CREATE TABLE collection_foods (
-    collection_id INT REFERENCES meal_collection(collection_id),
-    food_id INT REFERENCES food(food_id),
-    PRIMARY KEY (collection_id,food_id)
+    collection_id INT REFERENCES meal_collection (collection_id),
+    food_id INT REFERENCES food (food_id),
+    PRIMARY KEY (collection_id, food_id)
 );
 
 ---------------- FITNESS PROFILE & STREAK ----------------
 
 CREATE TABLE user_fitness_profile (
     profile_id SERIAL PRIMARY KEY,
-    user_id INT UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id INT UNIQUE NOT NULL REFERENCES users (user_id) ON DELETE CASCADE,
     days_per_week_goal INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE user_streak (
     streak_id SERIAL PRIMARY KEY,
-    user_id INT UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id INT UNIQUE NOT NULL REFERENCES users (user_id) ON DELETE CASCADE,
     current_streak INT DEFAULT 0,
     longest_streak INT DEFAULT 0,
     streak_start_date DATE,
@@ -269,538 +269,2793 @@ CREATE TABLE user_meal_plan (
     UNIQUE (user_id, plan_date)
 );
 
-INSERT INTO game_char
-(game_char_level, game_char_colour, game_char_type,
- game_char_hp, game_char_attack, game_char_speed)
+INSERT INTO
+    game_char (
+        game_char_level,
+        game_char_colour,
+        game_char_type,
+        game_char_hp,
+        game_char_attack,
+        game_char_speed
+    )
+VALUES (1, 'red', 'a', 200, 10, 5),
+    (1, 'blue', 'b', 100, 25, 10),
+    (1, 'green', 'c', 80, 15, 20),
+    (1, 'yellow', 'a', 210, 12, 6),
+    (1, 'purple', 'b', 150, 20, 9),
+    (1, 'black', 'c', 120, 18, 11),
+    (1, 'white', 'a', 170, 14, 8),
+    (1, 'orange', 'b', 140, 16, 10);
+
+INSERT INTO
+    users (
+        game_char_id,
+        user_name,
+        user_surname,
+        user_email,
+        user_password
+    )
+VALUES (
+        1,
+        'John',
+        'Smith',
+        'john.smith@email.com',
+        'password'
+    ),
+    (
+        2,
+        'Sarah',
+        'Johnson',
+        'sarah.j@email.com',
+        'password'
+    ),
+    (
+        3,
+        'Mike',
+        'Williams',
+        'mike.w@email.com',
+        'password'
+    ),
+    (
+        4,
+        'Emma',
+        'Brown',
+        'emma.brown@email.com',
+        'password'
+    ),
+    (
+        5,
+        'David',
+        'Jones',
+        'david.jones@email.com',
+        'password'
+    ),
+    (
+        6,
+        'Lisa',
+        'Garcia',
+        'lisa.garcia@email.com',
+        'password'
+    ),
+    (
+        7,
+        'James',
+        'Miller',
+        'james.miller@email.com',
+        'password'
+    ),
+    (
+        8,
+        'Anna',
+        'Davis',
+        'anna.davis@email.com',
+        'password'
+    );
+
+INSERT INTO
+    equipment (equip_id, equipment)
+VALUES (1, 'Dumbbells'),
+    (2, 'Barbells'),
+    (3, 'Resistance Bands'),
+    (4, 'Resistance Bands'),
+    (5, 'Gym Machines'),
+    (6, 'Cardio Machines');
+
+INSERT INTO
+    user_equip (user_id, equip_id)
 VALUES
-(1,'red','a',200,10,5),
-(1,'blue','b',100,25,10),
-(1,'green','c',80,15,20),
-(1,'yellow','a',210,12,6),
-(1,'purple','b',150,20,9),
-(1,'black','c',120,18,11),
-(1,'white','a',170,14,8),
-(1,'orange','b',140,16,10);
-
-INSERT INTO users
-(game_char_id, user_name, user_surname, user_email, user_password)
-VALUES
-(1, 'John', 'Smith', 'john.smith@email.com', 'password'),
-(2, 'Sarah', 'Johnson', 'sarah.j@email.com', 'password'),
-(3, 'Mike', 'Williams', 'mike.w@email.com', 'password'),
-(4, 'Emma', 'Brown', 'emma.brown@email.com', 'password'),
-(5, 'David', 'Jones', 'david.jones@email.com', 'password'),
-(6, 'Lisa', 'Garcia', 'lisa.garcia@email.com', 'password'),
-(7, 'James', 'Miller', 'james.miller@email.com', 'password'),
-(8, 'Anna', 'Davis', 'anna.davis@email.com', 'password');
-
-INSERT INTO equipment (equip_id, equipment) VALUES
-(1,'Dumbbells'),
-(2,'Barbells'),
-(3,'Resistance Bands'),
-(4,'Resistance Bands'),
-(5,'Gym Machines'),
-(6,'Cardio Machines');
-
-
-INSERT INTO user_equip (user_id, equip_id) VALUES
--- John Smith (1)
-(1, 1),
-(1, 3),
-(1, 6),
+    -- John Smith (1)
+    (1, 1),
+    (1, 3),
+    (1, 6),
 
 -- Sarah Johnson (2)
-(2, 2),
-(2, 5),
+(2, 2), (2, 5),
 
 -- Mike Williams (3)
-(3, 1),
-(3, 2),
-(3, 5),
+(3, 1), (3, 2), (3, 5),
 
 -- Emma Brown (4)
-(4, 3),
-(4, 4),
-(4, 6),
+(4, 3), (4, 4), (4, 6),
 
 -- David Jones (5)
-(5, 2),
-(5, 6),
+(5, 2), (5, 6),
 
 -- Lisa Garcia (6)
-(6, 1),
-(6, 3),
-(6, 5),
+(6, 1), (6, 3), (6, 5),
 
 -- James Miller (7)
-(7, 2),
-(7, 4),
+(7, 2), (7, 4),
 
 -- Anna Davis (8)
-(8, 1),
-(8, 5),
-(8, 6);
+(8, 1), (8, 5), (8, 6);
 
-INSERT INTO enemy (game_char_id, enemy_name, enemy_health, enemy_attack, enemy_level) VALUES
-(1, 'Goblin', 50.0, 10.0, 1),
-(2, 'Orc', 120.0, 25.0, 3),
-(3, 'Troll', 200.0, 35.0, 5),
-(4, 'Dragon', 500.0, 80.0, 10),
-(5, 'Skeleton', 80.0, 15.0, 2),
-(6, 'Zombie', 100.0, 20.0, 3),
-(7, 'Vampire', 300.0, 50.0, 7),
-(8, 'Demon', 400.0, 65.0, 9);
+INSERT INTO
+    enemy (
+        game_char_id,
+        enemy_name,
+        enemy_health,
+        enemy_attack,
+        enemy_level
+    )
+VALUES (1, 'Goblin', 50.0, 10.0, 1),
+    (2, 'Orc', 120.0, 25.0, 3),
+    (3, 'Troll', 200.0, 35.0, 5),
+    (4, 'Dragon', 500.0, 80.0, 10),
+    (5, 'Skeleton', 80.0, 15.0, 2),
+    (6, 'Zombie', 100.0, 20.0, 3),
+    (7, 'Vampire', 300.0, 50.0, 7),
+    (8, 'Demon', 400.0, 65.0, 9);
 
-INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, body_age, body_gender, body_goal) VALUES
-(1, 75.5, 78.0, 175.0, 25, 'male','Fat Loss'),
-(2, 62.0, 65.0, 165.0, 28, 'female', 'Endurance Improvement'),
-(3, 82.3, 80.0, 180.0, 32, 'male', 'Muscle Gain'),
-(4, 58.5, 60.0, 160.0, 24, 'female', 'Injury Rehabilitation'),
-(5, 90.0, 92.0, 185.0, 35, 'male', 'General Fitness'),
-(6, 65.0, 67.0, 168.0, 30, 'female', 'Athletic Performance'),
-(7, 78.0, 75.0, 178.0, 27, 'male', 'Fat Loss'),
-(8, 55.0, 57.0, 162.0, 26, 'female', 'General Fitness');
+INSERT INTO
+    body_metrics (
+        user_id,
+        body_weight,
+        body_past_weight,
+        body_height,
+        body_age,
+        body_gender,
+        body_goal
+    )
+VALUES (
+        1,
+        75.5,
+        78.0,
+        175.0,
+        25,
+        'male',
+        'Fat Loss'
+    ),
+    (
+        2,
+        62.0,
+        65.0,
+        165.0,
+        28,
+        'female',
+        'Endurance Improvement'
+    ),
+    (
+        3,
+        82.3,
+        80.0,
+        180.0,
+        32,
+        'male',
+        'Muscle Gain'
+    ),
+    (
+        4,
+        58.5,
+        60.0,
+        160.0,
+        24,
+        'female',
+        'Injury Rehabilitation'
+    ),
+    (
+        5,
+        90.0,
+        92.0,
+        185.0,
+        35,
+        'male',
+        'General Fitness'
+    ),
+    (
+        6,
+        65.0,
+        67.0,
+        168.0,
+        30,
+        'female',
+        'Athletic Performance'
+    ),
+    (
+        7,
+        78.0,
+        75.0,
+        178.0,
+        27,
+        'male',
+        'Fat Loss'
+    ),
+    (
+        8,
+        55.0,
+        57.0,
+        162.0,
+        26,
+        'female',
+        'General Fitness'
+    );
 
-INSERT INTO exercise
-(exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip, exer_met)
-VALUES
-('Push-ups','chest','strength','Classic upper body exercise','https://youtube.com/pushups','Bodyweight Only',3.8),
-('Squats','legs','strength','Lower body compound movement','https://youtube.com/squats','Bodyweight Only',5.0),
-('Running','full body','cardio','Outdoor cardio exercise','https://youtube.com/running','Dumbbells',9.8),
-('Bench Press','chest','strength','Chest and tricep builder','https://youtube.com/bench','Barbells',6.0),
-('Deadlift','back','strength','Full posterior chain exercise','https://youtube.com/deadlift','Gym Machines',6.0),
-('Cycling','legs','cardio','Low impact cardio','https://youtube.com/cycling','Cardio Machines',8.0),
-('Pull-ups','back','strength','Back and bicep exercise','https://youtube.com/pullups','Bodyweight Only',8.0),
-('Jump Rope','full body','cardio','High intensity cardio','https://youtube.com/jumprope','Resistance Bands',12.3),
--- Additional Chest Exercises
-('Dumbbell Bench Press','chest','strength','Chest exercise using dumbbells','https://youtube.com/db-bench','Dumbbells',5.5),
-('Incline Bench Press','chest','strength','Upper chest focus with barbells','https://youtube.com/incline-bench','Barbells',6.0),
-('Decline Bench Press','chest','strength','Lower chest focus exercise','https://youtube.com/decline-bench','Barbells',6.0),
-('Dumbbell Flyes','chest','isolation','Chest isolation exercise','https://youtube.com/db-flyes','Dumbbells',3.5),
-('Cable Crossovers','chest','isolation','Chest isolation with cables','https://youtube.com/cable-cross','Gym Machines',3.5),
-('Machine Chest Press','chest','strength','Chest press on machine','https://youtube.com/machine-press','Gym Machines',5.0),
-('Resistance Band Chest Press','chest','strength','Chest exercise with bands','https://youtube.com/band-press','Resistance Bands',4.5),
-('Dips','chest','bodyweight','Body weight chest and tricep exercise','https://youtube.com/dips','Bodyweight Only',8.0),
-('Push-ups Wide Grip','chest','bodyweight','Wide grip variation of push-ups','https://youtube.com/wide-pushups','Bodyweight Only',4.0),
-('Smith Machine Chest Press','chest','strength','Guided barbell chest press','https://youtube.com/smith-press','Barbells',5.5),
-('Decline Dumbbell Flyes','chest','isolation','Lower chest isolation exercise','https://youtube.com/decline-flyes','Dumbbells',3.5),
-('Landmine Press','chest','strength','Angled barbell chest press','https://youtube.com/landmine-press','Barbells',6.0),
-('Chest Squeeze Press','chest','isolation','Isometric chest contraction','https://youtube.com/squeeze-press','Dumbbells',4.0),
-('Hex Press','chest','strength','Hexagonal dumbbell chest press','https://youtube.com/hex-press','Dumbbells',5.5),
-('Pec Deck Machine','chest','isolation','Isolated chest machine exercise','https://youtube.com/pec-deck','Gym Machines',3.0),
--- Additional Back Exercises
-('Barbell Row','back','strength','Classic compound back exercise','https://youtube.com/barbell-row','Barbells',6.0),
-('Dumbbell Row','back','strength','Single arm dumbbell rowing','https://youtube.com/db-row','Dumbbells',5.5),
-('Lat Pulldown','back','strength','Vertical pulling exercise','https://youtube.com/lat-pulldown','Gym Machines',5.5),
-('Bent Over Rows','back','strength','Compound back exercise','https://youtube.com/bent-rows','Barbells',6.0),
-('Face Pulls','back','isolation','Rear deltoid and back exercise','https://youtube.com/face-pulls','Resistance Bands',3.5),
-('Inverted Rows','back','bodyweight','Horizontal pulling bodyweight','https://youtube.com/inverted-rows','Bodyweight Only',5.0),
-('Seal Rows','back','strength','Machine assisted rowing','https://youtube.com/seal-rows','Gym Machines',5.5),
-('T-Bar Rows','back','strength','Angled barbell rowing','https://youtube.com/t-bar-rows','Barbells',6.0),
--- Additional Shoulder Exercises
-('Overhead Press','shoulders','strength','Standing shoulder press','https://youtube.com/overhead-press','Barbells',6.0),
-('Dumbbell Shoulder Press','shoulders','strength','Seated shoulder press with dumbbells','https://youtube.com/db-shoulder','Dumbbells',5.5),
-('Lateral Raises','shoulders','isolation','Side shoulder isolation','https://youtube.com/lateral-raise','Dumbbells',3.0),
-('Front Raises','shoulders','isolation','Front shoulder isolation','https://youtube.com/front-raise','Dumbbells',3.0),
-('Shrugs','shoulders','isolation','Trapezius isolation exercise','https://youtube.com/shrugs','Dumbbells',4.0),
--- Additional Arm Exercises
-('Bicep Curls','arms','isolation','Classic arm curl exercise','https://youtube.com/bicep-curl','Dumbbells',3.0),
-('Tricep Dips','arms','strength','Tricep focused dips','https://youtube.com/tricep-dips','Bodyweight Only',7.0),
-('Hammer Curls','arms','isolation','Neutral grip arm curl','https://youtube.com/hammer-curl','Dumbbells',3.0),
-('Tricep Pushdowns','arms','isolation','Cable tricep exercise','https://youtube.com/tricep-pushdown','Gym Machines',3.0),
-('Preacher Curls','arms','isolation','Bench supported arm curl','https://youtube.com/preacher-curl','Dumbbells',3.5),
--- Additional Leg Exercises
-('Leg Press','legs','strength','Machine leg press exercise','https://youtube.com/leg-press','Gym Machines',6.0),
-('Leg Curls','legs','isolation','Hamstring isolation','https://youtube.com/leg-curls','Gym Machines',4.0),
-('Leg Extensions','legs','isolation','Quadriceps isolation','https://youtube.com/leg-ext','Gym Machines',4.0),
-('Lunges','legs','strength','Single leg compound exercise','https://youtube.com/lunges','Dumbbells',6.0),
-('Calf Raises','legs','isolation','Calf muscle isolation','https://youtube.com/calf-raise','Bodyweight Only',3.0),
--- Additional Core Exercises
-('Planks','core','bodyweight','Core stability exercise','https://youtube.com/planks','Bodyweight Only',4.0),
-('Ab Crunches','core','isolation','Abdominal isolation','https://youtube.com/crunches','Bodyweight Only',3.0),
-('Cable Woodchops','core','isolation','Rotational core exercise','https://youtube.com/woodchops','Gym Machines',4.0),
-('Hanging Leg Raises','core','strength','Advanced core exercise','https://youtube.com/leg-raises','Bodyweight Only',8.0),
-('Russian Twists','core','bodyweight','Rotational core work','https://youtube.com/russian-twists','Bodyweight Only',5.0),
--- Additional Cardio Exercises
-('Treadmill Running','cardio','cardio','Indoor running on treadmill','https://youtube.com/treadmill','Cardio Machines',9.0),
-('Rowing Machine','cardio','cardio','Full body cardio machine','https://youtube.com/rowing','Cardio Machines',9.0),
-('Elliptical','cardio','cardio','Low impact cardio machine','https://youtube.com/elliptical','Cardio Machines',8.0),
-('Stair Climber','cardio','cardio','Staircase climbing machine','https://youtube.com/stair-climber','Cardio Machines',11.0),
-('Burpees','cardio','cardio','High intensity full body','https://youtube.com/burpees','Bodyweight Only',12.0),
-('Mountain Climbers','cardio','cardio','Core and cardio exercise','https://youtube.com/mountain-climbers','Bodyweight Only',10.0),
-('High Knees','cardio','cardio','Running in place high intensity','https://youtube.com/high-knees','Bodyweight Only',10.0),
-('Battle Ropes','cardio','cardio','Wave training cardio','https://youtube.com/battle-ropes','Dumbbells',11.0),
+INSERT INTO
+    exercise (
+        exer_name,
+        exer_body_area,
+        exer_type,
+        exer_descrip,
+        exer_vid,
+        exer_equip,
+        exer_met
+    )
+VALUES (
+        'Push-ups',
+        'chest',
+        'strength',
+        'Classic upper body exercise',
+        'https://www.youtube.com/watch?v=WDIpL0pjun0&t=7s',
+        'Bodyweight Only',
+        3.8
+    ),
+    (
+        'Squats',
+        'legs',
+        'strength',
+        'Lower body compound movement',
+        'https://www.youtube.com/watch?v=dC0yGLZwxas&list=PLeVb1RGNTvddVE-InnohQkbxxdAYruId0',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Running',
+        'full body',
+        'cardio',
+        'Outdoor cardio exercise',
+        'https://www.youtube.com/watch?v=se1RDOPvA8Q',
+        'Dumbbells',
+        9.8
+    ),
+    (
+        'Bench Press',
+        'chest',
+        'strength',
+        'Chest and tricep builder',
+        'https://www.youtube.com/watch?v=CayG6UYqL8g',
+        'Barbells',
+        6.0
+    ),
+    (
+        'Deadlift',
+        'back',
+        'strength',
+        'Full posterior chain exercise',
+        'https://www.youtube.com/watch?v=yPqv3ejnZvc',
+        'Gym Machines',
+        6.0
+    ),
+    (
+        'Cycling',
+        'legs',
+        'cardio',
+        'Low impact cardio',
+        'https://www.youtube.com/watch?v=gWosN1CY4bg',
+        'Cardio Machines',
+        8.0
+    ),
+    (
+        'Pull-ups',
+        'back',
+        'strength',
+        'Back and bicep exercise',
+        'https://www.youtube.com/watch?v=9yVGh3XbJ34',
+        'Bodyweight Only',
+        8.0
+    ),
+    (
+        'Jump Rope',
+        'full body',
+        'cardio',
+        'High intensity cardio',
+        'https://www.youtube.com/watch?v=vEJ7XbbAMAg&pp=ygUXanVtcHJvcGUgZm9ybSBzaG90IGNsaXA%3D',
+        'Resistance Bands',
+        12.3
+    ),
+    -- Additional Chest Exercises
+    (
+        'Dumbbell Bench Press',
+        'chest',
+        'strength',
+        'Chest exercise using dumbbells',
+        'https://www.youtube.com/watch?v=4_QuyfOCI5U',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Incline Bench Press',
+        'chest',
+        'strength',
+        'Upper chest focus with barbells',
+        'https://www.youtube.com/watch?v=BjGLs6KGWUc',
+        'Barbells',
+        6.0
+    ),
+    (
+        'Decline Bench Press',
+        'chest',
+        'strength',
+        'Lower chest focus exercise',
+        'https://www.youtube.com/watch?v=6fotcWsMb0c&pp=ygUYZGVjbGluZSBiZW5jaCBwcmVzcyBmb3Jt',
+        'Barbells',
+        6.0
+    ),
+    (
+        'Dumbbell Flyes',
+        'chest',
+        'isolation',
+        'Chest isolation exercise',
+        'https://www.youtube.com/watch?v=UKwkChzThig&pp=ygUSZHVtYmVsbCBmbHllcyBmb3Jt',
+        'Dumbbells',
+        3.5
+    ),
+    (
+        'Cable Crossovers',
+        'chest',
+        'isolation',
+        'Chest isolation with cables',
+        'https://www.youtube.com/watch?v=XY6JrX1wyxk',
+        'Gym Machines',
+        3.5
+    ),
+    (
+        'Machine Chest Press',
+        'chest',
+        'strength',
+        'Chest press on machine',
+        'https://www.youtube.com/watch?v=lRo9zZ7EwpM',
+        'Gym Machines',
+        5.0
+    ),
+    (
+        'Resistance Band Chest Press',
+        'chest',
+        'strength',
+        'Chest exercise with bands',
+        'https://www.youtube.com/watch?v=9NGo4lZd65o&pp=ygUbUmVzaXN0YW5jZSBCYW5kIENoZXN0IFByZXNz',
+        'Resistance Bands',
+        4.5
+    ),
+    (
+        'Dips',
+        'chest',
+        'bodyweight',
+        'Body weight chest and tricep exercise',
+        'https://www.youtube.com/watch?v=WVeZDBhZwLA',
+        'Bodyweight Only',
+        8.0
+    ),
+    (
+        'Push-ups Wide Grip',
+        'chest',
+        'bodyweight',
+        'Wide grip variation of push-ups',
+        'https://www.youtube.com/watch?v=m3FTgWtJsFE&pp=ygUScHVzaCB1cHMgd2lkZSBncmlw0gcJCQMLAYcqIYzv',
+        'Bodyweight Only',
+        4.0
+    ),
+    (
+        'Smith Machine Chest Press',
+        'chest',
+        'strength',
+        'Guided barbell chest press',
+        'https://www.youtube.com/watch?v=X2QQXX3qO9E&pp=ygUbc21pdGggbWFjaGluZSBjaGVzdCB3b3Jrb3V00gcJCQMLAYcqIYzv',
+        'Barbells',
+        5.5
+    ),
+    (
+        'Decline Dumbbell Flyes',
+        'chest',
+        'isolation',
+        'Lower chest isolation exercise',
+        'https://www.youtube.com/watch?v=IMALXhhHRKM&pp=ygUVZGVjbGluZSBkdW1iZWxsIGZseWVz0gcJCQMLAYcqIYzv',
+        'Dumbbells',
+        3.5
+    ),
+    (
+        'Landmine Press',
+        'chest',
+        'strength',
+        'Angled barbell chest press',
+        'https://www.youtube.com/watch?v=t9GuiNQo1O4&pp=ygUObGFuZG1pbmUgcHJlc3M%3D',
+        'Barbells',
+        6.0
+    ),
+    (
+        'Chest Squeeze Press',
+        'chest',
+        'isolation',
+        'Isometric chest contraction',
+        'https://www.youtube.com/watch?v=Aq_wwRslKas&pp=ygUNc3F1ZWV6ZSBwcmVzcw%3D%3D',
+        'Dumbbells',
+        4.0
+    ),
+    (
+        'Hex Press',
+        'chest',
+        'strength',
+        'Hexagonal dumbbell chest press',
+        'https://www.youtube.com/watch?v=MjOeSCRwAQY&pp=ygUJaGV4IHByZXNz',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Pec Deck Machine',
+        'chest',
+        'isolation',
+        'Isolated chest machine exercise',
+        'https://www.youtube.com/watch?v=eGjt4lk6g34&pp=ygUPcGVjIGRlY2sgbWFoaW5l',
+        'Gym Machines',
+        3.0
+    ),
+    -- Additional Back Exercises
+    (
+        'Barbell Row',
+        'back',
+        'strength',
+        'Classic compound back exercise',
+        'https://www.youtube.com/watch?v=bm0_q9bR_HA&pp=0gcJCd4KAYcqIYzv',
+        'Barbells',
+        6.0
+    ),
+    (
+        'Dumbbell Row',
+        'back',
+        'strength',
+        'Single arm dumbbell rowing',
+        'https://www.youtube.com/watch?v=DJfQN6xJL28&pp=0gcJCd4KAYcqIYzv',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Lat Pulldown',
+        'back',
+        'strength',
+        'Vertical pulling exercise',
+        'https://www.youtube.com/watch?v=JGeRYIZdojU&pp=ygUMbGF0IHB1bGxkb3du',
+        'Gym Machines',
+        5.5
+    ),
+    (
+        'Bent Over Rows',
+        'back',
+        'strength',
+        'Compound back exercise',
+        'https://www.youtube.com/watch?v=TeUzJmU25Rc&pp=ygUNYmVudCBvdmVyIHJvdw%3D%3D',
+        'Barbells',
+        6.0
+    ),
+    (
+        'Face Pulls',
+        'back',
+        'isolation',
+        'Rear deltoid and back exercise',
+        'https://www.youtube.com/watch?v=0Po47vvj9g4&pp=ygUKZmFjZSBwdWxscw%3D%3D',
+        'Resistance Bands',
+        3.5
+    ),
+    (
+        'Inverted Rows',
+        'back',
+        'bodyweight',
+        'Horizontal pulling bodyweight',
+        'https://www.youtube.com/watch?v=KOaCM1HMwU0&pp=ygUNaW52ZXJ0ZWQgcm93cw%3D%3D',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Seal Rows',
+        'back',
+        'strength',
+        'Machine assisted rowing',
+        'https://www.youtube.com/watch?v=4H2ItXwUTp8&pp=ygUJc2VhbCByb3dz',
+        'Gym Machines',
+        5.5
+    ),
+    (
+        'T-Bar Rows',
+        'back',
+        'strength',
+        'Angled barbell rowing',
+        'https://www.youtube.com/watch?v=hYo72r8Ivso&pp=ygUJdGJhciByb3dz',
+        'Barbells',
+        6.0
+    ),
+    -- Additional Shoulder Exercises
+    (
+        'Overhead Press',
+        'shoulders',
+        'strength',
+        'Standing shoulder press',
+        'https://www.youtube.com/watch?v=cGnhixvC8uA&pp=ygUOb3ZlcmhlYWQgcHJlc3M%3D',
+        'Barbells',
+        6.0
+    ),
+    (
+        'Dumbbell Shoulder Press',
+        'shoulders',
+        'strength',
+        'Seated shoulder press with dumbbells',
+        'https://www.youtube.com/watch?v=0JfYxMRsUCQ&pp=ygUWZHVtYmVsbCBzaG91bGRlciBwcmVzcw%3D%3D',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Lateral Raises',
+        'shoulders',
+        'isolation',
+        'Side shoulder isolation',
+        'https://www.youtube.com/watch?v=XPPfnSEATJA&pp=ygUObGF0ZXJhbCByYWlzZXM%3D',
+        'Dumbbells',
+        3.0
+    ),
+    (
+        'Front Raises',
+        'shoulders',
+        'isolation',
+        'Front shoulder isolation',
+        'https://www.youtube.com/watch?v=sOcYlBI85hc&pp=ygUMZnJvbnQgcmFpc2Vz',
+        'Dumbbells',
+        3.0
+    ),
+    (
+        'Shrugs',
+        'shoulders',
+        'isolation',
+        'Trapezius isolation exercise',
+        'https://www.youtube.com/watch?v=SX1FE0URdv8&pp=ygUGc2hydWdz0gcJCQMLAYcqIYzv',
+        'Dumbbells',
+        4.0
+    ),
+    -- Additional Arm Exercises
+    (
+        'Bicep Curls',
+        'arms',
+        'isolation',
+        'Classic arm curl exercise',
+        'https://www.youtube.com/watch?v=cBSD6mQIPQk&pp=ygULYmljZXAgY3VybHM%3D',
+        'Dumbbells',
+        3.0
+    ),
+    (
+        'Tricep Dips',
+        'arms',
+        'strength',
+        'Tricep focused dips',
+        'https://www.youtube.com/watch?v=JhX1nBnirNw&pp=ygULdHJpY2VwIGRpcHPSBwkJAwsBhyohjO8%3D',
+        'Bodyweight Only',
+        7.0
+    ),
+    (
+        'Hammer Curls',
+        'arms',
+        'isolation',
+        'Neutral grip arm curl',
+        'https://www.youtube.com/watch?v=OPqe0kCxmR8&pp=ygUMaGFtbWVyIGN1cmxz0gcJCQMLAYcqIYzv',
+        'Dumbbells',
+        3.0
+    ),
+    (
+        'Tricep Pushdowns',
+        'arms',
+        'isolation',
+        'Cable tricep exercise',
+        'https://www.youtube.com/watch?v=LXkCrxn3caQ&pp=ygUPdHJpY2VwIHB1c2hkb3du',
+        'Gym Machines',
+        3.0
+    ),
+    (
+        'Preacher Curls',
+        'arms',
+        'isolation',
+        'Bench supported arm curl',
+        'https://www.youtube.com/watch?v=Zbs3ko8ycyg&pp=ygUOcHJlYWNoZXIgY3VybHM%3D',
+        'Dumbbells',
+        3.5
+    ),
+    -- Additional Leg Exercises
+    (
+        'Leg Press',
+        'legs',
+        'strength',
+        'Machine leg press exercise',
+        'https://www.youtube.com/watch?v=p5dCqF7wWUw&pp=ygUJbGVnIHByZXNz',
+        'Gym Machines',
+        6.0
+    ),
+    (
+        'Leg Curls',
+        'legs',
+        'isolation',
+        'Hamstring isolation',
+        'https://www.youtube.com/watch?v=SbSNUXPRkc8&pp=ygURbGVnIGN1cmxzIHB1cmVneW0%3D',
+        'Gym Machines',
+        4.0
+    ),
+    (
+        'Leg Extensions',
+        'legs',
+        'isolation',
+        'Quadriceps isolation',
+        'https://www.youtube.com/watch?v=4ZDm5EbiFI8&pp=ygUVbGVnIGV4dGVuc2lvbiBwdXJlZ3lt',
+        'Gym Machines',
+        4.0
+    ),
+    (
+        'Lunges',
+        'legs',
+        'strength',
+        'Single leg compound exercise',
+        'https://www.youtube.com/watch?v=CtWIqUXlZOI&t=11s&pp=ygUWbHVuZ2VzIGR1bWJlbGwgcHVyZWd5bQ%3D%3D',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Calf Raises',
+        'legs',
+        'isolation',
+        'Calf muscle isolation',
+        'https://www.youtube.com/watch?v=Zep-wKHWkNM&pp=ygUTY2FsZiByYWlzZXMgcHVyZWd5bQ%3D%3D',
+        'Bodyweight Only',
+        3.0
+    ),
+    -- Additional Core Exercises
+    (
+        'Planks',
+        'core',
+        'bodyweight',
+        'Core stability exercise',
+        'https://www.youtube.com/watch?v=q4rDeHYMcIg&pp=ygUOcGxhbmtzIHB1cmVneW0%3D',
+        'Bodyweight Only',
+        4.0
+    ),
+    (
+        'Ab Crunches',
+        'core',
+        'isolation',
+        'Abdominal isolation',
+        'https://www.youtube.com/watch?v=NnVhqMQRvmM&pp=ygUTYWIgY3J1bmNoZXMgcHVyZWd5bQ%3D%3D',
+        'Bodyweight Only',
+        3.0
+    ),
+    (
+        'Cable Woodchops',
+        'core',
+        'isolation',
+        'Rotational core exercise',
+        'https://www.youtube.com/watch?v=ZDt4MCvjMAA&pp=ygUWY2FibGUgd29vZGNob3BzcHVyZWd5bQ%3D%3D',
+        'Gym Machines',
+        4.0
+    ),
+    (
+        'Hanging Leg Raises',
+        'core',
+        'strength',
+        'Advanced core exercise',
+        'https://www.youtube.com/watch?v=Yrtvs-nEnk0&pp=ygUaaGFuZ2luZyBsZWcgcmFpc2VzIHB1cmVneW3SBwkJAwsBhyohjO8%3D',
+        'Bodyweight Only',
+        8.0
+    ),
+    (
+        'Russian Twists',
+        'core',
+        'bodyweight',
+        'Rotational core work',
+        'https://www.youtube.com/watch?v=99T1EfpMwPA&pp=ygUVcnVzc2lhbiB0d2lzdCBwdXJlZ3lt',
+        'Bodyweight Only',
+        5.0
+    ),
+    -- Additional Cardio Exercises
+    (
+        'Treadmill Running',
+        'cardio',
+        'cardio',
+        'Indoor running on treadmill',
+        'https://www.youtube.com/watch?v=HxsFneJFM2c&pp=ygURdHJlYWRtaWxsIHB1cmVneW0%3D',
+        'Cardio Machines',
+        9.0
+    ),
+    (
+        'Rowing Machine',
+        'cardio',
+        'cardio',
+        'Full body cardio machine',
+        'https://www.youtube.com/watch?v=6_eLpWiNijE&pp=ygUWcm93aW5nIG1hY2hpbmUgcHVyZWd5bQ%3D%3D',
+        'Cardio Machines',
+        9.0
+    ),
+    (
+        'Elliptical',
+        'cardio',
+        'cardio',
+        'Low impact cardio machine',
+        'https://www.youtube.com/watch?v=yISC2qwdh9I&pp=ygUSZWxsaXB0aWNhbCBwdXJlZ3lt',
+        'Cardio Machines',
+        8.0
+    ),
+    (
+        'Stair Climber',
+        'cardio',
+        'cardio',
+        'Staircase climbing machine',
+        'https://www.youtube.com/watch?v=GMc8fUksKpY&pp=ygUWc3RhaXIgY2xpbWJlciBwdXJlIGd5bQ%3D%3D',
+        'Cardio Machines',
+        11.0
+    ),
+    (
+        'Burpees',
+        'cardio',
+        'cardio',
+        'High intensity full body',
+        'https://www.youtube.com/watch?v=1yPltRIm59E&pp=ygUQYnVycGVlcyBwdXJlIGd5bQ%3D%3D',
+        'Bodyweight Only',
+        12.0
+    ),
+    (
+        'Mountain Climbers',
+        'cardio',
+        'cardio',
+        'Core and cardio exercise',
+        'https://www.youtube.com/watch?v=7LmA4zSitc4&pp=ygUcbW91bnRhaW4gY2xpbWJlciBneW0gbWFjaGluZQ%3D%3D',
+        'Bodyweight Only',
+        10.0
+    ),
+    (
+        'High Knees',
+        'cardio',
+        'cardio',
+        'Running in place high intensity',
+        'https://www.youtube.com/watch?v=sTvekaq6vOU&pp=ygUSaGlnaCBrbmVlIHB1cmUgZ3lt',
+        'Bodyweight Only',
+        10.0
+    ),
+    (
+        'Battle Ropes',
+        'cardio',
+        'cardio',
+        'Wave training cardio',
+        'https://www.youtube.com/watch?v=ZujykKeVZpM&pp=ygUVYmF0dGxlIHJvcGVzIHB1cmUgZ3lt',
+        'Dumbbells',
+        11.0
+    ),
+    (
+        'Barbell Bench Press',
+        'chest',
+        'strength',
+        'Heavy chest press with barbell',
+        '',
+        'Barbells',
+        6.5
+    ),
+    (
+        'Chest Press Machine',
+        'chest',
+        'strength',
+        'Machine chest press movement',
+        '',
+        'Gym Machines',
+        5.0
+    ),
+    (
+        'Pec Deck Fly',
+        'chest',
+        'isolation',
+        'Machine chest fly for isolation',
+        '',
+        'Gym Machines',
+        3.5
+    ),
+    (
+        'Cable Chest Fly',
+        'chest',
+        'isolation',
+        'Cable fly chest isolation movement',
+        '',
+        'Gym Machines',
+        3.5
+    ),
+    (
+        'Incline Push-ups',
+        'chest',
+        'bodyweight',
+        'Push-up with elevated hands',
+        '',
+        'Bodyweight Only',
+        3.5
+    ),
+    (
+        'Decline Push-ups',
+        'chest',
+        'bodyweight',
+        'Push-up with elevated feet',
+        '',
+        'Bodyweight Only',
+        4.5
+    ),
+    (
+        'Wide Push-ups',
+        'chest',
+        'bodyweight',
+        'Wide hand push-up variation',
+        '',
+        'Bodyweight Only',
+        4.0
+    ),
+    (
+        'Diamond Push-ups',
+        'arms',
+        'bodyweight',
+        'Close-hand push-up for triceps',
+        '',
+        'Bodyweight Only',
+        4.5
+    ),
+    (
+        'Push-up Jacks',
+        'chest',
+        'cardio',
+        'Push-up variation with jumping feet',
+        '',
+        'Bodyweight Only',
+        6.0
+    ),
+    (
+        'High Knees + Push-up combo',
+        'chest',
+        'cardio',
+        'Alternating high knees and push-ups',
+        '',
+        'Bodyweight Only',
+        7.0
+    ),
+    (
+        'Plank Shoulder Taps',
+        'arms',
+        'cardio',
+        'Plank stability with shoulder taps',
+        '',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Fast Push-ups',
+        'chest',
+        'cardio',
+        'High tempo push-up conditioning drill',
+        '',
+        'Bodyweight Only',
+        5.5
+    ),
+    (
+        'Incline Dumbbell Press',
+        'chest',
+        'strength',
+        'Incline dumbbell chest press',
+        '',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Dumbbell Fly',
+        'chest',
+        'isolation',
+        'Dumbbell chest fly variation',
+        '',
+        'Dumbbells',
+        3.5
+    ),
+    (
+        'Dumbbell Pullover',
+        'back',
+        'strength',
+        'Pullover for chest and lats',
+        '',
+        'Dumbbells',
+        5.0
+    ),
+    (
+        'Neutral Grip Press',
+        'chest',
+        'strength',
+        'Neutral grip dumbbell press',
+        '',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Single-arm Dumbbell Press',
+        'chest',
+        'strength',
+        'Single-arm chest press',
+        '',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Seated Cable Row',
+        'back',
+        'strength',
+        'Seated cable row for mid-back',
+        '',
+        'Gym Machines',
+        5.5
+    ),
+    (
+        'T-Bar Row',
+        'back',
+        'strength',
+        'T-bar row for back thickness',
+        '',
+        'Barbells',
+        6.0
+    ),
+    (
+        'Assisted Pull-ups',
+        'back',
+        'strength',
+        'Machine-assisted pull-up movement',
+        '',
+        'Gym Machines',
+        6.0
+    ),
+    (
+        'Straight Arm Pulldown',
+        'back',
+        'isolation',
+        'Straight-arm lat pulldown',
+        '',
+        'Gym Machines',
+        4.0
+    ),
+    (
+        'Superman Hold',
+        'back',
+        'bodyweight',
+        'Back extension hold on floor',
+        '',
+        'Bodyweight Only',
+        3.0
+    ),
+    (
+        'Reverse Snow Angels',
+        'back',
+        'bodyweight',
+        'Prone shoulder and back drill',
+        '',
+        'Bodyweight Only',
+        3.0
+    ),
+    (
+        'Doorframe Rows',
+        'back',
+        'bodyweight',
+        'Bodyweight row using a doorway',
+        '',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Resistance Band Rows',
+        'back',
+        'strength',
+        'Row variation with resistance bands',
+        '',
+        'Resistance Bands',
+        5.0
+    ),
+    (
+        'Backpack Rows',
+        'back',
+        'strength',
+        'Row using loaded backpack',
+        '',
+        'Bodyweight Only',
+        6.0
+    ),
+    (
+        'Floor Y Raises',
+        'back',
+        'bodyweight',
+        'Lower trap and upper back raise',
+        '',
+        'Bodyweight Only',
+        3.0
+    ),
+    (
+        'Renegade Rows (fast pace)',
+        'back',
+        'cardio',
+        'Fast plank row conditioning drill',
+        '',
+        'Dumbbells',
+        6.5
+    ),
+    (
+        'Plank Pull-throughs',
+        'back',
+        'cardio',
+        'Plank drill pulling weight across body',
+        '',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Burpee + Row combo',
+        'back',
+        'cardio',
+        'Conditioning combo of burpee and row',
+        '',
+        'Bodyweight Only',
+        11.0
+    ),
+    (
+        'High Plank Reach',
+        'back',
+        'cardio',
+        'Plank reach anti-rotation movement',
+        '',
+        'Bodyweight Only',
+        4.5
+    ),
+    (
+        'Jumping Superman',
+        'back',
+        'cardio',
+        'Dynamic superman conditioning movement',
+        '',
+        'Bodyweight Only',
+        8.0
+    ),
+    (
+        'One-arm Dumbbell Row',
+        'back',
+        'strength',
+        'Single-arm dumbbell rowing movement',
+        '',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Bent-over Dumbbell Row',
+        'back',
+        'strength',
+        'Bent-over row with dumbbells',
+        '',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Dumbbell Deadlift',
+        'full body',
+        'strength',
+        'Deadlift variation with dumbbells',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Renegade Row',
+        'back',
+        'strength',
+        'Plank row with dumbbells',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Incline Row',
+        'back',
+        'strength',
+        'Incline bench supported row',
+        '',
+        'Dumbbells',
+        5.0
+    ),
+    (
+        'Barbell Squat',
+        'legs',
+        'strength',
+        'Barbell back squat movement',
+        '',
+        'Barbells',
+        6.5
+    ),
+    (
+        'Leg Curl Machine',
+        'legs',
+        'isolation',
+        'Machine hamstring curl movement',
+        '',
+        'Gym Machines',
+        4.0
+    ),
+    (
+        'Leg Extension',
+        'legs',
+        'isolation',
+        'Machine quad extension movement',
+        '',
+        'Gym Machines',
+        4.0
+    ),
+    (
+        'Bodyweight Squats',
+        'legs',
+        'bodyweight',
+        'Squat variation with bodyweight only',
+        '',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Walking Lunges',
+        'legs',
+        'strength',
+        'Forward moving lunge pattern',
+        '',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Jump Squats',
+        'legs',
+        'cardio',
+        'Explosive squat jump conditioning',
+        '',
+        'Bodyweight Only',
+        10.0
+    ),
+    (
+        'Wall Sit',
+        'legs',
+        'bodyweight',
+        'Isometric wall-supported squat hold',
+        '',
+        'Bodyweight Only',
+        4.0
+    ),
+    (
+        'Glute Bridges',
+        'legs',
+        'bodyweight',
+        'Hip bridge for glutes and hamstrings',
+        '',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Step-ups',
+        'legs',
+        'strength',
+        'Step-up exercise for legs and glutes',
+        '',
+        'Bodyweight Only',
+        6.0
+    ),
+    (
+        'Skater Jumps',
+        'legs',
+        'cardio',
+        'Lateral jump conditioning movement',
+        '',
+        'Bodyweight Only',
+        9.0
+    ),
+    (
+        'Jump Lunges',
+        'legs',
+        'cardio',
+        'Alternating explosive lunge jumps',
+        '',
+        'Bodyweight Only',
+        10.0
+    ),
+    (
+        'Sprint Intervals',
+        'legs',
+        'cardio',
+        'Short sprint work and recovery intervals',
+        '',
+        'Bodyweight Only',
+        15.0
+    ),
+    (
+        'Box Jumps',
+        'legs',
+        'cardio',
+        'Explosive jump onto stable platform',
+        '',
+        'Bodyweight Only',
+        11.0
+    ),
+    (
+        'Goblet Squat',
+        'legs',
+        'strength',
+        'Front-loaded squat with dumbbell',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Dumbbell Lunges',
+        'legs',
+        'strength',
+        'Lunges performed with dumbbells',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Romanian Deadlift',
+        'legs',
+        'strength',
+        'Hip hinge targeting hamstrings',
+        '',
+        'Dumbbells',
+        5.5
+    ),
+    (
+        'Dumbbell Step-ups',
+        'legs',
+        'strength',
+        'Step-ups with dumbbells',
+        '',
+        'Dumbbells',
+        6.5
+    ),
+    (
+        'Sumo Squat',
+        'legs',
+        'strength',
+        'Wide stance dumbbell squat',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Dumbbell Calf Raises',
+        'legs',
+        'strength',
+        'Calf raises with dumbbells',
+        '',
+        'Dumbbells',
+        4.0
+    ),
+    (
+        'Barbell Curl',
+        'arms',
+        'strength',
+        'Standing barbell biceps curl',
+        '',
+        'Barbells',
+        4.0
+    ),
+    (
+        'Tricep Pushdown',
+        'arms',
+        'isolation',
+        'Cable triceps pushdown movement',
+        '',
+        'Gym Machines',
+        3.5
+    ),
+    (
+        'Preacher Curl',
+        'arms',
+        'isolation',
+        'Preacher bench biceps curl',
+        '',
+        'Dumbbells',
+        3.5
+    ),
+    (
+        'Skull Crushers',
+        'arms',
+        'strength',
+        'Lying triceps extension movement',
+        '',
+        'Barbells',
+        5.0
+    ),
+    (
+        'Cable Curl',
+        'arms',
+        'isolation',
+        'Cable biceps curl variation',
+        '',
+        'Gym Machines',
+        3.5
+    ),
+    (
+        'Chair Dips',
+        'arms',
+        'bodyweight',
+        'Dip variation using a chair or bench',
+        '',
+        'Bodyweight Only',
+        6.5
+    ),
+    (
+        'Pike Push-ups',
+        'arms',
+        'bodyweight',
+        'Pike push-up shoulder/triceps movement',
+        '',
+        'Bodyweight Only',
+        4.5
+    ),
+    (
+        'Towel Curls',
+        'arms',
+        'bodyweight',
+        'Curl movement using towel resistance',
+        '',
+        'Bodyweight Only',
+        3.0
+    ),
+    (
+        'Plank Up-Downs',
+        'arms',
+        'cardio',
+        'Alternating forearm to high plank',
+        '',
+        'Bodyweight Only',
+        6.0
+    ),
+    (
+        'Close Grip Push-ups',
+        'arms',
+        'bodyweight',
+        'Narrow grip push-up variation',
+        '',
+        'Bodyweight Only',
+        4.5
+    ),
+    (
+        'Punching (shadow boxing)',
+        'arms',
+        'cardio',
+        'High tempo air punch conditioning',
+        '',
+        'Bodyweight Only',
+        8.0
+    ),
+    (
+        'Fast Tricep Dips',
+        'arms',
+        'cardio',
+        'Fast bodyweight tricep dip reps',
+        '',
+        'Bodyweight Only',
+        7.0
+    ),
+    (
+        'Arm Circles (fast)',
+        'arms',
+        'cardio',
+        'Fast shoulder and arm circle drill',
+        '',
+        'Bodyweight Only',
+        4.0
+    ),
+    (
+        'Bicep Curl',
+        'arms',
+        'strength',
+        'Single dumbbell biceps curl',
+        '',
+        'Dumbbells',
+        3.5
+    ),
+    (
+        'Hammer Curl',
+        'arms',
+        'strength',
+        'Neutral grip dumbbell curl',
+        '',
+        'Dumbbells',
+        3.5
+    ),
+    (
+        'Tricep Kickbacks',
+        'arms',
+        'strength',
+        'Dumbbell triceps kickback movement',
+        '',
+        'Dumbbells',
+        3.0
+    ),
+    (
+        'Overhead Tricep Extension',
+        'arms',
+        'strength',
+        'Overhead dumbbell tricep extension',
+        '',
+        'Dumbbells',
+        3.5
+    ),
+    (
+        'Concentration Curl',
+        'arms',
+        'strength',
+        'Seated single-arm isolation curl',
+        '',
+        'Dumbbells',
+        3.0
+    ),
+    (
+        'Alternating Curl',
+        'arms',
+        'strength',
+        'Alternating dumbbell curl reps',
+        '',
+        'Dumbbells',
+        3.5
+    ),
+    (
+        'Squat',
+        'full body',
+        'strength',
+        'Compound squat used in full body sessions',
+        '',
+        'Bodyweight Only',
+        5.0
+    ),
+    (
+        'Shoulder Press',
+        'full body',
+        'strength',
+        'Overhead press in full body routines',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Cable Row',
+        'full body',
+        'strength',
+        'Cable row used in full body sessions',
+        '',
+        'Gym Machines',
+        5.5
+    ),
+    (
+        'Plank',
+        'full body',
+        'bodyweight',
+        'Isometric core stability hold',
+        '',
+        'Bodyweight Only',
+        4.0
+    ),
+    (
+        'Skaters',
+        'full body',
+        'cardio',
+        'Lateral skater jump cardio drill',
+        '',
+        'Bodyweight Only',
+        9.0
+    ),
+    (
+        'Dumbbell Thrusters',
+        'full body',
+        'strength',
+        'Squat to press with dumbbells',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Renegade Rows',
+        'full body',
+        'strength',
+        'Alternating plank rows with dumbbells',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Dumbbell Snatch',
+        'full body',
+        'strength',
+        'Explosive dumbbell floor-to-overhead lift',
+        '',
+        'Dumbbells',
+        6.0
+    ),
+    (
+        'Dumbbell Clean & Press',
+        'full body',
+        'strength',
+        'Clean then press with dumbbells',
+        '',
+        'Dumbbells',
+        6.0
+    );
 
-('Barbell Bench Press','chest','strength','Heavy chest press with barbell','', 'Barbells',6.5),
-('Chest Press Machine','chest','strength','Machine chest press movement','', 'Gym Machines',5.0),
-('Pec Deck Fly','chest','isolation','Machine chest fly for isolation','', 'Gym Machines',3.5),
-('Cable Chest Fly','chest','isolation','Cable fly chest isolation movement','', 'Gym Machines',3.5),
-('Incline Push-ups','chest','bodyweight','Push-up with elevated hands','', 'Bodyweight Only',3.5),
-('Decline Push-ups','chest','bodyweight','Push-up with elevated feet','', 'Bodyweight Only',4.5),
-('Wide Push-ups','chest','bodyweight','Wide hand push-up variation','', 'Bodyweight Only',4.0),
-('Diamond Push-ups','arms','bodyweight','Close-hand push-up for triceps','', 'Bodyweight Only',4.5),
-('Push-up Jacks','chest','cardio','Push-up variation with jumping feet','', 'Bodyweight Only',6.0),
-('High Knees + Push-up combo','chest','cardio','Alternating high knees and push-ups','', 'Bodyweight Only',7.0),
-('Plank Shoulder Taps','arms','cardio','Plank stability with shoulder taps','', 'Bodyweight Only',5.0),
-('Fast Push-ups','chest','cardio','High tempo push-up conditioning drill','', 'Bodyweight Only',5.5),
-('Incline Dumbbell Press','chest','strength','Incline dumbbell chest press','', 'Dumbbells',5.5),
-('Dumbbell Fly','chest','isolation','Dumbbell chest fly variation','', 'Dumbbells',3.5),
-('Dumbbell Pullover','back','strength','Pullover for chest and lats','', 'Dumbbells',5.0),
-('Neutral Grip Press','chest','strength','Neutral grip dumbbell press','', 'Dumbbells',5.5),
-('Single-arm Dumbbell Press','chest','strength','Single-arm chest press','', 'Dumbbells',5.5),
+INSERT INTO
+    training (
+        train_data,
+        train_mins,
+        train_reps,
+        train_effort
+    )
+VALUES (
+        '2026-02-01 10:15:00',
+        45,
+        120,
+        7.5
+    ),
+    (
+        '2026-02-02 09:30:00',
+        50,
+        140,
+        8.0
+    ),
+    (
+        '2026-02-03 07:20:00',
+        35,
+        90,
+        6.5
+    ),
+    (
+        '2026-02-04 08:25:00',
+        55,
+        160,
+        8.5
+    ),
+    (
+        '2026-02-05 10:40:00',
+        40,
+        110,
+        7.0
+    ),
+    (
+        '2026-02-06 06:25:00',
+        30,
+        100,
+        9.0
+    ),
+    (
+        '2026-02-07 11:20:00',
+        60,
+        180,
+        9.5
+    ),
+    (
+        '2026-02-08 07:45:00',
+        25,
+        70,
+        5.5
+    );
 
-('Seated Cable Row','back','strength','Seated cable row for mid-back','', 'Gym Machines',5.5),
-('T-Bar Row','back','strength','T-bar row for back thickness','', 'Barbells',6.0),
-('Assisted Pull-ups','back','strength','Machine-assisted pull-up movement','', 'Gym Machines',6.0),
-('Straight Arm Pulldown','back','isolation','Straight-arm lat pulldown','', 'Gym Machines',4.0),
-('Superman Hold','back','bodyweight','Back extension hold on floor','', 'Bodyweight Only',3.0),
-('Reverse Snow Angels','back','bodyweight','Prone shoulder and back drill','', 'Bodyweight Only',3.0),
-('Doorframe Rows','back','bodyweight','Bodyweight row using a doorway','', 'Bodyweight Only',5.0),
-('Resistance Band Rows','back','strength','Row variation with resistance bands','', 'Resistance Bands',5.0),
-('Backpack Rows','back','strength','Row using loaded backpack','', 'Bodyweight Only',6.0),
-('Floor Y Raises','back','bodyweight','Lower trap and upper back raise','', 'Bodyweight Only',3.0),
-('Renegade Rows (fast pace)','back','cardio','Fast plank row conditioning drill','', 'Dumbbells',6.5),
-('Plank Pull-throughs','back','cardio','Plank drill pulling weight across body','', 'Bodyweight Only',5.0),
-('Burpee + Row combo','back','cardio','Conditioning combo of burpee and row','', 'Bodyweight Only',11.0),
-('High Plank Reach','back','cardio','Plank reach anti-rotation movement','', 'Bodyweight Only',4.5),
-('Jumping Superman','back','cardio','Dynamic superman conditioning movement','', 'Bodyweight Only',8.0),
-('One-arm Dumbbell Row','back','strength','Single-arm dumbbell rowing movement','', 'Dumbbells',5.5),
-('Bent-over Dumbbell Row','back','strength','Bent-over row with dumbbells','', 'Dumbbells',5.5),
-('Dumbbell Deadlift','full body','strength','Deadlift variation with dumbbells','', 'Dumbbells',6.0),
-('Renegade Row','back','strength','Plank row with dumbbells','', 'Dumbbells',6.0),
-('Incline Row','back','strength','Incline bench supported row','', 'Dumbbells',5.0),
+INSERT INTO
+    training_exercise (train_id, exer_id)
+VALUES (1, 1),
+    (1, 11),
+    (2, 2),
+    (2, 12),
+    (3, 3),
+    (3, 61),
+    (4, 4),
+    (4, 5),
+    (5, 9),
+    (5, 13),
+    (6, 63),
+    (6, 64),
+    (7, 80),
+    (7, 81),
+    (8, 62),
+    (8, 65),
+    (1, 3),
+    (2, 6),
+    (4, 8),
+    (5, 3),
+    (7, 6);
 
-('Barbell Squat','legs','strength','Barbell back squat movement','', 'Barbells',6.5),
-('Leg Curl Machine','legs','isolation','Machine hamstring curl movement','', 'Gym Machines',4.0),
-('Leg Extension','legs','isolation','Machine quad extension movement','', 'Gym Machines',4.0),
-('Bodyweight Squats','legs','bodyweight','Squat variation with bodyweight only','', 'Bodyweight Only',5.0),
-('Walking Lunges','legs','strength','Forward moving lunge pattern','', 'Bodyweight Only',5.0),
-('Jump Squats','legs','cardio','Explosive squat jump conditioning','', 'Bodyweight Only',10.0),
-('Wall Sit','legs','bodyweight','Isometric wall-supported squat hold','', 'Bodyweight Only',4.0),
-('Glute Bridges','legs','bodyweight','Hip bridge for glutes and hamstrings','', 'Bodyweight Only',5.0),
-('Step-ups','legs','strength','Step-up exercise for legs and glutes','', 'Bodyweight Only',6.0),
-('Skater Jumps','legs','cardio','Lateral jump conditioning movement','', 'Bodyweight Only',9.0),
-('Jump Lunges','legs','cardio','Alternating explosive lunge jumps','', 'Bodyweight Only',10.0),
-('Sprint Intervals','legs','cardio','Short sprint work and recovery intervals','', 'Bodyweight Only',15.0),
-('Box Jumps','legs','cardio','Explosive jump onto stable platform','', 'Bodyweight Only',11.0),
-('Goblet Squat','legs','strength','Front-loaded squat with dumbbell','', 'Dumbbells',6.0),
-('Dumbbell Lunges','legs','strength','Lunges performed with dumbbells','', 'Dumbbells',6.0),
-('Romanian Deadlift','legs','strength','Hip hinge targeting hamstrings','', 'Dumbbells',5.5),
-('Dumbbell Step-ups','legs','strength','Step-ups with dumbbells','', 'Dumbbells',6.5),
-('Sumo Squat','legs','strength','Wide stance dumbbell squat','', 'Dumbbells',6.0),
-('Dumbbell Calf Raises','legs','strength','Calf raises with dumbbells','', 'Dumbbells',4.0),
+INSERT INTO
+    training_body (train_id, body_id)
+VALUES (1, 1),
+    (2, 2),
+    (3, 3),
+    (4, 4),
+    (5, 5),
+    (6, 6),
+    (7, 7),
+    (8, 8);
 
-('Barbell Curl','arms','strength','Standing barbell biceps curl','', 'Barbells',4.0),
-('Tricep Pushdown','arms','isolation','Cable triceps pushdown movement','', 'Gym Machines',3.5),
-('Preacher Curl','arms','isolation','Preacher bench biceps curl','', 'Dumbbells',3.5),
-('Skull Crushers','arms','strength','Lying triceps extension movement','', 'Barbells',5.0),
-('Cable Curl','arms','isolation','Cable biceps curl variation','', 'Gym Machines',3.5),
-('Chair Dips','arms','bodyweight','Dip variation using a chair or bench','', 'Bodyweight Only',6.5),
-('Pike Push-ups','arms','bodyweight','Pike push-up shoulder/triceps movement','', 'Bodyweight Only',4.5),
-('Towel Curls','arms','bodyweight','Curl movement using towel resistance','', 'Bodyweight Only',3.0),
-('Plank Up-Downs','arms','cardio','Alternating forearm to high plank','', 'Bodyweight Only',6.0),
-('Close Grip Push-ups','arms','bodyweight','Narrow grip push-up variation','', 'Bodyweight Only',4.5),
-('Punching (shadow boxing)','arms','cardio','High tempo air punch conditioning','', 'Bodyweight Only',8.0),
-('Fast Tricep Dips','arms','cardio','Fast bodyweight tricep dip reps','', 'Bodyweight Only',7.0),
-('Arm Circles (fast)','arms','cardio','Fast shoulder and arm circle drill','', 'Bodyweight Only',4.0),
-('Bicep Curl','arms','strength','Single dumbbell biceps curl','', 'Dumbbells',3.5),
-('Hammer Curl','arms','strength','Neutral grip dumbbell curl','', 'Dumbbells',3.5),
-('Tricep Kickbacks','arms','strength','Dumbbell triceps kickback movement','', 'Dumbbells',3.0),
-('Overhead Tricep Extension','arms','strength','Overhead dumbbell tricep extension','', 'Dumbbells',3.5),
-('Concentration Curl','arms','strength','Seated single-arm isolation curl','', 'Dumbbells',3.0),
-('Alternating Curl','arms','strength','Alternating dumbbell curl reps','', 'Dumbbells',3.5),
+INSERT INTO
+    work_plan (
+        body_id,
+        work_name,
+        work_descrip,
+        work_created_at,
+        work_updated_at,
+        work_day
+    )
+VALUES (
+        1,
+        'Chest Day',
+        'Focus on chest and triceps',
+        '2026-02-01 10:00:00',
+        '2026-02-01 10:00:00',
+        '2026-02-18'
+    ),
+    (
+        2,
+        'Leg Day',
+        'Lower body workout',
+        '2026-02-02 09:00:00',
+        '2026-02-02 09:00:00',
+        '2026-02-19'
+    ),
+    (
+        3,
+        'Cardio Session',
+        'Endurance training',
+        '2026-02-03 07:00:00',
+        '2026-02-03 07:00:00',
+        '2026-02-20'
+    ),
+    (
+        4,
+        'Full Body',
+        'Complete body workout',
+        '2026-02-04 08:00:00',
+        '2026-02-04 08:00:00',
+        '2026-02-21'
+    ),
+    (
+        5,
+        'Back Day',
+        'Back and biceps',
+        '2026-02-05 10:00:00',
+        '2026-02-05 10:00:00',
+        '2026-02-22'
+    ),
+    (
+        6,
+        'HIIT Training',
+        'High intensity intervals',
+        '2026-02-06 06:00:00',
+        '2026-02-06 06:00:00',
+        '2026-02-23'
+    ),
+    (
+        7,
+        'Strength Training',
+        'Heavy compound lifts',
+        '2026-02-07 11:00:00',
+        '2026-02-07 11:00:00',
+        '2026-02-24'
+    ),
+    (
+        8,
+        'Recovery Cardio',
+        'Light cardio session',
+        '2026-02-08 07:30:00',
+        '2026-02-08 07:30:00',
+        '2026-02-25'
+    );
 
-('Squat','full body','strength','Compound squat used in full body sessions','', 'Bodyweight Only',5.0),
-('Shoulder Press','full body','strength','Overhead press in full body routines','', 'Dumbbells',6.0),
-('Cable Row','full body','strength','Cable row used in full body sessions','', 'Gym Machines',5.5),
-('Plank','full body','bodyweight','Isometric core stability hold','', 'Bodyweight Only',4.0),
-('Skaters','full body','cardio','Lateral skater jump cardio drill','', 'Bodyweight Only',9.0),
-('Dumbbell Thrusters','full body','strength','Squat to press with dumbbells','', 'Dumbbells',6.0),
-('Renegade Rows','full body','strength','Alternating plank rows with dumbbells','', 'Dumbbells',6.0),
-('Dumbbell Snatch','full body','strength','Explosive dumbbell floor-to-overhead lift','', 'Dumbbells',6.0),
-('Dumbbell Clean & Press','full body','strength','Clean then press with dumbbells','', 'Dumbbells',6.0);
+INSERT INTO
+    meal_plan (body_id, meal_day, meal_name)
+VALUES (
+        1,
+        '2026-02-18 08:00:00',
+        'Breakfast Plan'
+    ),
+    (
+        2,
+        '2026-02-18 12:00:00',
+        'Lunch Plan'
+    ),
+    (
+        3,
+        '2026-02-18 18:00:00',
+        'Dinner Plan'
+    ),
+    (
+        4,
+        '2026-02-19 08:00:00',
+        'Morning Meal'
+    ),
+    (
+        5,
+        '2026-02-19 12:00:00',
+        'Afternoon Meal'
+    ),
+    (
+        6,
+        '2026-02-19 18:00:00',
+        'Evening Meal'
+    ),
+    (
+        7,
+        '2026-02-20 08:00:00',
+        'Protein Breakfast'
+    ),
+    (
+        8,
+        '2026-02-20 12:00:00',
+        'Healthy Lunch'
+    );
 
-INSERT INTO training (train_data, train_mins, train_reps, train_effort) VALUES
-('2026-02-01 10:15:00', 45, 120, 7.5),
-('2026-02-02 09:30:00', 50, 140, 8.0),
-('2026-02-03 07:20:00', 35, 90, 6.5),
-('2026-02-04 08:25:00', 55, 160, 8.5),
-('2026-02-05 10:40:00', 40, 110, 7.0),
-('2026-02-06 06:25:00', 30, 100, 9.0),
-('2026-02-07 11:20:00', 60, 180, 9.5),
-('2026-02-08 07:45:00', 25, 70, 5.5);
-
-INSERT INTO training_exercise (train_id, exer_id) VALUES
-(1, 1),
-(1, 11),
-(2, 2),
-(2, 12),
-(3, 3),
-(3, 61),
-(4, 4),
-(4, 5),
-(5, 9),
-(5, 13),
-(6, 63),
-(6, 64),
-(7, 80),
-(7, 81),
-(8, 62),
-(8, 65),
-(1, 3),
-(2, 6),
-(4, 8),
-(5, 3),
-(7, 6);
-
-INSERT INTO training_body (train_id, body_id) VALUES
-(1, 1),
-(2, 2),
-(3, 3),
-(4, 4),
-(5, 5),
-(6, 6),
-(7, 7),
-(8, 8);
-
-INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_updated_at, work_day) VALUES
-(1, 'Chest Day', 'Focus on chest and triceps', '2026-02-01 10:00:00', '2026-02-01 10:00:00', '2026-02-18'),
-(2, 'Leg Day', 'Lower body workout', '2026-02-02 09:00:00', '2026-02-02 09:00:00', '2026-02-19'),
-(3, 'Cardio Session', 'Endurance training', '2026-02-03 07:00:00', '2026-02-03 07:00:00', '2026-02-20'),
-(4, 'Full Body', 'Complete body workout', '2026-02-04 08:00:00', '2026-02-04 08:00:00', '2026-02-21'),
-(5, 'Back Day', 'Back and biceps', '2026-02-05 10:00:00', '2026-02-05 10:00:00', '2026-02-22'),
-(6, 'HIIT Training', 'High intensity intervals', '2026-02-06 06:00:00', '2026-02-06 06:00:00', '2026-02-23'),
-(7, 'Strength Training', 'Heavy compound lifts', '2026-02-07 11:00:00', '2026-02-07 11:00:00', '2026-02-24'),
-(8, 'Recovery Cardio', 'Light cardio session', '2026-02-08 07:30:00', '2026-02-08 07:30:00', '2026-02-25');
-
-INSERT INTO meal_plan (body_id, meal_day, meal_name) VALUES
-(1, '2026-02-18 08:00:00', 'Breakfast Plan'),
-(2, '2026-02-18 12:00:00', 'Lunch Plan'),
-(3, '2026-02-18 18:00:00', 'Dinner Plan'),
-(4, '2026-02-19 08:00:00', 'Morning Meal'),
-(5, '2026-02-19 12:00:00', 'Afternoon Meal'),
-(6, '2026-02-19 18:00:00', 'Evening Meal'),
-(7, '2026-02-20 08:00:00', 'Protein Breakfast'),
-(8, '2026-02-20 12:00:00', 'Healthy Lunch');
-
-INSERT INTO plan_exercise
-(work_id, exer_id, plan_exer_amount, plan_exer_set,
- plan_exer_PB, plan_exer_PB_first)
-VALUES
-(1, 1, 20, 3, 25, 15),
-(2, 4, 10, 4, 12, 8),
-(3, 2, 15, 3, 20, 10),
-(4, 3, 30, 2, 35, 20),
-(5, 5, 8, 5, 10, 5),
-(6, 7, 12, 3, 15, 8),
-(7, 8, 100, 2, 120, 80),
-(8, 4, 12, 4, 15, 10);
+INSERT INTO
+    plan_exercise (
+        work_id,
+        exer_id,
+        plan_exer_amount,
+        plan_exer_set,
+        plan_exer_PB,
+        plan_exer_PB_first
+    )
+VALUES (1, 1, 20, 3, 25, 15),
+    (2, 4, 10, 4, 12, 8),
+    (3, 2, 15, 3, 20, 10),
+    (4, 3, 30, 2, 35, 20),
+    (5, 5, 8, 5, 10, 5),
+    (6, 7, 12, 3, 15, 8),
+    (7, 8, 100, 2, 120, 80),
+    (8, 4, 12, 4, 15, 10);
 
 -- food_name, food_type, food_calories, food_fat, food_fibre, food_protein
-INSERT INTO food (food_name, food_type, food_calories, food_fat, food_fibre, food_protein) VALUES
-('Chicken', 'protein', 165.0, 3.6, 0.0, 31.0),
-('Rice', 'carbs', 130.0, 0.3, 0.4, 2.7),
-('Broccoli', 'vegetable', 55.0, 0.6, 5.1, 3.7),
-('Salmon', 'protein', 208.0, 13.0, 0.0, 20.0),
-('Pasta', 'carbs', 131.0, 1.1, 1.8, 5.0),
-('Spinach', 'vegetable', 23.0, 0.4, 2.2, 2.9),
-('Eggs', 'protein', 155.0, 11.0, 0.0, 13.0),
-('Oats', 'carbs', 389.0, 6.9, 10.6, 16.9);
+INSERT INTO
+    food (
+        food_name,
+        food_type,
+        food_calories,
+        food_fat,
+        food_fibre,
+        food_protein
+    )
+VALUES (
+        'Chicken',
+        'protein',
+        165.0,
+        3.6,
+        0.0,
+        31.0
+    ),
+    (
+        'Rice',
+        'carbs',
+        130.0,
+        0.3,
+        0.4,
+        2.7
+    ),
+    (
+        'Broccoli',
+        'vegetable',
+        55.0,
+        0.6,
+        5.1,
+        3.7
+    ),
+    (
+        'Salmon',
+        'protein',
+        208.0,
+        13.0,
+        0.0,
+        20.0
+    ),
+    (
+        'Pasta',
+        'carbs',
+        131.0,
+        1.1,
+        1.8,
+        5.0
+    ),
+    (
+        'Spinach',
+        'vegetable',
+        23.0,
+        0.4,
+        2.2,
+        2.9
+    ),
+    (
+        'Eggs',
+        'protein',
+        155.0,
+        11.0,
+        0.0,
+        13.0
+    ),
+    (
+        'Oats',
+        'carbs',
+        389.0,
+        6.9,
+        10.6,
+        16.9
+    );
 
-INSERT INTO food_plan (food_id, meal_id) VALUES
-(1, 1),
-(2, 1),
-(3, 2),
-(4, 2),
-(5, 3),
-(6, 3),
-(7, 4),
-(8, 4);
+INSERT INTO
+    food_plan (food_id, meal_id)
+VALUES (1, 1),
+    (2, 1),
+    (3, 2),
+    (4, 2),
+    (5, 3),
+    (6, 3),
+    (7, 4),
+    (8, 4);
 
-INSERT INTO custom_items (item_name, item_effect, item_level, item_type) VALUES
-('Health Potion', 50, 1, 'consumable'),
-('Mana Potion', 30, 1, 'consumable'),
-('Iron Sword', 15, 3, 'weapon'),
-('Steel Shield', 20, 4, 'armor'),
-('Magic Ring', 10, 5, 'accessory'),
-('Leather Boots', 8, 2, 'armor'),
-('Fire Staff', 25, 6, 'weapon'),
-('Elixir', 100, 7, 'consumable');
+INSERT INTO
+    custom_items (
+        item_name,
+        item_effect,
+        item_level,
+        item_type
+    )
+VALUES (
+        'Health Potion',
+        50,
+        1,
+        'consumable'
+    ),
+    (
+        'Mana Potion',
+        30,
+        1,
+        'consumable'
+    ),
+    ('Iron Sword', 15, 3, 'weapon'),
+    (
+        'Steel Shield',
+        20,
+        4,
+        'armor'
+    ),
+    (
+        'Magic Ring',
+        10,
+        5,
+        'accessory'
+    ),
+    (
+        'Leather Boots',
+        8,
+        2,
+        'armor'
+    ),
+    ('Fire Staff', 25, 6, 'weapon'),
+    (
+        'Elixir',
+        100,
+        7,
+        'consumable'
+    );
 
-INSERT INTO game_items (item_id, game_char_id) VALUES
-(1, 1),
-(2, 1),
-(3, 1),
-(4, 2),
-(5, 2),
-(6, 2),
-(7, 3),
-(8, 3);
+INSERT INTO
+    game_items (item_id, game_char_id)
+VALUES (1, 1),
+    (2, 1),
+    (3, 1),
+    (4, 2),
+    (5, 2),
+    (6, 2),
+    (7, 3),
+    (8, 3);
 
-INSERT INTO rewards (enemy_id, reward_level, reward_name, reward_type, reward_description) VALUES
-(1, 1, 'Goblin Gold', 'currency', 'Small amount of gold from goblin'),
-(2, 3, 'Orc Axe', 'item', 'A crude but effective axe'),
-(3, 5, 'Troll Hide', 'item', 'Tough leather for crafting armor'),
-(4, 10, 'Dragon Scale', 'item', 'Legendary crafting material'),
-(5, 2, 'Bone Dust', 'item', 'Useful for alchemy'),
-(6, 3, 'Zombie Brain', 'item', 'Disgusting but valuable'),
-(7, 7, 'Vampire Fang', 'item', 'Rare alchemical ingredient'),
-(8, 9, 'Demon Soul', 'experience', 'Grants massive experience');
+INSERT INTO
+    rewards (
+        enemy_id,
+        reward_level,
+        reward_name,
+        reward_type,
+        reward_description
+    )
+VALUES (
+        1,
+        1,
+        'Goblin Gold',
+        'currency',
+        'Small amount of gold from goblin'
+    ),
+    (
+        2,
+        3,
+        'Orc Axe',
+        'item',
+        'A crude but effective axe'
+    ),
+    (
+        3,
+        5,
+        'Troll Hide',
+        'item',
+        'Tough leather for crafting armor'
+    ),
+    (
+        4,
+        10,
+        'Dragon Scale',
+        'item',
+        'Legendary crafting material'
+    ),
+    (
+        5,
+        2,
+        'Bone Dust',
+        'item',
+        'Useful for alchemy'
+    ),
+    (
+        6,
+        3,
+        'Zombie Brain',
+        'item',
+        'Disgusting but valuable'
+    ),
+    (
+        7,
+        7,
+        'Vampire Fang',
+        'item',
+        'Rare alchemical ingredient'
+    ),
+    (
+        8,
+        9,
+        'Demon Soul',
+        'experience',
+        'Grants massive experience'
+    );
 
-INSERT INTO meal_collection (collection_name, collection_type, collection_description, collection_link) VALUES
-('Vegan Meals', 'vegan', 'Plant-based meals with no animal products', 'https://example.com/collections/vegan'),
-('Vegetarian Meals', 'vegetarian', 'Meals without meat but may include dairy/eggs', 'https://example.com/collections/vegetarian'),
-('High Protein', 'high_protein', 'Protein-rich meals for muscle building', 'https://example.com/collections/high-protein'),
-('Low Carb', 'low_carb', 'Low carbohydrate meals for weight management', 'https://example.com/collections/low-carb'),
-('Keto Friendly', 'keto', 'High fat, low carb meals for ketogenic diet', 'https://example.com/collections/keto'),
-('Low Calorie', 'low_calorie', 'Meals under 300 calories for weight loss', 'https://example.com/collections/low-calorie'),
-('Post Workout', 'post_workout', 'Recovery meals with protein and carbs', 'https://example.com/collections/post-workout'),
-('Quick Snacks', 'snacks', 'Fast and easy snack options', 'https://example.com/collections/snacks');
+INSERT INTO
+    meal_collection (
+        collection_name,
+        collection_type,
+        collection_description,
+        collection_link
+    )
+VALUES (
+        'Vegan Meals',
+        'vegan',
+        'Plant-based meals with no animal products',
+        'https://example.com/collections/vegan'
+    ),
+    (
+        'Vegetarian Meals',
+        'vegetarian',
+        'Meals without meat but may include dairy/eggs',
+        'https://example.com/collections/vegetarian'
+    ),
+    (
+        'High Protein',
+        'high_protein',
+        'Protein-rich meals for muscle building',
+        'https://example.com/collections/high-protein'
+    ),
+    (
+        'Low Carb',
+        'low_carb',
+        'Low carbohydrate meals for weight management',
+        'https://example.com/collections/low-carb'
+    ),
+    (
+        'Keto Friendly',
+        'keto',
+        'High fat, low carb meals for ketogenic diet',
+        'https://example.com/collections/keto'
+    ),
+    (
+        'Low Calorie',
+        'low_calorie',
+        'Meals under 300 calories for weight loss',
+        'https://example.com/collections/low-calorie'
+    ),
+    (
+        'Post Workout',
+        'post_workout',
+        'Recovery meals with protein and carbs',
+        'https://example.com/collections/post-workout'
+    ),
+    (
+        'Quick Snacks',
+        'snacks',
+        'Fast and easy snack options',
+        'https://example.com/collections/snacks'
+    );
 
 --Run this before inserting additional food data;
 ALTER TABLE food ALTER COLUMN food_name TYPE VARCHAR(50);
 
 -- food_name, food_type, food_calories, food_fat, food_fibre, food_protein
-INSERT INTO food (food_name, food_type, food_calories, food_fat, food_fibre, food_protein) VALUES
--- Proteins
-('Beef', 'protein', 250.0, 15.0, 0.0, 26.0),
-('Tuna', 'protein', 132.0, 1.0, 0.0, 28.0),
-('Turkey', 'protein', 135.0, 1.0, 0.0, 30.0),
-('Tofu', 'protein', 76.0, 4.8, 0.3, 8.0),
-('Greek Yogurt', 'protein', 100.0, 0.7, 0.0, 17.0),
-('Cottage Cheese', 'protein', 98.0, 4.3, 0.0, 11.0),
-('Protein Shake', 'protein', 120.0, 1.0, 1.0, 24.0),
-('Pork Chop', 'protein', 231.0, 13.0, 0.0, 27.0),
+INSERT INTO
+    food (
+        food_name,
+        food_type,
+        food_calories,
+        food_fat,
+        food_fibre,
+        food_protein
+    )
+VALUES
+    -- Proteins
+    (
+        'Beef',
+        'protein',
+        250.0,
+        15.0,
+        0.0,
+        26.0
+    ),
+    (
+        'Tuna',
+        'protein',
+        132.0,
+        1.0,
+        0.0,
+        28.0
+    ),
+    (
+        'Turkey',
+        'protein',
+        135.0,
+        1.0,
+        0.0,
+        30.0
+    ),
+    (
+        'Tofu',
+        'protein',
+        76.0,
+        4.8,
+        0.3,
+        8.0
+    ),
+    (
+        'Greek Yogurt',
+        'protein',
+        100.0,
+        0.7,
+        0.0,
+        17.0
+    ),
+    (
+        'Cottage Cheese',
+        'protein',
+        98.0,
+        4.3,
+        0.0,
+        11.0
+    ),
+    (
+        'Protein Shake',
+        'protein',
+        120.0,
+        1.0,
+        1.0,
+        24.0
+    ),
+    (
+        'Pork Chop',
+        'protein',
+        231.0,
+        13.0,
+        0.0,
+        27.0
+    ),
 
 -- Carbs
-('Quinoa', 'carbs', 222.0, 3.6, 5.2, 8.1),
-('Brown Rice', 'carbs', 218.0, 1.6, 3.5, 4.5),
-('Sweet Potato', 'carbs', 112.0, 0.1, 3.8, 2.0),
-('White Bread', 'carbs', 265.0, 3.2, 2.7, 9.0),
-('Whole Wheat Bread', 'carbs', 247.0, 3.4, 6.0, 13.0),
-('Bagel', 'carbs', 289.0, 1.7, 2.3, 11.0),
-('Couscous', 'carbs', 176.0, 0.3, 2.2, 6.0),
-('Cereal', 'carbs', 379.0, 1.5, 5.0, 7.0),
+(
+    'Quinoa',
+    'carbs',
+    222.0,
+    3.6,
+    5.2,
+    8.1
+),
+(
+    'Brown Rice',
+    'carbs',
+    218.0,
+    1.6,
+    3.5,
+    4.5
+),
+(
+    'Sweet Potato',
+    'carbs',
+    112.0,
+    0.1,
+    3.8,
+    2.0
+),
+(
+    'White Bread',
+    'carbs',
+    265.0,
+    3.2,
+    2.7,
+    9.0
+),
+(
+    'Whole Wheat Bread',
+    'carbs',
+    247.0,
+    3.4,
+    6.0,
+    13.0
+),
+(
+    'Bagel',
+    'carbs',
+    289.0,
+    1.7,
+    2.3,
+    11.0
+),
+(
+    'Couscous',
+    'carbs',
+    176.0,
+    0.3,
+    2.2,
+    6.0
+),
+(
+    'Cereal',
+    'carbs',
+    379.0,
+    1.5,
+    5.0,
+    7.0
+),
 
 -- Vegetables
-('Carrots', 'vegetable', 41.0, 0.2, 2.8, 0.9),
-('Kale', 'vegetable', 33.0, 0.5, 2.0, 2.9),
-('Bell Peppers', 'vegetable', 31.0, 0.3, 2.1, 1.0),
-('Tomatoes', 'vegetable', 18.0, 0.2, 1.2, 0.9),
-('Cucumber', 'vegetable', 16.0, 0.1, 0.5, 0.7),
-('Cauliflower', 'vegetable', 25.0, 0.3, 2.0, 1.9),
-('Green Beans', 'vegetable', 31.0, 0.1, 3.4, 1.8),
-('Lettuce', 'vegetable', 15.0, 0.2, 1.3, 1.4),
+(
+    'Carrots',
+    'vegetable',
+    41.0,
+    0.2,
+    2.8,
+    0.9
+),
+(
+    'Kale',
+    'vegetable',
+    33.0,
+    0.5,
+    2.0,
+    2.9
+),
+(
+    'Bell Peppers',
+    'vegetable',
+    31.0,
+    0.3,
+    2.1,
+    1.0
+),
+(
+    'Tomatoes',
+    'vegetable',
+    18.0,
+    0.2,
+    1.2,
+    0.9
+),
+(
+    'Cucumber',
+    'vegetable',
+    16.0,
+    0.1,
+    0.5,
+    0.7
+),
+(
+    'Cauliflower',
+    'vegetable',
+    25.0,
+    0.3,
+    2.0,
+    1.9
+),
+(
+    'Green Beans',
+    'vegetable',
+    31.0,
+    0.1,
+    3.4,
+    1.8
+),
+(
+    'Lettuce',
+    'vegetable',
+    15.0,
+    0.2,
+    1.3,
+    1.4
+),
 
 -- Fruits
-('Apple', 'fruit', 95.0, 0.3, 4.4, 0.5),
-('Banana', 'fruit', 105.0, 0.4, 3.1, 1.3),
-('Orange', 'fruit', 62.0, 0.2, 3.1, 1.2),
-('Strawberries', 'fruit', 49.0, 0.5, 3.0, 1.0),
-('Blueberries', 'fruit', 84.0, 0.5, 2.4, 1.1),
-('Grapes', 'fruit', 104.0, 0.2, 1.4, 1.1),
-('Watermelon', 'fruit', 86.0, 0.4, 1.1, 1.7),
-('Mango', 'fruit', 135.0, 0.6, 3.7, 1.1),
+(
+    'Apple',
+    'fruit',
+    95.0,
+    0.3,
+    4.4,
+    0.5
+),
+(
+    'Banana',
+    'fruit',
+    105.0,
+    0.4,
+    3.1,
+    1.3
+),
+(
+    'Orange',
+    'fruit',
+    62.0,
+    0.2,
+    3.1,
+    1.2
+),
+(
+    'Strawberries',
+    'fruit',
+    49.0,
+    0.5,
+    3.0,
+    1.0
+),
+(
+    'Blueberries',
+    'fruit',
+    84.0,
+    0.5,
+    2.4,
+    1.1
+),
+(
+    'Grapes',
+    'fruit',
+    104.0,
+    0.2,
+    1.4,
+    1.1
+),
+(
+    'Watermelon',
+    'fruit',
+    86.0,
+    0.4,
+    1.1,
+    1.7
+),
+(
+    'Mango',
+    'fruit',
+    135.0,
+    0.6,
+    3.7,
+    1.1
+),
 
 -- Fats/Oils
-('Avocado', 'fat', 240.0, 22.0, 10.0, 3.0),
-('Olive Oil', 'fat', 119.0, 13.5, 0.0, 0.0),
-('Almonds', 'fat', 164.0, 14.0, 3.5, 6.0),
-('Peanut Butter', 'fat', 188.0, 16.0, 1.9, 8.0),
-('Walnuts', 'fat', 185.0, 18.5, 1.9, 4.3),
-('Cheese', 'fat', 113.0, 9.0, 0.0, 7.0),
-('Butter', 'fat', 102.0, 11.5, 0.0, 0.1),
-('Cashews', 'fat', 157.0, 12.0, 0.9, 5.2),
+(
+    'Avocado',
+    'fat',
+    240.0,
+    22.0,
+    10.0,
+    3.0
+),
+(
+    'Olive Oil',
+    'fat',
+    119.0,
+    13.5,
+    0.0,
+    0.0
+),
+(
+    'Almonds',
+    'fat',
+    164.0,
+    14.0,
+    3.5,
+    6.0
+),
+(
+    'Peanut Butter',
+    'fat',
+    188.0,
+    16.0,
+    1.9,
+    8.0
+),
+(
+    'Walnuts',
+    'fat',
+    185.0,
+    18.5,
+    1.9,
+    4.3
+),
+(
+    'Cheese',
+    'fat',
+    113.0,
+    9.0,
+    0.0,
+    7.0
+),
+(
+    'Butter',
+    'fat',
+    102.0,
+    11.5,
+    0.0,
+    0.1
+),
+(
+    'Cashews',
+    'fat',
+    157.0,
+    12.0,
+    0.9,
+    5.2
+),
 
 -- Snacks
-('Granola Bar', 'snack', 140.0, 5.0, 2.0, 3.0),
-('Protein Bar', 'snack', 200.0, 7.0, 3.0, 20.0),
-('Trail Mix', 'snack', 173.0, 11.0, 2.0, 5.0),
-('Popcorn', 'snack', 55.0, 0.6, 2.0, 1.8),
-('Rice Cakes', 'snack', 35.0, 0.3, 0.4, 0.7),
-('Crackers', 'snack', 120.0, 4.0, 1.0, 2.5),
-('Chips', 'snack', 152.0, 10.0, 1.0, 2.0),
-('Pretzels', 'snack', 108.0, 1.0, 0.9, 2.6),
+(
+    'Granola Bar',
+    'snack',
+    140.0,
+    5.0,
+    2.0,
+    3.0
+),
+(
+    'Protein Bar',
+    'snack',
+    200.0,
+    7.0,
+    3.0,
+    20.0
+),
+(
+    'Trail Mix',
+    'snack',
+    173.0,
+    11.0,
+    2.0,
+    5.0
+),
+(
+    'Popcorn',
+    'snack',
+    55.0,
+    0.6,
+    2.0,
+    1.8
+),
+(
+    'Rice Cakes',
+    'snack',
+    35.0,
+    0.3,
+    0.4,
+    0.7
+),
+(
+    'Crackers',
+    'snack',
+    120.0,
+    4.0,
+    1.0,
+    2.5
+),
+(
+    'Chips',
+    'snack',
+    152.0,
+    10.0,
+    1.0,
+    2.0
+),
+(
+    'Pretzels',
+    'snack',
+    108.0,
+    1.0,
+    0.9,
+    2.6
+),
 
 -- Additional Proteins / Legumes / Seafood
-('Shrimp', 'protein', 99.0, 0.3, 0.0, 24.0),
-('Lentils', 'protein', 116.0, 0.4, 7.9, 9.0),
-('Chickpeas', 'protein', 164.0, 2.6, 7.6, 8.9),
-('Black Beans', 'protein', 132.0, 0.5, 8.7, 8.9),
-('Edamame', 'protein', 121.0, 5.2, 5.2, 11.0),
-('Tempeh', 'protein', 193.0, 11.0, 0.0, 19.0),
-('Seitan', 'protein', 143.0, 1.9, 0.6, 25.0),
-('Sardines', 'protein', 208.0, 11.5, 0.0, 25.0),
-('Herring', 'protein', 158.0, 9.0, 0.0, 18.0),
-('Venison', 'protein', 158.0, 3.2, 0.0, 30.0),
-('Lamb', 'protein', 294.0, 21.0, 0.0, 25.0),
+(
+    'Shrimp',
+    'protein',
+    99.0,
+    0.3,
+    0.0,
+    24.0
+),
+(
+    'Lentils',
+    'protein',
+    116.0,
+    0.4,
+    7.9,
+    9.0
+),
+(
+    'Chickpeas',
+    'protein',
+    164.0,
+    2.6,
+    7.6,
+    8.9
+),
+(
+    'Black Beans',
+    'protein',
+    132.0,
+    0.5,
+    8.7,
+    8.9
+),
+(
+    'Edamame',
+    'protein',
+    121.0,
+    5.2,
+    5.2,
+    11.0
+),
+(
+    'Tempeh',
+    'protein',
+    193.0,
+    11.0,
+    0.0,
+    19.0
+),
+(
+    'Seitan',
+    'protein',
+    143.0,
+    1.9,
+    0.6,
+    25.0
+),
+(
+    'Sardines',
+    'protein',
+    208.0,
+    11.5,
+    0.0,
+    25.0
+),
+(
+    'Herring',
+    'protein',
+    158.0,
+    9.0,
+    0.0,
+    18.0
+),
+(
+    'Venison',
+    'protein',
+    158.0,
+    3.2,
+    0.0,
+    30.0
+),
+(
+    'Lamb',
+    'protein',
+    294.0,
+    21.0,
+    0.0,
+    25.0
+),
 
 -- Additional Carbs
-('Barley', 'carbs', 354.0, 2.3, 17.3, 12.5),
-('Millet', 'carbs', 378.0, 4.2, 8.5, 11.0),
-('Buckwheat', 'carbs', 343.0, 3.4, 10.0, 13.3),
-('Polenta', 'carbs', 70.0, 0.4, 1.0, 1.5),
-('Soba Noodles', 'carbs', 99.0, 0.1, 0.0, 5.1),
+(
+    'Barley',
+    'carbs',
+    354.0,
+    2.3,
+    17.3,
+    12.5
+),
+(
+    'Millet',
+    'carbs',
+    378.0,
+    4.2,
+    8.5,
+    11.0
+),
+(
+    'Buckwheat',
+    'carbs',
+    343.0,
+    3.4,
+    10.0,
+    13.3
+),
+(
+    'Polenta',
+    'carbs',
+    70.0,
+    0.4,
+    1.0,
+    1.5
+),
+(
+    'Soba Noodles',
+    'carbs',
+    99.0,
+    0.1,
+    0.0,
+    5.1
+),
 
 -- Additional Vegetables
-('Brussels Sprouts', 'vegetable', 43.0, 0.3, 3.8, 3.4),
-('Eggplant', 'vegetable', 25.0, 0.2, 3.0, 1.0),
-('Zucchini', 'vegetable', 17.0, 0.3, 1.0, 1.2),
-('Asparagus', 'vegetable', 20.0, 0.1, 2.1, 2.2),
+(
+    'Brussels Sprouts',
+    'vegetable',
+    43.0,
+    0.3,
+    3.8,
+    3.4
+),
+(
+    'Eggplant',
+    'vegetable',
+    25.0,
+    0.2,
+    3.0,
+    1.0
+),
+(
+    'Zucchini',
+    'vegetable',
+    17.0,
+    0.3,
+    1.0,
+    1.2
+),
+(
+    'Asparagus',
+    'vegetable',
+    20.0,
+    0.1,
+    2.1,
+    2.2
+),
 
 -- Additional Fruits
-('Pineapple', 'fruit', 50.0, 0.1, 1.4, 0.5),
-('Pear', 'fruit', 101.0, 0.2, 5.5, 0.6),
-('Papaya', 'fruit', 43.0, 0.3, 1.7, 0.5),
-('Kiwi', 'fruit', 61.0, 0.5, 3.0, 1.1),
+(
+    'Pineapple',
+    'fruit',
+    50.0,
+    0.1,
+    1.4,
+    0.5
+),
+(
+    'Pear',
+    'fruit',
+    101.0,
+    0.2,
+    5.5,
+    0.6
+),
+(
+    'Papaya',
+    'fruit',
+    43.0,
+    0.3,
+    1.7,
+    0.5
+),
+(
+    'Kiwi',
+    'fruit',
+    61.0,
+    0.5,
+    3.0,
+    1.1
+),
 
 -- Additional Fats / Oils / Seeds
-('Flaxseed', 'fat', 534.0, 42.0, 27.0, 18.0),
-('Chia Seeds', 'fat', 486.0, 31.0, 34.0, 17.0),
-('Sunflower Seeds', 'fat', 584.0, 51.0, 8.6, 21.0),
-('Ghee', 'fat', 900.0, 100.0, 0.0, 0.0),
+(
+    'Flaxseed',
+    'fat',
+    534.0,
+    42.0,
+    27.0,
+    18.0
+),
+(
+    'Chia Seeds',
+    'fat',
+    486.0,
+    31.0,
+    34.0,
+    17.0
+),
+(
+    'Sunflower Seeds',
+    'fat',
+    584.0,
+    51.0,
+    8.6,
+    21.0
+),
+(
+    'Ghee',
+    'fat',
+    900.0,
+    100.0,
+    0.0,
+    0.0
+),
 
 -- Additional Snacks
-('Beef Jerky', 'snack', 116.0, 3.0, 0.5, 9.4),
-('Dark Chocolate', 'snack', 546.0, 31.0, 7.0, 5.0),
-('Energy Ball', 'snack', 120.0, 6.0, 2.0, 4.0);
+(
+    'Beef Jerky',
+    'snack',
+    116.0,
+    3.0,
+    0.5,
+    9.4
+),
+(
+    'Dark Chocolate',
+    'snack',
+    546.0,
+    31.0,
+    7.0,
+    5.0
+),
+(
+    'Energy Ball',
+    'snack',
+    120.0,
+    6.0,
+    2.0,
+    4.0
+);
 
-INSERT INTO collection_foods (collection_id, food_id) 
-SELECT 1, food_id FROM food 
-WHERE food_type IN ('vegetable', 'fruit', 'carbs') 
-AND food_name IN ('Rice', 'Broccoli', 'Spinach', 'Oats', 'Quinoa', 'Brown Rice', 
-                  'Sweet Potato', 'Carrots', 'Kale', 'Bell Peppers', 'Tomatoes', 
-                  'Cucumber', 'Cauliflower', 'Green Beans', 'Lettuce', 
-                  'Apple', 'Banana', 'Orange', 'Strawberries', 'Blueberries', 
-                  'Grapes', 'Watermelon', 'Mango', 'Avocado', 'Almonds', 
-                  'Walnuts', 'Cashews', 'Tofu');
+INSERT INTO
+    collection_foods (collection_id, food_id)
+SELECT 1, food_id
+FROM food
+WHERE
+    food_type IN ('vegetable', 'fruit', 'carbs')
+    AND food_name IN (
+        'Rice',
+        'Broccoli',
+        'Spinach',
+        'Oats',
+        'Quinoa',
+        'Brown Rice',
+        'Sweet Potato',
+        'Carrots',
+        'Kale',
+        'Bell Peppers',
+        'Tomatoes',
+        'Cucumber',
+        'Cauliflower',
+        'Green Beans',
+        'Lettuce',
+        'Apple',
+        'Banana',
+        'Orange',
+        'Strawberries',
+        'Blueberries',
+        'Grapes',
+        'Watermelon',
+        'Mango',
+        'Avocado',
+        'Almonds',
+        'Walnuts',
+        'Cashews',
+        'Tofu'
+    );
 
-INSERT INTO collection_foods (collection_id, food_id) 
-SELECT 2, food_id FROM food 
-WHERE food_type IN ('vegetable', 'fruit', 'carbs', 'fat') 
-OR food_name IN ('Eggs', 'Greek Yogurt', 'Cottage Cheese', 'Cheese', 'Tofu');
+INSERT INTO
+    collection_foods (collection_id, food_id)
+SELECT 2, food_id
+FROM food
+WHERE
+    food_type IN (
+        'vegetable',
+        'fruit',
+        'carbs',
+        'fat'
+    )
+    OR food_name IN (
+        'Eggs',
+        'Greek Yogurt',
+        'Cottage Cheese',
+        'Cheese',
+        'Tofu'
+    );
 
-INSERT INTO collection_foods (collection_id, food_id) 
-SELECT 3, food_id FROM food 
-WHERE food_type = 'protein';
+INSERT INTO
+    collection_foods (collection_id, food_id)
+SELECT 3, food_id
+FROM food
+WHERE
+    food_type = 'protein';
 
-INSERT INTO collection_foods (collection_id, food_id) 
-SELECT 4, food_id FROM food 
-WHERE food_type IN ('protein', 'vegetable', 'fat');
+INSERT INTO
+    collection_foods (collection_id, food_id)
+SELECT 4, food_id
+FROM food
+WHERE
+    food_type IN ('protein', 'vegetable', 'fat');
 
-INSERT INTO collection_foods (collection_id, food_id) 
-SELECT 5, food_id FROM food 
-WHERE food_type IN ('protein', 'fat')
-OR food_name IN ('Broccoli', 'Spinach', 'Cauliflower', 'Avocado', 'Kale');
+INSERT INTO
+    collection_foods (collection_id, food_id)
+SELECT 5, food_id
+FROM food
+WHERE
+    food_type IN ('protein', 'fat')
+    OR food_name IN (
+        'Broccoli',
+        'Spinach',
+        'Cauliflower',
+        'Avocado',
+        'Kale'
+    );
 
-INSERT INTO collection_foods (collection_id, food_id) 
-SELECT 6, food_id FROM food 
-WHERE food_calories < 100;
+INSERT INTO
+    collection_foods (collection_id, food_id)
+SELECT 6, food_id
+FROM food
+WHERE
+    food_calories < 100;
 
-INSERT INTO collection_foods (collection_id, food_id) 
-SELECT 7, food_id FROM food 
-WHERE food_type IN ('protein', 'carbs');
+INSERT INTO
+    collection_foods (collection_id, food_id)
+SELECT 7, food_id
+FROM food
+WHERE
+    food_type IN ('protein', 'carbs');
 
-INSERT INTO collection_foods (collection_id, food_id) 
-SELECT 8, food_id FROM food
-WHERE food_type = 'snack';
+INSERT INTO
+    collection_foods (collection_id, food_id)
+SELECT 8, food_id
+FROM food
+WHERE
+    food_type = 'snack';

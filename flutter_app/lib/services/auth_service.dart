@@ -6,7 +6,7 @@ import '../config/api_config.dart';
 class AuthService {
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'current_user';
-  static final _secureStorage = const FlutterSecureStorage();
+  static const _secureStorage = FlutterSecureStorage();
 
   static String get baseUrl => ApiConfig.baseUrl;
 
