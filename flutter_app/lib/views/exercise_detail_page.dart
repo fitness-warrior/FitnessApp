@@ -53,12 +53,12 @@ class ExerciseDetailPage extends StatelessWidget {
         ? equipmentRaw.join(', ')
         : equipmentRaw?.toString() ?? 'None';
     final videoUrl = (exercise['exer_vid'] ??
-        exercise['video'] ??
-        exercise['video_url'] ??
-        exercise['vid'])
-      ?.toString()
-      .trim() ??
-      '';
+                exercise['video'] ??
+                exercise['video_url'] ??
+                exercise['vid'])
+            ?.toString()
+            .trim() ??
+        '';
     final color = _areaColors[area] ?? const Color(0xFF4A9FFF);
     final highlights = _areaHighlights[area] ?? [];
 
@@ -256,7 +256,7 @@ class ExerciseDetailPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: color, size: 20),
           ),
@@ -266,7 +266,10 @@ class ExerciseDetailPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: TextStyle(color: Colors.grey[500], fontSize: 11, letterSpacing: 0.5)),
+                    style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 11,
+                        letterSpacing: 0.5)),
                 const SizedBox(height: 4),
                 Text(value,
                     style: const TextStyle(
