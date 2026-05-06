@@ -36,9 +36,11 @@ class CollectedData:
     
     def _get_train_name(self,name):
         self.cur.execute("""
-            SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps
+            SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps, e.exer_type
             FROM training t
             JOIN training_body tb ON tb.train_id = t.train_id
+            JOIN train_exercise te ON te.train_id = t.train_id
+            JOIN exercies e ON e.exer_id = te.exer_id 
             JOIN (
                 SELECT t2.train_data AS train_data, MAX(t2.train_effort) AS max_effort
                 FROM training t2
@@ -94,12 +96,14 @@ class CollectedData:
             
             i += 1
             
+        return final_collection
+            
         #get all for the day ✅
         #calulate roundabout cal ✅
         #out put the last 7 days 
             
     
-    def no_change_data (self,name,find):
+    def no_change_data (self,name,find,type):
         #1 = endurance
         #2 = distance/weight make code to know what one is needed km/kg
         rows = self._collect_rows(name)
