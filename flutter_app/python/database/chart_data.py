@@ -54,7 +54,7 @@ class CollectedData:
     
     def _get_cadio_callories (self):
         self.cur.execute("""
-            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_met
+            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_easy, e.exer_mid, e.exer_hard,
             FROM training t
             JOIN training_exercise te ON t.train_id = te.train_id 
             JOIN exercies e ON e.exer_id = te.exer_id 
@@ -71,13 +71,37 @@ class CollectedData:
     def day_cadio_callories (self):
         rows = self._get_cadio_callories()
         final_collection = []
+        i = 0
+        date = rows[0][0]
+        total = 0
         for row in rows:
             speed = (row[2]*1000) / row[1]
+            
+            if speed <= row[4]:
+                met = 6
+            elif speed <= row[5]:
+                met = 8.3
+            else:
+                met = 10
+                
+            exerices_cal = met * row[3] * (row[1]/60)
+            
+            if row[0] == date:
+                total += exerices_cal
+            else:
+                final_collection.append(row[0],total)
+                total = 0
+            
+            i += 1
+            
+        #get all for the day ✅
+        #calulate roundabout cal ✅
+        #out put the last 7 days 
             
     
     def no_change_data (self,name,find):
         #1 = endurance
-        #2 = distance/weight
+        #2 = distance/weight make code to know what one is needed km/kg
         rows = self._collect_rows(name)
         final_collection = []
         for row in rows:
@@ -90,6 +114,7 @@ class CollectedData:
         final_collection = []
         for row in rows:
             speed = (row[2]*1000) / row[1]
+            #meter per min
             new_row = [row[0],speed]
             final_collection.append (new_row)
         return final_collection  
