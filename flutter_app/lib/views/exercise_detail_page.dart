@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/youtube_video_embed.dart';
 
 class ExerciseDetailPage extends StatelessWidget {
   final Map<String, dynamic> exercise;
@@ -51,6 +52,7 @@ class ExerciseDetailPage extends StatelessWidget {
     final equipment = equipmentRaw is List
         ? equipmentRaw.join(', ')
         : equipmentRaw?.toString() ?? 'None';
+    final videoUrl = exercise['exer_vid']?.toString() ?? '';
     final color = _areaColors[area] ?? const Color(0xFF4A9FFF);
     final highlights = _areaHighlights[area] ?? [];
 
@@ -110,9 +112,10 @@ class ExerciseDetailPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                            color: color.withOpacity(0.15),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4)),
+                          color: color.withValues(alpha: 0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
                       ],
                     ),
                     child: Column(
@@ -164,6 +167,31 @@ class ExerciseDetailPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
+                  if (videoUrl.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C2E),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'How to do it',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          YoutubeVideoEmbed(youtubeUrl: videoUrl),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 20),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
@@ -201,9 +229,9 @@ class ExerciseDetailPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.5), width: 1)),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 1)),
       child: Text(label,
           style: TextStyle(
               color: color, fontWeight: FontWeight.bold, fontSize: 13)),
@@ -216,13 +244,13 @@ class ExerciseDetailPage extends StatelessWidget {
       decoration: BoxDecoration(
           color: const Color(0xFF1C1C2E),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05))),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05))),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: color, size: 20),
           ),
@@ -353,7 +381,9 @@ class _BodyPainter extends CustomPainter {
     void drawPoly(List<Offset> pts, bool hl) {
       if (pts.isEmpty) return;
       final path = Path()..moveTo(pts[0].dx, pts[0].dy);
-      for (int i = 1; i < pts.length; i++) path.lineTo(pts[i].dx, pts[i].dy);
+      for (int i = 1; i < pts.length; i++) {
+        path.lineTo(pts[i].dx, pts[i].dy);
+      }
       path.close();
       canvas.drawPath(path, hl ? highlightPaint : basePaint);
       canvas.drawPath(path, outlinePaint);
