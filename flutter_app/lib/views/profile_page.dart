@@ -36,8 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
       fitness = {
         'goal': cached.goal,
         'experience': cached.experience,
-        'location':
-            cached.equipment.contains('gym_machines') ? 'Gym' : 'Home',
+        'location': cached.equipment.contains('gym_machines') ? 'Gym' : 'Home',
         'session_length': cached.workoutLengthMinutes,
         'age': cached.age > 0 ? cached.age : null,
         'injuries': cached.injuredAreas,
@@ -244,10 +243,10 @@ class _ProfilePageState extends State<ProfilePage> {
     if (profile == null) return null;
 
     final age = _toInt(profile['age']) ?? _toInt(profile['body_age']) ?? 0;
-    final height = _toDouble(profile['height']) ??
-        _toDouble(profile['body_height']);
-    final weight = _toDouble(profile['weight']) ??
-        _toDouble(profile['body_weight']);
+    final height =
+        _toDouble(profile['height']) ?? _toDouble(profile['body_height']);
+    final weight =
+        _toDouble(profile['weight']) ?? _toDouble(profile['body_weight']);
     if (age <= 0 || height == null || weight == null) {
       return {
         'error': 'Missing age/height/weight',
@@ -313,7 +312,6 @@ class _ProfilePageState extends State<ProfilePage> {
       'burn_calories': burnCalories,
     };
   }
-
 
   // Keys we want to surface and the order to show them in
   static const _fitnessKeys = [
@@ -392,7 +390,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           _RecommendationsCard(data: recommendations),
                           const SizedBox(height: 24),
 
-
                           // ── Logout ───────────────────────────────────────
                           ElevatedButton.icon(
                             onPressed: _handleLogout,
@@ -401,8 +398,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -417,7 +413,6 @@ class _ProfilePageState extends State<ProfilePage> {
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
     );
   }
-
 }
 
 // ── Sub-widgets ──────────────────────────────────────────────────────────────
@@ -669,8 +664,7 @@ class _RecommendationsCard extends StatelessWidget {
       ),
       _FitnessRow(
         label: data!['deficit_or_surplus_label']?.toString() ?? 'Deficit',
-        value:
-            '${_fmtNumber(data!['deficit_or_surplus'] as double?)} kcal',
+        value: '${_fmtNumber(data!['deficit_or_surplus'] as double?)} kcal',
       ),
       _FitnessRow(
         label: 'Recommended Meal Calories',
