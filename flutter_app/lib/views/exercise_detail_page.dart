@@ -52,7 +52,13 @@ class ExerciseDetailPage extends StatelessWidget {
     final equipment = equipmentRaw is List
         ? equipmentRaw.join(', ')
         : equipmentRaw?.toString() ?? 'None';
-    final videoUrl = exercise['exer_vid']?.toString() ?? '';
+    final videoUrl = (exercise['exer_vid'] ??
+        exercise['video'] ??
+        exercise['video_url'] ??
+        exercise['vid'])
+      ?.toString()
+      .trim() ??
+      '';
     final color = _areaColors[area] ?? const Color(0xFF4A9FFF);
     final highlights = _areaHighlights[area] ?? [];
 
