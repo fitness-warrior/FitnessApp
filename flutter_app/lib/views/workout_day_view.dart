@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/workout_storage.dart';
+import '../services/streak_service.dart';
+import '../services/user_stats_service.dart';
 
 class WorkoutDayView extends StatefulWidget {
   final String dayName;
@@ -17,7 +20,7 @@ class WorkoutDayView extends StatefulWidget {
 }
 
 class _WorkoutDayViewState extends State<WorkoutDayView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // routineIndex -> exerciseIndex -> list<bool> for each set
   final Map<int, Map<int, List<bool>>> _completedSets = {};
   // routineIndex -> exerciseIndex -> setIndex -> controllers
@@ -27,6 +30,28 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
   bool _workoutFinished = false;
   late AnimationController _successController;
   late Animation<double> _scaleAnimation;
+
+  // ── Quit interception ─────────────────────────────────────────────────────
+  bool _showingQuitScreen = false;
+  late AnimationController _quitController;
+  late Animation<double> _quitAnimation;
+
+  // ── Elapsed timer ─────────────────────────────────────────────────────────
+  int _elapsedSeconds = 0;
+  Timer? _elapsedTimer;
+
+  String get _formattedTime {
+    final h = _elapsedSeconds ~/ 3600;
+    final m = (_elapsedSeconds % 3600) ~/ 60;
+    final s = _elapsedSeconds % 60;
+    if (h > 0) {
+      return '${h.toString().padLeft(2, '0')}:'
+          '${m.toString().padLeft(2, '0')}:'
+          '${s.toString().padLeft(2, '0')}';
+    }
+    return '${m.toString().padLeft(2, '0')}:'
+        '${s.toString().padLeft(2, '0')}';
+  }
 
   @override
   void initState() {
@@ -40,6 +65,20 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
       parent: _successController,
       curve: Curves.elasticOut,
     );
+    _quitController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _quitAnimation = CurvedAnimation(
+      parent: _quitController,
+      curve: Curves.elasticOut,
+    );
+    // Start the elapsed workout timer
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && !_workoutFinished) {
+        setState(() => _elapsedSeconds++);
+      }
+    });
   }
 
   void _initializeState() {
@@ -76,6 +115,8 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
 
   @override
   void dispose() {
+    _elapsedTimer?.cancel();
+    _quitController.dispose();
     for (var routine in _setControllers.values) {
       for (var exercise in routine.values) {
         for (var set in exercise) {
@@ -168,10 +209,78 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
     _showRestTimerDialog();
   }
 
-  void _finishWorkout() {
+  void _handleBackPress() {
+    if (_workoutFinished) {
+      Navigator.of(context).pop();
+      return;
+    }
+    // If all done, let them leave (finish button handles it)
+    if (_areAllComplete()) {
+      Navigator.of(context).pop();
+      return;
+    }
+    // Mid-workout: show the quit screen
+    setState(() => _showingQuitScreen = true);
+    _quitController.forward(from: 0);
+  }
+
+  void _keepGoing() {
+    _quitController.reverse().then((_) {
+      if (mounted) setState(() => _showingQuitScreen = false);
+    });
+  }
+
+  void _confirmQuit() {
+    Navigator.of(context).pop();
+  }
+
+  void _finishWorkout() async {
     HapticFeedback.heavyImpact();
     setState(() => _workoutFinished = true);
     _successController.forward();
+
+    // Prepare data to save to history
+    final List<Map<String, dynamic>> allExercises = [];
+    for (int rIndex = 0; rIndex < widget.routines.length; rIndex++) {
+      final routine = widget.routines[rIndex];
+      final exercises =
+          routine['exercises'] is List ? routine['exercises'] as List : [];
+
+      for (int eIndex = 0; eIndex < exercises.length; eIndex++) {
+        final exercise = exercises[eIndex];
+        final sets = <Map<String, dynamic>>[];
+        final controllers = _setControllers[rIndex]?[eIndex] ?? [];
+
+        for (var setControllers in controllers) {
+          sets.add({
+            'kg': setControllers['kg']?.text ?? '0',
+            'reps': setControllers['reps']?.text ?? '0',
+          });
+        }
+
+        allExercises.add({
+          'exer_id': exercise['exer_id'] ?? 0,
+          'exer_name': exercise['exer_name'] ?? 'Unknown',
+          'exer_type': exercise['exer_type'] ?? 'strength',
+          'sets': sets,
+        });
+      }
+    }
+
+    // Save to local history so the app knows we did a workout today
+    await WorkoutStorage.saveWorkout(
+      allExercises,
+      workoutName: widget.dayName,
+    );
+
+    // Update streak for the user
+    try {
+      await StreakService.updateStreak();
+    } catch (_) {}
+
+    // Grant XP: 10 XP per exercise
+    final xpEarned = allExercises.length * 10;
+    await UserStatsService.addXP(xpEarned);
   }
 
   // ── Dialogs ───────────────────────────────────────────────────────────────
@@ -242,6 +351,11 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
 
   @override
   Widget build(BuildContext context) {
+    // Show full-screen quit overlay when back is pressed mid-workout
+    if (_showingQuitScreen) {
+      return _buildQuitScreen();
+    }
+
     // Show full-screen success overlay when workout is finished
     if (_workoutFinished) {
       return _buildSuccessScreen();
@@ -249,15 +363,41 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
 
     final allDone = _areAllComplete();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) _handleBackPress();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0D0D14),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D14),
         elevation: 0,
-        title: Text(
-          '${widget.dayName} Workout',
-          style:
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${widget.dayName} Workout',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.timer_outlined,
+                    size: 13, color: Color(0xFF4A9FFF)),
+                const SizedBox(width: 4),
+                Text(
+                  _formattedTime,
+                  style: const TextStyle(
+                      color: Color(0xFF4A9FFF),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ],
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -483,6 +623,98 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                 );
               },
             ),
+        ),
+      );
+    }
+
+  Widget _buildQuitScreen() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0D14),
+      body: SafeArea(
+        child: Center(
+          child: ScaleTransition(
+            scale: _quitAnimation,
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.redAccent.withOpacity(0.15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.redAccent.withOpacity(0.4),
+                          blurRadius: 40,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.heart_broken_rounded,
+                      size: 64,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Really? Giving up?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'I thought you weren\'t a quitter... \ud83d\ude14\nYour future self will thank you for finishing.',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 16,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 48),
+                  ElevatedButton.icon(
+                    onPressed: _keepGoing,
+                    icon: const Icon(Icons.fitness_center, size: 20),
+                    label: const Text(
+                      'Keep Going! \ud83d\udcaa',
+                      style: TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4A9FFF),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      elevation: 4,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextButton(
+                    onPressed: _confirmQuit,
+                    child: Text(
+                      'Yes, I give up',
+                      style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.grey[600]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -555,9 +787,9 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _statColumn(
-                          icon: Icons.fitness_center,
-                          label: 'Routines',
-                          value: '${widget.routines.length}',
+                          icon: Icons.access_time_rounded,
+                          label: 'Time',
+                          value: _formattedTime,
                         ),
                         _divider(),
                         _statColumn(
@@ -565,11 +797,17 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                           label: 'Exercises',
                           value: '${_totalExercises()}',
                         ),
-                        _divider(),
+                         _divider(),
                         _statColumn(
                           icon: Icons.repeat,
                           label: 'Sets',
                           value: '${_totalSets()}',
+                        ),
+                        _divider(),
+                        _statColumn(
+                          icon: Icons.star_rounded,
+                          label: 'XP',
+                          value: '+${_totalExercises() * 10}',
                         ),
                       ],
                     ),

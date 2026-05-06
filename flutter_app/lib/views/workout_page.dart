@@ -11,6 +11,8 @@ import '../widgets/common/finish_button.dart';
 import '../widgets/common/streak_display.dart';
 import 'exercise_library_page.dart';
 import 'workout_calendar_page.dart';
+import '../services/user_stats_service.dart';
+import '../widgets/xp_bar.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -29,19 +31,44 @@ class _WorkoutPageState extends State<WorkoutPage> {
   List<Map<String, dynamic>> _savedWorkouts = [];
   bool _loadingSavedWorkouts = true;
   int _streakRefreshToken = 0;
+  /// Maps routine name -> list of day names it is assigned to.
+  Map<String, List<String>> _assignedRoutineDays = {};
+  int _currentXP = 0;
 
   @override
   void initState() {
     super.initState();
     _loadSavedWorkoutSession();
     _loadSavedWorkouts();
-    // If launched with recommendation tags, open the search dialog after build
+    _loadAssignedRoutines();
+    _loadXP();
     if (widget.initialRecommendationTags != null &&
         widget.initialRecommendationTags!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openSearchDialogWithTags(widget.initialRecommendationTags!);
       });
     }
+  }
+
+  Future<void> _loadAssignedRoutines() async {
+    try {
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      if (plan != null && mounted) {
+        const dayLabels = {
+          'monday': 'Mon', 'tuesday': 'Tue', 'wednesday': 'Wed',
+          'thursday': 'Thu', 'friday': 'Fri',
+          'saturday': 'Sat', 'sunday': 'Sun',
+        };
+        final Map<String, List<String>> result = {};
+        plan.forEach((day, names) {
+          final label = dayLabels[day] ?? day;
+          for (final name in names) {
+            result.putIfAbsent(name, () => []).add(label);
+          }
+        });
+        setState(() => _assignedRoutineDays = result);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadSavedWorkouts() async {
@@ -101,6 +128,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
         _loadingSavedWorkouts = false;
       });
     }
+  }
+
+  Future<void> _loadXP() async {
+    final xp = await UserStatsService.getXP();
+    if (mounted) setState(() => _currentXP = xp);
   }
 
   List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
@@ -581,6 +613,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF0D0D14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         insetPadding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
           child: Column(
@@ -588,11 +622,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1C1C2E),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
                   ),
                 ),
                 child: Row(
@@ -603,37 +637,40 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Date: $dateText',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'EXERCISES',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4A9FFF),
+                        letterSpacing: 1.2,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Exercises',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     exerciseList.isEmpty
                         ? Padding(
                             padding: const EdgeInsets.all(16),
@@ -653,12 +690,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border:
-                                      Border.all(color: Colors.grey.shade200),
+                                  color: const Color(0xFF1C1C2E),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,11 +702,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                     Text(
                                       exerName,
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 12),
                                     ...List.generate(setsList.length, (setIdx) {
                                       final set = setsList[setIdx];
                                       final kg = set['kg']?.toString() ?? '0';
@@ -678,13 +715,34 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                           set['reps']?.toString() ?? '0';
                                       return Padding(
                                         padding:
-                                            const EdgeInsets.only(bottom: 4),
-                                        child: Text(
-                                          'Set ${setIdx + 1}: $reps × ${kg}kg',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
+                                            const EdgeInsets.only(bottom: 6),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.05),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                'Set ${setIdx + 1}',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.grey[400],
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              '$reps × ${kg}kg',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       );
                                     }),
@@ -693,13 +751,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               );
                             }),
                           ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: const Color(0xFF1C1C2E),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                          ),
                         ),
                         child: const Text('Close'),
                       ),
@@ -733,6 +797,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
           await _saveCurrentWorkoutSession();
           // Refresh the routines list to show the newly saved workout
           await _loadSavedWorkouts();
+          await _loadXP();
           StreakService.notifyStreakChanged();
         },
       ),
@@ -829,6 +894,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ],
                 ),
               ),
+            ),
+            // XP Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: XPBar(xp: _currentXP),
             ),
             // Current Workout Section
             if (_selectedTab == 0) ...[
@@ -1176,6 +1246,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 savedWorkouts: _savedWorkouts,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
+                onRefresh: () {
+                  _loadSavedWorkouts();
+                  _loadXP();
+                },
               ),
               const SizedBox(height: 100),
             ],
@@ -1329,6 +1403,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     final workoutNumber = _savedWorkouts.length - idx;
                     final routineName =
                         workout['name']?.toString() ?? 'Workout $workoutNumber';
+                    final assignedDays =
+                        _assignedRoutineDays[routineName] ?? [];
+                    final isAssigned = assignedDays.isNotEmpty;
 
                     return GestureDetector(
                       onTap: () =>
@@ -1338,8 +1415,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF252538),
+                          color: isAssigned
+                              ? const Color(0xFF1E1A3A)
+                              : const Color(0xFF252538),
                           borderRadius: BorderRadius.circular(12),
+                          border: isAssigned
+                              ? Border.all(
+                                  color: const Color(0xFF7C5CBF),
+                                  width: 1.2,
+                                )
+                              : null,
                         ),
                         child: Row(
                           children: [
@@ -1347,13 +1432,53 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    routineName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          routineName,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isAssigned)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF7C5CBF)
+                                                .withOpacity(0.25),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: const Color(0xFF7C5CBF),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.calendar_today_rounded,
+                                                size: 11,
+                                                color: Color(0xFFB39DDB),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                assignedDays.join(', '),
+                                                style: const TextStyle(
+                                                  color: Color(0xFFB39DDB),
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   const SizedBox(height: 3),
                                   Text(

@@ -201,8 +201,9 @@ class ExerciseDetailPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-          color: color.withOpacity(0.18),
-          borderRadius: BorderRadius.circular(20)),
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.5), width: 1)),
       child: Text(label,
           style: TextStyle(
               color: color, fontWeight: FontWeight.bold, fontSize: 13)),
@@ -211,32 +212,33 @@ class ExerciseDetailPage extends StatelessWidget {
 
   Widget _infoTile(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
           color: const Color(0xFF1C1C2E),
-          borderRadius: BorderRadius.circular(14)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.05))),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 18),
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: TextStyle(color: Colors.grey[500], fontSize: 11)),
-                const SizedBox(height: 2),
+                    style: TextStyle(color: Colors.grey[500], fontSize: 11, letterSpacing: 0.5)),
+                const SizedBox(height: 4),
                 Text(value,
                     style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13),
+                        fontSize: 14),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis),
               ],

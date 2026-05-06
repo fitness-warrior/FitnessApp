@@ -6,12 +6,14 @@ class WorkoutCalendarPage extends StatefulWidget {
   final List<Map<String, dynamic>> savedWorkouts;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
+  final VoidCallback? onRefresh;
 
   const WorkoutCalendarPage({
     Key? key,
     required this.savedWorkouts,
     this.shrinkWrap = false,
     this.physics,
+    this.onRefresh,
   }) : super(key: key);
 
   @override
@@ -78,7 +80,12 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  Future<void> _removeRoutineFromDay(String day, String name) async {
+    setState(() => _weeklyPlanNames[day]?.remove(name));
+    await _saveToApi();
+  }
+
+
 
   List<Map<String, dynamic>> _resolvedRoutines(String day) {
     final names = _weeklyPlanNames[day] ?? [];
@@ -160,10 +167,42 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     );
   }
 
-  void _openDayView(String day) {
+  void _openDayView(String day) async {
+    // Check if a workout was already completed today
+    final now = DateTime.now();
+    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    
+    final alreadyDone = widget.savedWorkouts.any((w) {
+      final date = w['date']?.toString() ?? '';
+      return date.startsWith(todayStr);
+    });
+
+    if (alreadyDone) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
+              const SizedBox(width: 12),
+              const Text(
+                'Rest you did your workout',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF1C1C2E),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final routines = _resolvedRoutines(day);
     if (routines.isEmpty) return;
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => WorkoutDayView(
@@ -172,6 +211,23 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
         ),
       ),
     );
+    widget.onRefresh?.call();
+  }
+
+  bool _isDayCompleted(int dayIndex) {
+    // dayIndex is 0-6 (Mon-Sun)
+    final now = DateTime.now();
+    // Get this week's Monday
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final targetDate = DateTime(monday.year, monday.month, monday.day)
+        .add(Duration(days: dayIndex));
+    final datePrefix =
+        "${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}";
+
+    return widget.savedWorkouts.any((w) {
+      final date = w['date']?.toString() ?? '';
+      return date.startsWith(datePrefix);
+    });
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -222,21 +278,27 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
         itemBuilder: (_, i) {
           final day = _days[i];
           final isToday = (i + 1) == todayWeekday;
+          final isCompleted = _isDayCompleted(i);
           final assignedCount = (_weeklyPlanNames[day] ?? []).length;
           final resolved = _resolvedRoutines(day);
 
           return GestureDetector(
             onLongPress: () => _openAssignDialog(day),
-            onTap: () => assignedCount == 0 ? _openAssignDialog(day) : _openDayView(day),
+            onTap: () =>
+                assignedCount == 0 ? _openAssignDialog(day) : _openDayView(day),
             child: Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1C2E),
+                color: isCompleted
+                    ? const Color(0xFF0F2D1F)
+                    : const Color(0xFF1C1C2E),
                 borderRadius: BorderRadius.circular(16),
-                border: isToday
-                    ? Border.all(color: const Color(0xFF4A9FFF), width: 1.5)
-                    : null,
+                border: isCompleted
+                    ? Border.all(color: const Color(0xFF66BB6A), width: 1.5)
+                    : (isToday
+                        ? Border.all(color: const Color(0xFF4A9FFF), width: 1.5)
+                        : null),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
@@ -256,11 +318,20 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                           Text(
                             _dayNames[day]!,
                             style: TextStyle(
-                              color: isToday ? const Color(0xFF4A9FFF) : Colors.white,
+                              color: isCompleted
+                                  ? const Color(0xFF66BB6A)
+                                  : (isToday
+                                      ? const Color(0xFF4A9FFF)
+                                      : Colors.white),
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          if (isCompleted) ...[
+                            const SizedBox(width: 8),
+                            const Icon(Icons.check_circle,
+                                color: Color(0xFF66BB6A), size: 18),
+                          ],
                           if (isToday) ...[
                             const SizedBox(width: 8),
                             Container(
@@ -278,15 +349,59 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                           ],
                         ]),
                         const SizedBox(height: 6),
-                        Text(
-                          assignedCount == 0
-                              ? 'No routines assigned'
-                              : '${resolved.length} routine${resolved.length != 1 ? 's' : ''}',
-                          style: TextStyle(
-                            color: assignedCount == 0 ? Colors.grey[500] : Colors.grey[300],
-                            fontSize: 14,
+                        if (assignedCount == 0)
+                          Text(
+                            'No routines assigned',
+                            style: TextStyle(
+                                color: Colors.grey[500], fontSize: 14),
+                          )
+                        else
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: (_weeklyPlanNames[day] ?? [])
+                                .map((name) => Container(
+                                      padding: const EdgeInsets.only(
+                                          left: 10, right: 4,
+                                          top: 3, bottom: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF4A9FFF)
+                                            .withOpacity(0.15),
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: const Color(0xFF4A9FFF)
+                                              .withOpacity(0.4),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              color: Color(0xFF4A9FFF),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          GestureDetector(
+                                            onTap: () =>
+                                                _removeRoutineFromDay(
+                                                    day, name),
+                                            child: const Icon(
+                                              Icons.close,
+                                              size: 14,
+                                              color: Color(0xFF4A9FFF),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ))
+                                .toList(),
                           ),
-                        ),
                       ],
                     ),
                   ),

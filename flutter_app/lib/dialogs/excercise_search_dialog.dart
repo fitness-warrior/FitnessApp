@@ -136,7 +136,9 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: const Color(0xFF0D0D14),
       insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -144,11 +146,11 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
             // Header
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1C1C2E),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
               ),
               child: Row(
@@ -159,10 +161,11 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -173,15 +176,24 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
               padding: const EdgeInsets.all(16),
               child: TextField(
                 controller: _searchController,
+                style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Exercise name',
-                  prefixIcon: const Icon(Icons.search),
+                  labelStyle: TextStyle(color: Colors.grey[500]),
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF4A9FFF)),
+                  filled: true,
+                  fillColor: const Color(0xFF1C1C2E),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF4A9FFF), width: 1.5),
                   ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear),
+                          icon: const Icon(Icons.clear, color: Colors.grey),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -206,46 +218,72 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
               child: Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _selectedArea,
-                      isDense: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Body Area',
-                        border: OutlineInputBorder(),
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        canvasColor: const Color(0xFF1C1C2E),
                       ),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('All')),
-                        ..._bodyAreas.map(
-                            (a) => DropdownMenuItem(value: a, child: Text(a))),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _selectedArea = value);
-                        _performSearch(_searchController.text);
-                      },
+                      child: DropdownButtonFormField<String>(
+                        dropdownColor: const Color(0xFF1C1C2E),
+                        value: _selectedArea,
+                        isDense: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Body Area',
+                          labelStyle: TextStyle(color: Colors.grey[500]),
+                          filled: true,
+                          fillColor: const Color(0xFF1C1C2E),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text('All')),
+                          ..._bodyAreas.map(
+                              (a) => DropdownMenuItem(value: a, child: Text(a))),
+                        ],
+                        onChanged: (value) {
+                          setState(() => _selectedArea = value);
+                          _performSearch(_searchController.text);
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _selectedType,
-                      isDense: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Type',
-                        border: OutlineInputBorder(),
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        canvasColor: const Color(0xFF1C1C2E),
                       ),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('All')),
-                        ..._types.map(
-                            (t) => DropdownMenuItem(value: t, child: Text(t))),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _selectedType = value);
-                        _performSearch(_searchController.text);
-                      },
+                      child: DropdownButtonFormField<String>(
+                        dropdownColor: const Color(0xFF1C1C2E),
+                        value: _selectedType,
+                        isDense: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Type',
+                          labelStyle: TextStyle(color: Colors.grey[500]),
+                          filled: true,
+                          fillColor: const Color(0xFF1C1C2E),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text('All')),
+                          ..._types.map(
+                              (t) => DropdownMenuItem(value: t, child: Text(t))),
+                        ],
+                        onChanged: (value) {
+                          setState(() => _selectedType = value);
+                          _performSearch(_searchController.text);
+                        },
+                      ),
                     ),
                   ),
                 ],
@@ -271,18 +309,18 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
 
     if (_error != null) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error, size: 48, color: Colors.red),
-              const SizedBox(height: 12),
-              Text('Error: $_error'),
-            ],
-          ),
-        ),
-      );
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                    const SizedBox(height: 12),
+                    Text('Error: $_error', style: const TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+            );
     }
 
     // If user hasn't typed a query and we have recommendations, show them first
@@ -294,7 +332,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text('Recommended for you',
-                  style: Theme.of(context).textTheme.titleMedium),
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           SizedBox(
@@ -316,26 +354,29 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                   child: SizedBox(
                     width: 220,
                     child: Card(
+                      color: const Color(0xFF1C1C2E),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       child: Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(12.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(name,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
+                                    fontWeight: FontWeight.bold, color: Colors.white)),
                             const SizedBox(height: 8),
                             Text(area,
                                 style: const TextStyle(
                                     fontSize: 12, color: Colors.grey)),
                             const SizedBox(height: 6),
-                            Text(type, style: const TextStyle(fontSize: 12)),
+                            Text(type, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                             const Spacer(),
                             Align(
                                 alignment: Alignment.bottomRight,
                                 child: Text('Add',
                                     style: TextStyle(
-                                        color: Colors.blue[700],
+                                        color: const Color(0xFF4A9FFF),
+                                        fontWeight: FontWeight.bold,
                                         fontSize: 12))),
                           ],
                         ),
@@ -346,7 +387,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
               },
             ),
           ),
-          const Divider(),
+          Divider(color: Colors.white.withOpacity(0.05)),
         ],
       );
     }
@@ -361,7 +402,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
               Icon(
                 Icons.search_off,
                 size: 48,
-                color: Colors.grey.shade400,
+                color: Colors.grey.shade700,
               ),
               const SizedBox(height: 12),
               Text(
@@ -369,7 +410,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                     ? 'Start typing to search'
                     : 'No exercises found',
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: Colors.grey.shade500,
                   fontSize: 16,
                 ),
               ),
@@ -391,6 +432,8 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
         final equipment = exercise['exer_equip'] ?? '';
 
         return Card(
+          color: const Color(0xFF1C1C2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           margin: const EdgeInsets.symmetric(vertical: 6),
           child: ListTile(
             onTap: () => _selectExercise(exercise),
@@ -399,6 +442,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
+                color: Colors.white,
               ),
             ),
             subtitle: Column(
@@ -407,55 +451,60 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Chip(
-                      label: Text(
-                        area,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: Colors.blue.shade100,
-                    ),
+                    _searchChip(area, const Color(0xFF4A9FFF)),
                     const SizedBox(width: 6),
-                    Chip(
-                      label: Text(
-                        type,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: Colors.green.shade100,
-                    ),
+                    _searchChip(type, const Color(0xFF66BB6A)),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade700,
+                    color: Colors.grey[400],
                   ),
                 ),
                 if (equipment.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     'Equipment: $equipment',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: Colors.grey[500],
                       fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
               ],
             ),
-            trailing: const Icon(Icons.add_circle_outline, color: Colors.blue),
+            trailing: const Icon(Icons.add_circle_outline, color: Color(0xFF4A9FFF)),
             isThreeLine: true,
           ),
         );
       },
+    );
+  }
+
+  Widget _searchChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.4), width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
