@@ -505,7 +505,7 @@ VALUES (
         'chest',
         'strength',
         'Classic upper body exercise',
-        'https://youtube.com/pushups',
+        'https://www.youtube.com/watch?v=WDIpL0pjun0&t=7s',
         'Bodyweight Only',
         3.8
     ),
@@ -514,7 +514,7 @@ VALUES (
         'legs',
         'strength',
         'Lower body compound movement',
-        'https://youtube.com/squats',
+        'https://www.youtube.com/watch?v=dC0yGLZwxas&list=PLeVb1RGNTvddVE-InnohQkbxxdAYruId0',
         'Bodyweight Only',
         5.0
     ),
@@ -523,7 +523,7 @@ VALUES (
         'full body',
         'cardio',
         'Outdoor cardio exercise',
-        'https://youtube.com/running',
+        'https://www.youtube.com/watch?v=se1RDOPvA8Q',
         'Dumbbells',
         9.8
     ),
@@ -532,7 +532,7 @@ VALUES (
         'chest',
         'strength',
         'Chest and tricep builder',
-        'https://youtube.com/bench',
+        'https://www.youtube.com/watch?v=CayG6UYqL8g',
         'Barbells',
         6.0
     ),
@@ -541,7 +541,7 @@ VALUES (
         'back',
         'strength',
         'Full posterior chain exercise',
-        'https://youtube.com/deadlift',
+        'https://www.youtube.com/watch?v=yPqv3ejnZvc',
         'Gym Machines',
         6.0
     ),
@@ -550,7 +550,7 @@ VALUES (
         'legs',
         'cardio',
         'Low impact cardio',
-        'https://youtube.com/cycling',
+        'https://www.youtube.com/watch?v=gWosN1CY4bg',
         'Cardio Machines',
         8.0
     ),
@@ -559,7 +559,7 @@ VALUES (
         'back',
         'strength',
         'Back and bicep exercise',
-        'https://youtube.com/pullups',
+        'https://www.youtube.com/watch?v=9yVGh3XbJ34',
         'Bodyweight Only',
         8.0
     ),
@@ -568,7 +568,7 @@ VALUES (
         'full body',
         'cardio',
         'High intensity cardio',
-        'https://youtube.com/jumprope',
+        'https://www.youtube.com/watch?v=vEJ7XbbAMAg&pp=ygUXanVtcHJvcGUgZm9ybSBzaG90IGNsaXA%3D',
         'Resistance Bands',
         12.3
     ),
@@ -578,7 +578,7 @@ VALUES (
         'chest',
         'strength',
         'Chest exercise using dumbbells',
-        'https://youtube.com/db-bench',
+        'https://www.youtube.com/watch?v=4_QuyfOCI5U',
         'Dumbbells',
         5.5
     ),
@@ -587,7 +587,7 @@ VALUES (
         'chest',
         'strength',
         'Upper chest focus with barbells',
-        'https://youtube.com/incline-bench',
+        'https://www.youtube.com/watch?v=BjGLs6KGWUc',
         'Barbells',
         6.0
     ),
@@ -596,7 +596,7 @@ VALUES (
         'chest',
         'strength',
         'Lower chest focus exercise',
-        'https://youtube.com/decline-bench',
+        'https://www.youtube.com/watch?v=6fotcWsMb0c&pp=ygUYZGVjbGluZSBiZW5jaCBwcmVzcyBmb3Jt',
         'Barbells',
         6.0
     ),
@@ -605,7 +605,7 @@ VALUES (
         'chest',
         'isolation',
         'Chest isolation exercise',
-        'https://youtube.com/db-flyes',
+        'https://www.youtube.com/watch?v=UKwkChzThig&pp=ygUSZHVtYmVsbCBmbHllcyBmb3Jt',
         'Dumbbells',
         3.5
     ),
@@ -614,7 +614,7 @@ VALUES (
         'chest',
         'isolation',
         'Chest isolation with cables',
-        'https://youtube.com/cable-cross',
+        'https://www.youtube.com/watch?v=XY6JrX1wyxk',
         'Gym Machines',
         3.5
     ),
@@ -623,7 +623,7 @@ VALUES (
         'chest',
         'strength',
         'Chest press on machine',
-        'https://youtube.com/machine-press',
+        'https://www.youtube.com/watch?v=lRo9zZ7EwpM',
         'Gym Machines',
         5.0
     ),
@@ -632,7 +632,7 @@ VALUES (
         'chest',
         'strength',
         'Chest exercise with bands',
-        'https://youtube.com/band-press',
+        'https://www.youtube.com/watch?v=9NGo4lZd65o&pp=ygUbUmVzaXN0YW5jZSBCYW5kIENoZXN0IFByZXNz',
         'Resistance Bands',
         4.5
     ),
@@ -641,7 +641,7 @@ VALUES (
         'chest',
         'bodyweight',
         'Body weight chest and tricep exercise',
-        'https://youtube.com/dips',
+        'https://www.youtube.com/watch?v=WVeZDBhZwLA',
         'Bodyweight Only',
         8.0
     ),
@@ -650,7 +650,7 @@ VALUES (
         'chest',
         'bodyweight',
         'Wide grip variation of push-ups',
-        'https://youtube.com/wide-pushups',
+        'https://www.youtube.com/watch?v=m3FTgWtJsFE&pp=ygUScHVzaCB1cHMgd2lkZSBncmlw0gcJCQMLAYcqIYzv',
         'Bodyweight Only',
         4.0
     ),
@@ -659,7 +659,7 @@ VALUES (
         'chest',
         'strength',
         'Guided barbell chest press',
-        'https://youtube.com/smith-press',
+        'https://www.youtube.com/watch?v=X2QQXX3qO9E&pp=ygUbc21pdGggbWFjaGluZSBjaGVzdCB3b3Jrb3V00gcJCQMLAYcqIYzv',
         'Barbells',
         5.5
     ),
@@ -668,7 +668,7 @@ VALUES (
         'chest',
         'isolation',
         'Lower chest isolation exercise',
-        'https://youtube.com/decline-flyes',
+        'https://www.youtube.com/watch?v=IMALXhhHRKM&pp=ygUVZGVjbGluZSBkdW1iZWxsIGZseWVz0gcJCQMLAYcqIYzv',
         'Dumbbells',
         3.5
     ),
@@ -677,7 +677,7 @@ VALUES (
         'chest',
         'strength',
         'Angled barbell chest press',
-        'https://youtube.com/landmine-press',
+        'https://www.youtube.com/watch?v=t9GuiNQo1O4&pp=ygUObGFuZG1pbmUgcHJlc3M%3D',
         'Barbells',
         6.0
     ),
@@ -686,7 +686,7 @@ VALUES (
         'chest',
         'isolation',
         'Isometric chest contraction',
-        'https://youtube.com/squeeze-press',
+        'https://www.youtube.com/watch?v=Aq_wwRslKas&pp=ygUNc3F1ZWV6ZSBwcmVzcw%3D%3D',
         'Dumbbells',
         4.0
     ),
@@ -695,7 +695,7 @@ VALUES (
         'chest',
         'strength',
         'Hexagonal dumbbell chest press',
-        'https://youtube.com/hex-press',
+        'https://www.youtube.com/watch?v=MjOeSCRwAQY&pp=ygUJaGV4IHByZXNz',
         'Dumbbells',
         5.5
     ),
@@ -704,7 +704,7 @@ VALUES (
         'chest',
         'isolation',
         'Isolated chest machine exercise',
-        'https://youtube.com/pec-deck',
+        'https://www.youtube.com/watch?v=eGjt4lk6g34&pp=ygUPcGVjIGRlY2sgbWFoaW5l',
         'Gym Machines',
         3.0
     ),
@@ -714,7 +714,7 @@ VALUES (
         'back',
         'strength',
         'Classic compound back exercise',
-        'https://youtube.com/barbell-row',
+        'https://www.youtube.com/watch?v=bm0_q9bR_HA&pp=0gcJCd4KAYcqIYzv',
         'Barbells',
         6.0
     ),
@@ -723,7 +723,7 @@ VALUES (
         'back',
         'strength',
         'Single arm dumbbell rowing',
-        'https://youtube.com/db-row',
+        'https://www.youtube.com/watch?v=DJfQN6xJL28&pp=0gcJCd4KAYcqIYzv',
         'Dumbbells',
         5.5
     ),
@@ -732,7 +732,7 @@ VALUES (
         'back',
         'strength',
         'Vertical pulling exercise',
-        'https://youtube.com/lat-pulldown',
+        'https://www.youtube.com/watch?v=JGeRYIZdojU&pp=ygUMbGF0IHB1bGxkb3du',
         'Gym Machines',
         5.5
     ),
@@ -741,7 +741,7 @@ VALUES (
         'back',
         'strength',
         'Compound back exercise',
-        'https://youtube.com/bent-rows',
+        'https://www.youtube.com/watch?v=TeUzJmU25Rc&pp=ygUNYmVudCBvdmVyIHJvdw%3D%3D',
         'Barbells',
         6.0
     ),
@@ -750,7 +750,7 @@ VALUES (
         'back',
         'isolation',
         'Rear deltoid and back exercise',
-        'https://youtube.com/face-pulls',
+        'https://www.youtube.com/watch?v=0Po47vvj9g4&pp=ygUKZmFjZSBwdWxscw%3D%3D',
         'Resistance Bands',
         3.5
     ),
@@ -759,7 +759,7 @@ VALUES (
         'back',
         'bodyweight',
         'Horizontal pulling bodyweight',
-        'https://youtube.com/inverted-rows',
+        'https://www.youtube.com/watch?v=KOaCM1HMwU0&pp=ygUNaW52ZXJ0ZWQgcm93cw%3D%3D',
         'Bodyweight Only',
         5.0
     ),
@@ -768,7 +768,7 @@ VALUES (
         'back',
         'strength',
         'Machine assisted rowing',
-        'https://youtube.com/seal-rows',
+        'https://www.youtube.com/watch?v=4H2ItXwUTp8&pp=ygUJc2VhbCByb3dz',
         'Gym Machines',
         5.5
     ),
@@ -777,7 +777,7 @@ VALUES (
         'back',
         'strength',
         'Angled barbell rowing',
-        'https://youtube.com/t-bar-rows',
+        'https://www.youtube.com/watch?v=hYo72r8Ivso&pp=ygUJdGJhciByb3dz',
         'Barbells',
         6.0
     ),
@@ -787,7 +787,7 @@ VALUES (
         'shoulders',
         'strength',
         'Standing shoulder press',
-        'https://youtube.com/overhead-press',
+        'https://www.youtube.com/watch?v=cGnhixvC8uA&pp=ygUOb3ZlcmhlYWQgcHJlc3M%3D',
         'Barbells',
         6.0
     ),
@@ -796,7 +796,7 @@ VALUES (
         'shoulders',
         'strength',
         'Seated shoulder press with dumbbells',
-        'https://youtube.com/db-shoulder',
+        'https://www.youtube.com/watch?v=0JfYxMRsUCQ&pp=ygUWZHVtYmVsbCBzaG91bGRlciBwcmVzcw%3D%3D',
         'Dumbbells',
         5.5
     ),
@@ -805,7 +805,7 @@ VALUES (
         'shoulders',
         'isolation',
         'Side shoulder isolation',
-        'https://youtube.com/lateral-raise',
+        'https://www.youtube.com/watch?v=XPPfnSEATJA&pp=ygUObGF0ZXJhbCByYWlzZXM%3D',
         'Dumbbells',
         3.0
     ),
@@ -814,7 +814,7 @@ VALUES (
         'shoulders',
         'isolation',
         'Front shoulder isolation',
-        'https://youtube.com/front-raise',
+        'https://www.youtube.com/watch?v=sOcYlBI85hc&pp=ygUMZnJvbnQgcmFpc2Vz',
         'Dumbbells',
         3.0
     ),
@@ -823,7 +823,7 @@ VALUES (
         'shoulders',
         'isolation',
         'Trapezius isolation exercise',
-        'https://youtube.com/shrugs',
+        'https://www.youtube.com/watch?v=SX1FE0URdv8&pp=ygUGc2hydWdz0gcJCQMLAYcqIYzv',
         'Dumbbells',
         4.0
     ),
@@ -833,7 +833,7 @@ VALUES (
         'arms',
         'isolation',
         'Classic arm curl exercise',
-        'https://youtube.com/bicep-curl',
+        'https://www.youtube.com/watch?v=cBSD6mQIPQk&pp=ygULYmljZXAgY3VybHM%3D',
         'Dumbbells',
         3.0
     ),
@@ -842,7 +842,7 @@ VALUES (
         'arms',
         'strength',
         'Tricep focused dips',
-        'https://youtube.com/tricep-dips',
+        'https://www.youtube.com/watch?v=JhX1nBnirNw&pp=ygULdHJpY2VwIGRpcHPSBwkJAwsBhyohjO8%3D',
         'Bodyweight Only',
         7.0
     ),
@@ -851,7 +851,7 @@ VALUES (
         'arms',
         'isolation',
         'Neutral grip arm curl',
-        'https://youtube.com/hammer-curl',
+        'https://www.youtube.com/watch?v=OPqe0kCxmR8&pp=ygUMaGFtbWVyIGN1cmxz0gcJCQMLAYcqIYzv',
         'Dumbbells',
         3.0
     ),
@@ -860,7 +860,7 @@ VALUES (
         'arms',
         'isolation',
         'Cable tricep exercise',
-        'https://youtube.com/tricep-pushdown',
+        'https://www.youtube.com/watch?v=LXkCrxn3caQ&pp=ygUPdHJpY2VwIHB1c2hkb3du',
         'Gym Machines',
         3.0
     ),
@@ -869,7 +869,7 @@ VALUES (
         'arms',
         'isolation',
         'Bench supported arm curl',
-        'https://youtube.com/preacher-curl',
+        'https://www.youtube.com/watch?v=Zbs3ko8ycyg&pp=ygUOcHJlYWNoZXIgY3VybHM%3D',
         'Dumbbells',
         3.5
     ),
@@ -879,7 +879,7 @@ VALUES (
         'legs',
         'strength',
         'Machine leg press exercise',
-        'https://youtube.com/leg-press',
+        'https://www.youtube.com/watch?v=p5dCqF7wWUw&pp=ygUJbGVnIHByZXNz',
         'Gym Machines',
         6.0
     ),
@@ -888,7 +888,7 @@ VALUES (
         'legs',
         'isolation',
         'Hamstring isolation',
-        'https://youtube.com/leg-curls',
+        'https://www.youtube.com/watch?v=SbSNUXPRkc8&pp=ygURbGVnIGN1cmxzIHB1cmVneW0%3D',
         'Gym Machines',
         4.0
     ),
@@ -897,7 +897,7 @@ VALUES (
         'legs',
         'isolation',
         'Quadriceps isolation',
-        'https://youtube.com/leg-ext',
+        'https://www.youtube.com/watch?v=4ZDm5EbiFI8&pp=ygUVbGVnIGV4dGVuc2lvbiBwdXJlZ3lt',
         'Gym Machines',
         4.0
     ),
@@ -906,7 +906,7 @@ VALUES (
         'legs',
         'strength',
         'Single leg compound exercise',
-        'https://youtube.com/lunges',
+        'https://www.youtube.com/watch?v=CtWIqUXlZOI&t=11s&pp=ygUWbHVuZ2VzIGR1bWJlbGwgcHVyZWd5bQ%3D%3D',
         'Dumbbells',
         6.0
     ),
@@ -915,7 +915,7 @@ VALUES (
         'legs',
         'isolation',
         'Calf muscle isolation',
-        'https://youtube.com/calf-raise',
+        'https://www.youtube.com/watch?v=Zep-wKHWkNM&pp=ygUTY2FsZiByYWlzZXMgcHVyZWd5bQ%3D%3D',
         'Bodyweight Only',
         3.0
     ),
@@ -925,7 +925,7 @@ VALUES (
         'core',
         'bodyweight',
         'Core stability exercise',
-        'https://youtube.com/planks',
+        'https://www.youtube.com/watch?v=q4rDeHYMcIg&pp=ygUOcGxhbmtzIHB1cmVneW0%3D',
         'Bodyweight Only',
         4.0
     ),
@@ -934,7 +934,7 @@ VALUES (
         'core',
         'isolation',
         'Abdominal isolation',
-        'https://youtube.com/crunches',
+        'https://www.youtube.com/watch?v=NnVhqMQRvmM&pp=ygUTYWIgY3J1bmNoZXMgcHVyZWd5bQ%3D%3D',
         'Bodyweight Only',
         3.0
     ),
@@ -943,7 +943,7 @@ VALUES (
         'core',
         'isolation',
         'Rotational core exercise',
-        'https://youtube.com/woodchops',
+        'https://www.youtube.com/watch?v=ZDt4MCvjMAA&pp=ygUWY2FibGUgd29vZGNob3BzcHVyZWd5bQ%3D%3D',
         'Gym Machines',
         4.0
     ),
@@ -952,7 +952,7 @@ VALUES (
         'core',
         'strength',
         'Advanced core exercise',
-        'https://youtube.com/leg-raises',
+        'https://www.youtube.com/watch?v=Yrtvs-nEnk0&pp=ygUaaGFuZ2luZyBsZWcgcmFpc2VzIHB1cmVneW3SBwkJAwsBhyohjO8%3D',
         'Bodyweight Only',
         8.0
     ),
@@ -961,7 +961,7 @@ VALUES (
         'core',
         'bodyweight',
         'Rotational core work',
-        'https://youtube.com/russian-twists',
+        'https://www.youtube.com/watch?v=99T1EfpMwPA&pp=ygUVcnVzc2lhbiB0d2lzdCBwdXJlZ3lt',
         'Bodyweight Only',
         5.0
     ),
@@ -971,7 +971,7 @@ VALUES (
         'cardio',
         'cardio',
         'Indoor running on treadmill',
-        'https://youtube.com/treadmill',
+        'https://www.youtube.com/watch?v=HxsFneJFM2c&pp=ygURdHJlYWRtaWxsIHB1cmVneW0%3D',
         'Cardio Machines',
         9.0
     ),
@@ -980,7 +980,7 @@ VALUES (
         'cardio',
         'cardio',
         'Full body cardio machine',
-        'https://youtube.com/rowing',
+        'https://www.youtube.com/watch?v=6_eLpWiNijE&pp=ygUWcm93aW5nIG1hY2hpbmUgcHVyZWd5bQ%3D%3D',
         'Cardio Machines',
         9.0
     ),
@@ -989,7 +989,7 @@ VALUES (
         'cardio',
         'cardio',
         'Low impact cardio machine',
-        'https://youtube.com/elliptical',
+        'https://www.youtube.com/watch?v=yISC2qwdh9I&pp=ygUSZWxsaXB0aWNhbCBwdXJlZ3lt',
         'Cardio Machines',
         8.0
     ),
@@ -998,7 +998,7 @@ VALUES (
         'cardio',
         'cardio',
         'Staircase climbing machine',
-        'https://youtube.com/stair-climber',
+        'https://www.youtube.com/watch?v=GMc8fUksKpY&pp=ygUWc3RhaXIgY2xpbWJlciBwdXJlIGd5bQ%3D%3D',
         'Cardio Machines',
         11.0
     ),
@@ -1007,7 +1007,7 @@ VALUES (
         'cardio',
         'cardio',
         'High intensity full body',
-        'https://youtube.com/burpees',
+        'https://www.youtube.com/watch?v=1yPltRIm59E&pp=ygUQYnVycGVlcyBwdXJlIGd5bQ%3D%3D',
         'Bodyweight Only',
         12.0
     ),
@@ -1016,7 +1016,7 @@ VALUES (
         'cardio',
         'cardio',
         'Core and cardio exercise',
-        'https://youtube.com/mountain-climbers',
+        'https://www.youtube.com/watch?v=7LmA4zSitc4&pp=ygUcbW91bnRhaW4gY2xpbWJlciBneW0gbWFjaGluZQ%3D%3D',
         'Bodyweight Only',
         10.0
     ),
@@ -1025,7 +1025,7 @@ VALUES (
         'cardio',
         'cardio',
         'Running in place high intensity',
-        'https://youtube.com/high-knees',
+        'https://www.youtube.com/watch?v=sTvekaq6vOU&pp=ygUSaGlnaCBrbmVlIHB1cmUgZ3lt',
         'Bodyweight Only',
         10.0
     ),
@@ -1034,7 +1034,7 @@ VALUES (
         'cardio',
         'cardio',
         'Wave training cardio',
-        'https://youtube.com/battle-ropes',
+        'https://www.youtube.com/watch?v=ZujykKeVZpM&pp=ygUVYmF0dGxlIHJvcGVzIHB1cmUgZ3lt',
         'Dumbbells',
         11.0
     ),
