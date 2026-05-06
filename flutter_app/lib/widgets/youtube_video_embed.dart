@@ -24,7 +24,7 @@ class _YoutubeVideoEmbedState extends State<YoutubeVideoEmbed> {
   }
 
   void _initializeController() {
-    final videoId = YoutubePlayerController.convertUrlToId(widget.youtubeUrl);
+    final videoId = _extractYoutubeVideoId(widget.youtubeUrl);
 
     if (videoId == null || videoId.isEmpty) {
       _errorMessage = 'This video link is not a valid YouTube URL.';
@@ -34,6 +34,49 @@ class _YoutubeVideoEmbedState extends State<YoutubeVideoEmbed> {
     _controller = YoutubePlayerController.fromVideoId(
       videoId: videoId,
     );
+  }
+
+  String? _extractYoutubeVideoId(String rawUrl) {
+    final trimmed = rawUrl.trim();
+    if (trimmed.isEmpty) return null;
+
+    // Try package helper first.
+    final direct = YoutubePlayerController.convertUrlToId(trimmed);
+    if (direct != null && direct.isNotEmpty) return direct;
+
+    // Accept links without protocol by prepending https.
+    final withScheme =
+        trimmed.startsWith('http://') || trimmed.startsWith('https://')
+            ? trimmed
+            : 'https://$trimmed';
+
+    final fallback = YoutubePlayerController.convertUrlToId(withScheme);
+    if (fallback != null && fallback.isNotEmpty) return fallback;
+
+    final uri = Uri.tryParse(withScheme);
+    if (uri == null) return null;
+
+    // Common watch URL format: youtube.com/watch?v=VIDEO_ID
+    final v = uri.queryParameters['v'];
+    if (_isValidId(v)) return v;
+
+    // Path-based formats: youtu.be/ID, /shorts/ID, /embed/ID, /live/ID
+    final segments = uri.pathSegments;
+    if (segments.isEmpty) return null;
+
+    if ((uri.host.contains('youtu.be') ||
+            uri.host.contains('youtube.com') ||
+            uri.host.contains('youtube-nocookie.com')) &&
+        _isValidId(segments.last)) {
+      return segments.last;
+    }
+
+    return null;
+  }
+
+  bool _isValidId(String? value) {
+    if (value == null) return false;
+    return RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(value);
   }
 
   @override
