@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../widgets/questionnaire/questionnaire_widget.dart';
+import 'workout_page.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({Key? key}) : super(key: key);
@@ -60,8 +62,19 @@ class _AuthPageState extends State<AuthPage> {
       }
 
       if (mounted) {
-        // Navigate to questionnaire launcher
-        Navigator.of(context).pushReplacementNamed('/launcher');
+        if (isLogin) {
+          // Existing user — go straight to the app, no questionnaire
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const WorkoutPage()),
+          );
+        } else {
+          // New user — show questionnaire once to build their fitness profile
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const QuestionnairePage(isOnboarding: true),
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() => error = e.toString().replaceAll('Exception: ', ''));

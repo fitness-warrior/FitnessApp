@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../../models/recommendation_profile.dart';
 import '../../services/recommendation_service.dart';
 import '../../services/recommendation_storage.dart';
@@ -30,7 +29,12 @@ class Question {
 }
 
 class QuestionnairePage extends StatefulWidget {
-  const QuestionnairePage({Key? key}) : super(key: key);
+  /// [isOnboarding] = true  → shown after sign-up; navigates to WorkoutPage on submit.
+  /// [isOnboarding] = false → shown from Edit Profile; pops back on submit.
+  final bool isOnboarding;
+
+  const QuestionnairePage({Key? key, this.isOnboarding = true})
+      : super(key: key);
 
   @override
   State<QuestionnairePage> createState() => _QuestionnairePageState();
@@ -244,8 +248,8 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     if (_index > 0) setState(() => _index--);
   }
 
-  void _buildAndShowResult() {
-    // Ensure final question persisted
+  Future<void> _buildAndShowResult() async {
+    // Ensure final question is persisted
     final last = _questions[_index];
     if (last.type == QuestionType.number || last.type == QuestionType.text) {
       _responses[last.id] = _textControllers[last.id]!.text.trim();
@@ -268,7 +272,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       };
     }
 
-    // Map to canonical output schema
+    // Map responses to canonical RecommendationProfile
     final age = int.tryParse(_responses['Q001'] ?? '0') ?? 0;
     final fitnessGoalRaw = (_responses['Q003'] ?? '').toString();
     final fitnessLevelRaw = (_responses['Q004'] ?? '').toString();
@@ -277,7 +281,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     final injuriesRaw =
         (_responses['Q008'] as List<dynamic>?)?.cast<String>() ?? <String>[];
 
-    // Normalize mappings
     String mapGoal(String g) {
       final s = g.toLowerCase();
       if (s.contains('lose')) return 'fat_loss';
@@ -335,47 +338,43 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       injuredAreas: mapInjuries(injuriesRaw),
     );
 
-    // Persist profile locally
-    RecommendationStorage.saveProfile(profile);
+    // Persist profile locally (offline cache) — awaited so it's done before nav
+    await RecommendationStorage.saveProfile(profile);
 
-    // Save questionnaire to backend
-    _saveToBackend(_responses);
+    // Save questionnaire to backend (source of truth) — awaited so Profile
+    // page sees the data as soon as we navigate there
+    await _saveToBackend(_responses);
 
-    // Call recommendation service
-    RecommendationService.getRecommendations(profile).then((rec) {
-      final jsonStr = const JsonEncoder.withIndent('  ').convert(_responses);
+    if (!mounted) return;
 
-      showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Recommendations Ready'),
-          content: SingleChildScrollView(child: Text(jsonStr)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to WorkoutPage with tags
-                Navigator.of(context).pop();
-                final tags = (rec['tags'] as List<dynamic>?)?.cast<String>() ??
-                    <String>[];
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        WorkoutPage(initialRecommendationTags: tags),
-                  ),
-                );
-              },
-              child: const Text('Apply Recommendations'),
-            ),
-          ],
-        ),
-      );
-      // ignore: avoid_print
-      print(jsonStr);
-    });
+    // Get recommendations then navigate
+    try {
+      final rec = await RecommendationService.getRecommendations(profile);
+      if (!mounted) return;
+
+      final tags =
+          (rec['tags'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+
+      if (widget.isOnboarding) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => WorkoutPage(initialRecommendationTags: tags),
+          ),
+        );
+      } else {
+        Navigator.of(context).pop(true);
+      }
+    } catch (_) {
+      // Recommendations unavailable — navigate anyway without tags
+      if (!mounted) return;
+      if (widget.isOnboarding) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const WorkoutPage()),
+        );
+      } else {
+        Navigator.of(context).pop(true);
+      }
+    }
   }
 
   Widget _buildCurrent() {
@@ -562,10 +561,10 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
           int.tryParse(responses['Q007']?.toString().split(' ')[0] ?? '30') ??
               30;
       final injuries = (responses['Q008'] as List?)?.cast<String>() ?? [];
-      final dietPref = responses['Q009']?.toString() ?? 'non-veg';
-      final allergies = (responses['Q010'] as List?)?.cast<String>() ?? [];
+      final dietPref = responses['Q010']?.toString() ?? 'non-veg';
+      final allergies = (responses['Q011'] as List?)?.cast<String>() ?? [];
 
-      await UserService.saveQuestionnaireResponse({
+      final payload = {
         'age': age,
         'height': height,
         'weight': weight,
@@ -577,7 +576,10 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         'injuries': injuries,
         'diet_preference': dietPref,
         'allergies': allergies,
-      });
+      };
+
+      await RecommendationStorage.saveQuestionnaireResponse(payload);
+      await UserService.saveQuestionnaireResponse(payload);
     } catch (e) {
       // Silently fail - questionnaire still progresses
     }

@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/exercise_service.dart';
 
@@ -26,8 +25,15 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
     'Legs': ['Legs', 'Quadriceps', 'Hamstrings', 'Calves', 'Glutes'],
     'Arms': ['Arms', 'Biceps', 'Triceps'],
     'Full Body': [
-      'Chest', 'Back', 'Shoulders', 'Triceps', 'Biceps',
-      'Quadriceps', 'Hamstrings', 'Calves', 'Glutes'
+      'Chest',
+      'Back',
+      'Shoulders',
+      'Triceps',
+      'Biceps',
+      'Quadriceps',
+      'Hamstrings',
+      'Calves',
+      'Glutes'
     ],
   };
 
@@ -101,7 +107,6 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
         _selectedMuscleGroup!,
         _selectedEquipmentType!,
       );
-
     } catch (e) {
       setState(() {
         _error = 'Something went wrong';
@@ -124,9 +129,12 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                 _error = null;
               });
             },
-      selectedColor: Colors.blue,
+      selectedColor: const Color(0xFF4A9FFF),
+      backgroundColor: const Color(0xFF1C1C2E),
+      side: BorderSide(color: selected ? const Color(0xFF4A9FFF) : const Color(0xFF2A2A3E)),
       labelStyle: TextStyle(
-        color: selected ? Colors.white : Colors.black,
+        color: selected ? Colors.white : Colors.grey[400],
+        fontWeight: selected ? FontWeight.bold : FontWeight.normal,
       ),
     );
   }
@@ -143,11 +151,19 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                 _error = null;
               });
             },
-      icon: Icon(icon),
+      icon: Icon(icon, size: 20),
       label: Text(label),
       style: ElevatedButton.styleFrom(
-        backgroundColor: selected ? Colors.green : Colors.grey.shade200,
-        foregroundColor: selected ? Colors.white : Colors.black,
+        backgroundColor: selected ? const Color(0xFF66BB6A).withOpacity(0.2) : const Color(0xFF1C1C2E),
+        foregroundColor: selected ? const Color(0xFF66BB6A) : Colors.grey[400],
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: selected ? const Color(0xFF66BB6A) : const Color(0xFF2A2A3E),
+            width: 1.5,
+          ),
+        ),
       ),
     );
   }
@@ -155,31 +171,35 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: const Color(0xFF0D0D14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: _isLoading
           ? Padding(
               padding: const EdgeInsets.all(30),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 20),
+                  CircularProgressIndicator(color: Color(0xFF4A9FFF)),
+                  SizedBox(height: 24),
                   Text(
                     "Generating workout...",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ],
               ),
             )
           : Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Target Muscle"),
-                  const SizedBox(height: 10),
+                  const Text("Target Muscle",
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 14),
                   Wrap(
                     spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _chip('Chest'),
                       _chip('Back'),
@@ -188,11 +208,13 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                       _chip('Full Body'),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  const Text("Workout Type"),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 24),
+                  const Text("Workout Type",
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 14),
                   Wrap(
                     spacing: 10,
+                    runSpacing: 10,
                     children: [
                       _equipment('At Home', Icons.home),
                       _equipment('Gym', Icons.fitness_center),
@@ -201,22 +223,27 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
                     ],
                   ),
                   if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                    Text(_error!, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
                   ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 32),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () => Navigator.pop(context),
-                        child: const Text("Cancel"),
-                      ),
-                      ElevatedButton(
                         onPressed:
-                            _isLoading ? null : _generateWorkout,
+                            _isLoading ? null : () => Navigator.pop(context),
+                        child: Text("Cancel", style: TextStyle(color: Colors.grey[400])),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _generateWorkout,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4A9FFF),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
                         child: const Text("Generate"),
                       ),
                     ],
@@ -234,22 +261,30 @@ class _SuccessDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: const Color(0xFF0D0D14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 60),
-            const SizedBox(height: 16),
+            const Icon(Icons.check_circle_outline, color: Color(0xFF66BB6A), size: 64),
+            const SizedBox(height: 20),
             const Text(
               "Workout Generated!",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context); // ONLY closes success dialog
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF66BB6A),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               child: const Text("Continue"),
             )
           ],

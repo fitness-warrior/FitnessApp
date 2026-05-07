@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../services/streak_service.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
+import '../services/user_stats_service.dart';
 
 class FinishWorkoutDialog extends StatefulWidget {
   final List<Map<String, dynamic>> exercises;
@@ -37,26 +39,48 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
 
   bool _validateWorkoutData() {
     for (int i = 0; i < widget.exercises.length; i++) {
+      final exercise = widget.exercises[i];
+      final exerType = exercise['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
+
       if (widget.setControllers.containsKey(i)) {
         for (final set in widget.setControllers[i]!) {
-          final kg = set['kg']!.text.trim();
-          final reps = set['reps']!.text.trim();
+          if (isCardio) {
+            // Validate cardio fields
+            final time = set['time']?.text.trim() ?? '';
+            final calories = set['calories']?.text.trim() ?? '';
 
-          // Check if fields are empty
-          if (kg.isEmpty || reps.isEmpty) {
-            return false;
-          }
+            if (time.isEmpty || calories.isEmpty) {
+              return false;
+            }
 
-          // Validate kg: must be between 0 and 500
-          final kgValue = double.tryParse(kg);
-          if (kgValue == null || kgValue <= 0 || kgValue >= 500) {
-            return false;
-          }
+            final timeValue = double.tryParse(time);
+            if (timeValue == null || timeValue <= 0) {
+              return false;
+            }
 
-          // Validate reps: must be positive integer
-          final repsValue = int.tryParse(reps);
-          if (repsValue == null || repsValue <= 0) {
-            return false;
+            final caloriesValue = double.tryParse(calories);
+            if (caloriesValue == null || caloriesValue <= 0) {
+              return false;
+            }
+          } else {
+            // Validate strength fields
+            final kg = set['kg']?.text.trim() ?? '';
+            final reps = set['reps']?.text.trim() ?? '';
+
+            if (kg.isEmpty || reps.isEmpty) {
+              return false;
+            }
+
+            final kgValue = double.tryParse(kg);
+            if (kgValue == null || kgValue <= 0 || kgValue >= 500) {
+              return false;
+            }
+
+            final repsValue = int.tryParse(reps);
+            if (repsValue == null || repsValue <= 0) {
+              return false;
+            }
           }
         }
       }
@@ -69,20 +93,36 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
 
     for (int i = 0; i < widget.exercises.length; i++) {
       final exercise = widget.exercises[i];
+      final exerType = exercise['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
       final sets = <Map<String, dynamic>>[];
 
       if (widget.setControllers.containsKey(i)) {
         for (final set in widget.setControllers[i]!) {
-          sets.add({
-            'kg': set['kg']!.text.isNotEmpty ? set['kg']!.text : '0',
-            'reps': set['reps']!.text.isNotEmpty ? set['reps']!.text : '0',
-          });
+          if (isCardio) {
+            sets.add({
+              'time': set['time']?.text.isNotEmpty == true
+                  ? set['time']!.text
+                  : '0',
+              'calories': set['calories']?.text.isNotEmpty == true
+                  ? set['calories']!.text
+                  : '0',
+            });
+          } else {
+            sets.add({
+              'kg': set['kg']?.text.isNotEmpty == true ? set['kg']!.text : '0',
+              'reps': set['reps']?.text.isNotEmpty == true
+                  ? set['reps']!.text
+                  : '0',
+            });
+          }
         }
       }
 
       data.add({
         'exer_id': exercise['exer_id'] ?? 0,
         'exer_name': exercise['exer_name'] ?? 'Unknown',
+        'exer_type': exerType,
         'sets': sets,
       });
     }
@@ -93,8 +133,12 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
   Future<void> _showSaveConfirmationDialog() async {
     if (!_validateWorkoutData()) {
       setState(() {
+<<<<<<< HEAD
         _error =
             'Invalid values: kg must be 0-500, reps must be positive integers';
+=======
+        _error = 'Invalid values: All fields must be positive numbers';
+>>>>>>> 3b61fb2d08a04dc5e1416069b7f6924894645e39
       });
       return;
     }
@@ -103,17 +147,19 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF0D0D14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         insetPadding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1C1C2E),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
               ),
               child: const Row(
@@ -124,34 +170,32 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Text(
                     'Would you like to save this workout as a routine for future reference?',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14),
+                    style: TextStyle(fontSize: 15, color: Colors.grey),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ElevatedButton(
+                      TextButton(
                         onPressed: () {
                           Navigator.pop(context);
                           _submitWorkout(saveAsRoutine: false);
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey,
-                        ),
-                        child: const Text('No'),
+                        child: Text('No, just complete', style: TextStyle(color: Colors.grey[500])),
                       ),
                       const SizedBox(width: 16),
                       ElevatedButton(
@@ -160,9 +204,12 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                           _showRoutineNameDialog();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xFF4CAF50),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('Yes'),
+                        child: const Text('Yes, save it'),
                       ),
                     ],
                   ),
@@ -181,17 +228,19 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF0D0D14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         insetPadding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1C1C2E),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
               ),
               child: const Row(
@@ -202,51 +251,53 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
                     'Enter a name for this routine (optional)',
-                    style: TextStyle(fontSize: 14),
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameController,
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'e.g., Chest Day, Push Workout',
-                      hintStyle: TextStyle(color: Colors.grey[500]),
+                      hintStyle: TextStyle(color: Colors.grey[600]),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: const Color(0xFF1C1C2E),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 1.5),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
+                        horizontal: 16,
+                        vertical: 14,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 32),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      OutlinedButton(
+                      TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
+                        child: Text('Cancel', style: TextStyle(color: Colors.grey[500])),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
@@ -254,7 +305,10 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                           _submitWorkout(saveAsRoutine: true);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xFF4CAF50),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: const Text('Save'),
                       ),
@@ -287,23 +341,58 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
         );
       }
 
-      // Best-effort sync to API (skip if backend unreachable)
+      // Best-effort sync to API
       try {
-        await WorkoutService.submitWorkout(exerciseData)
+        await WorkoutService.submitWorkout(
+          exerciseData,
+          notes: workoutName.isNotEmpty ? workoutName : null,
+        ).timeout(const Duration(seconds: 5));
+      } catch (_) {}
+
+      // Streak update is independent — always attempt it even if the
+      // workout API call above failed or timed out
+      try {
+        await StreakService.updateStreak()
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
+<<<<<<< HEAD
       if (!mounted) return;
+=======
+      // Grant XP: 10 XP per exercise
+      final xpEarned = exerciseData.length * 10;
+      await UserStatsService.addXP(xpEarned);
+>>>>>>> 3b61fb2d08a04dc5e1416069b7f6924894645e39
 
       widget.onSuccess({});
       Navigator.pop(context);
 
+<<<<<<< HEAD
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             saveAsRoutine
                 ? 'Workout saved successfully!'
                 : 'Workout completed!',
+=======
+      if (mounted) {
+        final message = saveAsRoutine
+            ? 'Workout saved! +$xpEarned XP earned!'
+            : 'Workout completed! +$xpEarned XP earned!';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.star_rounded, color: Color(0xFF66BB6A), size: 20),
+                const SizedBox(width: 10),
+                Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            backgroundColor: const Color(0xFF1C1C2E),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 3),
+>>>>>>> 3b61fb2d08a04dc5e1416069b7f6924894645e39
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -321,6 +410,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
     final exerciseData = _buildExerciseData();
 
     return Dialog(
+      backgroundColor: const Color(0xFF0D0D14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         child: Column(
@@ -328,11 +419,11 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1C1C2E),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
               ),
               child: Row(
@@ -343,10 +434,11 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -389,42 +481,44 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 200,
+                    height: 220,
                     child: ListView.builder(
                       itemCount: exerciseData.length,
                       itemBuilder: (context, index) {
                         final exercise = exerciseData[index];
                         final sets = exercise['sets'] as List;
+                        final exerType =
+                            exercise['exer_type']?.toString() ?? 'strength';
+                        final isCardio = exerType.toLowerCase() == 'cardio';
 
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: Colors.grey.shade200),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  exercise['exer_name'],
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1C1C2E),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white.withOpacity(0.05)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                exercise['exer_name'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.white,
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '${sets.length} set${sets.length > 1 ? 's' : ''}: ${sets.map((s) => '${s['reps']}x${s['kg']}kg').join(', ')}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${sets.length} set${sets.length > 1 ? 's' : ''} • ${sets.map((s) => isCardio ? '${s['time']}min' : '${s['reps']}x${s['kg']}kg').join(', ')}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[400],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -456,21 +550,31 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+<<<<<<< HEAD
                       OutlinedButton(
                         onPressed:
                             _isLoading ? null : () => Navigator.pop(context),
                         child: const Text('Cancel'),
+=======
+                      TextButton(
+                        onPressed:
+                            _isLoading ? null : () => Navigator.pop(context),
+                        child: Text('Cancel', style: TextStyle(color: Colors.grey[500])),
+>>>>>>> 3b61fb2d08a04dc5e1416069b7f6924894645e39
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       ElevatedButton(
                         onPressed:
                             _isLoading ? null : _showSaveConfirmationDialog,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xFF66BB6A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: _isLoading
                             ? const SizedBox(

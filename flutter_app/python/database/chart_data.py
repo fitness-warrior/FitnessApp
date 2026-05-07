@@ -36,9 +36,11 @@ class CollectedData:
     
     def _get_train_name(self,name):
         self.cur.execute("""
-            SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps
+            SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps, e.exer_type
             FROM training t
             JOIN training_body tb ON tb.train_id = t.train_id
+            JOIN train_exercise te ON te.train_id = t.train_id
+            JOIN exercies e ON e.exer_id = te.exer_id 
             JOIN (
                 SELECT t2.train_data AS train_data, MAX(t2.train_effort) AS max_effort
                 FROM training t2
@@ -52,9 +54,58 @@ class CollectedData:
         """, (self.body_id, self.body_id))
         return self.cur.fetchall()
     
-    def no_change_data (self,name,find):
+    def _get_cadio_callories (self):
+        self.cur.execute("""
+            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_easy, e.exer_mid, e.exer_hard,
+            FROM training t
+            JOIN training_exercise te ON t.train_id = te.train_id 
+            JOIN exercies e ON e.exer_id = te.exer_id 
+            JOIN training_body tb ON tb.train_id = t.train_id 
+            JOIN body_metrics bm ON bm.body_id = tb.body_id 
+            Where bm.body_id = %s
+            AND exer_type = "cardio"
+            ORDER BY t.train_data
+""", (self.body_id))
+        return self.cur.fetchall()
+    
+#set a limmit for 7 days but not max how much 1 can do in a day 
+    
+    def day_cadio_callories (self):
+        rows = self._get_cadio_callories()
+        final_collection = []
+        i = 0
+        date = rows[0][0]
+        total = 0
+        for row in rows:
+            speed = (row[2]*1000) / row[1]
+            
+            if speed <= row[4]:
+                met = 6
+            elif speed <= row[5]:
+                met = 8.3
+            else:
+                met = 10
+                
+            exerices_cal = met * row[3] * (row[1]/60)
+            
+            if row[0] == date:
+                total += exerices_cal
+            else:
+                final_collection.append(row[0],total)
+                total = 0
+            
+            i += 1
+            
+        return final_collection
+            
+        #get all for the day ✅
+        #calulate roundabout cal ✅
+        #out put the last 7 days 
+            
+    
+    def no_change_data (self,name,find,type):
         #1 = endurance
-        #2 = distance/weight
+        #2 = distance/weight make code to know what one is needed km/kg
         rows = self._collect_rows(name)
         final_collection = []
         for row in rows:
@@ -67,6 +118,7 @@ class CollectedData:
         final_collection = []
         for row in rows:
             speed = (row[2]*1000) / row[1]
+            #meter per min
             new_row = [row[0],speed]
             final_collection.append (new_row)
         return final_collection  

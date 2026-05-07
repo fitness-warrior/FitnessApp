@@ -4,6 +4,7 @@ import '../models/recommendation_profile.dart';
 
 class RecommendationStorage {
   static const _kProfileKey = 'recommendation_profile';
+  static const _kQuestionnaireKey = 'questionnaire_response';
 
   /// Save the profile to device local storage (SharedPreferences).
   /// Returns true on success.
@@ -30,5 +31,25 @@ class RecommendationStorage {
   static Future<bool> deleteProfile() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.remove(_kProfileKey);
+  }
+
+  /// Save the full questionnaire response for local reuse.
+  static Future<bool> saveQuestionnaireResponse(
+      Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(data);
+    return prefs.setString(_kQuestionnaireKey, jsonString);
+  }
+
+  /// Load the cached questionnaire response.
+  static Future<Map<String, dynamic>?> loadQuestionnaireResponse() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_kQuestionnaireKey);
+    if (jsonString == null) return null;
+    try {
+      return jsonDecode(jsonString) as Map<String, dynamic>;
+    } catch (e) {
+      return null;
+    }
   }
 }

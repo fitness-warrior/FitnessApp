@@ -33,6 +33,27 @@ DATABASE_URL = os.getenv(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+    # Ensure weekly plan table exists on startup
+    async with app.state.db_pool.acquire() as _conn:
+        await _conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_weekly_plan (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                plan JSONB NOT NULL DEFAULT '{}'::jsonb,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (user_id)
+            )
+        """)
+        await _conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_stats (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                xp INT NOT NULL DEFAULT 0,
+                level INT NOT NULL DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (user_id)
+            )
+        """)
     try:
         yield
     finally:
@@ -204,14 +225,25 @@ async def save_questionnaire(
                     """
                     UPDATE body_metrics
                     SET body_age = $1, body_height = $2, body_weight = $3,
-                        body_goal = $4, body_gender = $5
-                    WHERE user_id = $6
+                        body_goal = $4, body_gender = $5,
+                        body_experience = $6, body_location = $7,
+                        body_days_per_week = $8, body_session_length = $9,
+                        body_injuries = $10, body_diet_preference = $11,
+                        body_allergies = $12
+                    WHERE user_id = $13
                     """,
                     request.age,
                     request.height,
                     request.weight,
                     request.goal,
                     'male',  # Default, can be extended later
+                    request.experience,
+                    request.location,
+                    request.days_per_week,
+                    request.session_length,
+                    request.injuries,
+                    request.diet_preference,
+                    request.allergies,
                     user_id
                 )
             else:
@@ -219,15 +251,24 @@ async def save_questionnaire(
                 await connection.execute(
                     """
                     INSERT INTO body_metrics 
-                    (user_id, body_age, body_height, body_weight, body_goal, body_gender)
-                    VALUES ($1, $2, $3, $4, $5, $6)
+                    (user_id, body_age, body_height, body_weight, body_goal, body_gender,
+                     body_experience, body_location, body_days_per_week, body_session_length,
+                     body_injuries, body_diet_preference, body_allergies)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                     """,
                     user_id,
                     request.age,
                     request.height,
                     request.weight,
                     request.goal,
-                    'male'  # Default
+                    'male',  # Default
+                    request.experience,
+                    request.location,
+                    request.days_per_week,
+                    request.session_length,
+                    request.injuries,
+                    request.diet_preference,
+                    request.allergies
                 )
             
             # Save fitness profile with weekly gym days goal
@@ -293,7 +334,10 @@ async def get_questionnaire(
         async with app.state.db_pool.acquire() as connection:
             result = await connection.fetchrow(
                 """
-                SELECT body_age, body_height, body_weight, body_goal, body_gender
+                SELECT body_age, body_height, body_weight, body_goal, body_gender,
+                       body_experience, body_location, body_days_per_week,
+                       body_session_length, body_injuries, body_diet_preference,
+                       body_allergies
                 FROM body_metrics
                 WHERE user_id = $1
                 """,
@@ -308,7 +352,14 @@ async def get_questionnaire(
                 "height": result["body_height"],
                 "weight": result["body_weight"],
                 "goal": result["body_goal"],
-                "gender": result["body_gender"]
+                "gender": result["body_gender"],
+                "experience": result["body_experience"],
+                "location": result["body_location"],
+                "days_per_week": result["body_days_per_week"],
+                "session_length": result["body_session_length"],
+                "injuries": result["body_injuries"] or [],
+                "diet_preference": result["body_diet_preference"],
+                "allergies": result["body_allergies"] or []
             }
     except HTTPException:
         raise
@@ -385,7 +436,86 @@ async def update_user_profile(
         raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
 
 
+# ==================== USER STATS ENDPOINTS ====================
+
+@app.get("/api/user/stats")
+async def get_user_stats(user_id: int = Depends(get_current_user_id)):
+    """Get user's XP and level stats"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            stats = await connection.fetchrow(
+                "SELECT xp, level FROM user_stats WHERE user_id = $1",
+                user_id
+            )
+            
+            if not stats:
+                # Initialize stats if they don't exist
+                await connection.execute(
+                    "INSERT INTO user_stats (user_id, xp, level) VALUES ($1, 0, 1) ON CONFLICT (user_id) DO NOTHING",
+                    user_id
+                )
+                return {"xp": 0, "level": 1}
+            
+            return {"xp": stats["xp"], "level": stats["level"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch stats: {str(e)}")
+
+
+class XPRequest(BaseModel):
+    amount: int
+
+
+@app.post("/api/user/stats/xp")
+async def add_user_xp(
+    request: XPRequest,
+    user_id: int = Depends(get_current_user_id)
+):
+    """Add XP to user and update level if necessary"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Get current stats
+            stats = await connection.fetchrow(
+                "SELECT xp, level FROM user_stats WHERE user_id = $1",
+                user_id
+            )
+            
+            if not stats:
+                current_xp = 0
+                current_level = 1
+            else:
+                current_xp = stats["xp"]
+                current_level = stats["level"]
+            
+            new_xp = current_xp + request.amount
+            
+            # Simple level calculation: 100 XP per level
+            new_level = (new_xp // 100) + 1
+            
+            await connection.execute(
+                """
+                INSERT INTO user_stats (user_id, xp, level, updated_at)
+                VALUES ($1, $2, $3, NOW())
+                ON CONFLICT (user_id) DO UPDATE
+                SET xp = $2, level = $3, updated_at = NOW()
+                """,
+                user_id, new_xp, new_level
+            )
+            
+            return {
+                "success": True,
+                "xp": new_xp,
+                "level": new_level,
+                "leveled_up": new_level > current_level
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add XP: {str(e)}")
+
+
 # ==================== WORKOUT ENDPOINTS ====================
+class WeeklyPlanRequest(BaseModel):
+    plan: dict
+
+
 class WorkoutExercise(BaseModel):
     exer_id: int
     exer_name: str
@@ -547,9 +677,10 @@ async def get_workouts(
             for w in workouts:
                 exercises = await connection.fetch(
                     """
-                    SELECT exer_id, sets, reps, weight, notes
-                    FROM user_workout_exercise
-                    WHERE workout_id = $1
+                    SELECT uwe.exer_id, e.exer_name, uwe.sets, uwe.reps, uwe.weight, uwe.notes
+                    FROM user_workout_exercise uwe
+                    JOIN exercise e ON e.exer_id = uwe.exer_id
+                    WHERE uwe.workout_id = $1
                     """,
                     w["workout_id"]
                 )
@@ -562,6 +693,7 @@ async def get_workouts(
                     "exercises": [
                         {
                             "exer_id": e["exer_id"],
+                            "name": e["exer_name"],
                             "sets": e["sets"],
                             "reps": e["reps"],
                             "weight": e["weight"],
@@ -598,9 +730,10 @@ async def get_workout(
             
             exercises = await connection.fetch(
                 """
-                SELECT exer_id, sets, reps, weight, notes
-                FROM user_workout_exercise
-                WHERE workout_id = $1
+                SELECT uwe.exer_id, e.exer_name, uwe.sets, uwe.reps, uwe.weight, uwe.notes
+                FROM user_workout_exercise uwe
+                JOIN exercise e ON e.exer_id = uwe.exer_id
+                WHERE uwe.workout_id = $1
                 """,
                 workout_id
             )
@@ -613,6 +746,7 @@ async def get_workout(
                 "exercises": [
                     {
                         "exer_id": e["exer_id"],
+                        "name": e["exer_name"],
                         "sets": e["sets"],
                         "reps": e["reps"],
                         "weight": e["weight"],
@@ -680,23 +814,37 @@ async def get_streak(user_id: int = Depends(get_current_user_id)):
                 user_id
             )
             
+          
             if not streak:
-                raise HTTPException(status_code=404, detail="Streak not found")
-            
+                from datetime import date as _date
+                _today = _date.today()
+                await connection.execute(
+                    """
+                    INSERT INTO user_streak
+                    (user_id, current_streak, longest_streak, workouts_this_week, week_start_date)
+                    VALUES ($1, 0, 0, 0, $2)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    user_id, _today
+                )
+                streak = {"current_streak": 0, "longest_streak": 0,
+                          "streak_start_date": None, "last_workout_date": None,
+                          "workouts_this_week": 0, "week_start_date": str(_today)}
+
             # Fetch the user's weekly goal
             profile = await connection.fetchval(
                 "SELECT days_per_week_goal FROM user_fitness_profile WHERE user_id = $1",
                 user_id
             )
-            
+
             return {
                 "current_streak": streak["current_streak"],
                 "longest_streak": streak["longest_streak"],
                 "streak_start_date": str(streak["streak_start_date"]) if streak["streak_start_date"] else None,
                 "last_workout_date": str(streak["last_workout_date"]) if streak["last_workout_date"] else None,
-                "workouts_this_week": streak["workouts_this_week"],
+                "workouts_this_week": streak["workouts_this_week"] or 0,
                 "week_start_date": str(streak["week_start_date"]) if streak["week_start_date"] else None,
-                "weekly_goal": profile or 3,  # Default to 3 if not set
+                "weekly_goal": profile or 3,
             }
     except HTTPException:
         raise
@@ -729,8 +877,28 @@ async def update_streak(user_id: int = Depends(get_current_user_id)):
                 user_id
             )
             
+            # Auto-create streak row instead of 404-ing
             if not streak:
-                raise HTTPException(status_code=404, detail="Streak not found")
+                week_start_auto = today - timedelta(days=today.weekday())
+                await connection.execute(
+                    """
+                    INSERT INTO user_streak
+                    (user_id, current_streak, longest_streak, workouts_this_week, week_start_date)
+                    VALUES ($1, 0, 0, 0, $2)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    user_id, week_start_auto
+                )
+                streak = await connection.fetchrow(
+                    """
+                    SELECT current_streak, longest_streak, streak_start_date,
+                           last_workout_date, workouts_this_week, week_start_date
+                    FROM user_streak WHERE user_id = $1
+                    """,
+                    user_id
+                )
+                if not streak:
+                    raise HTTPException(status_code=500, detail="Failed to create streak record")
             
             last_workout = streak["last_workout_date"]
             current_streak = streak["current_streak"]
@@ -825,6 +993,120 @@ async def update_streak(user_id: int = Depends(get_current_user_id)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update streak: {str(e)}")
+
+
+# ==================== MEAL PLAN ENDPOINTS ====================
+class MealPlanRequest(BaseModel):
+    plan_date: date
+    plan: dict
+
+
+@app.get("/api/meals")
+async def get_meal_plan(plan_date: date, user_id: int = Depends(get_current_user_id)):
+    """Fetch the user's meal plan for a given date (returns empty plan if none)."""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            row = await connection.fetchrow(
+                """
+                SELECT plan, created_at, updated_at
+                FROM user_meal_plan
+                WHERE user_id = $1 AND plan_date = $2
+                """,
+                user_id,
+                plan_date,
+            )
+
+            if not row:
+                return {"plan_date": str(plan_date), "plan": {}}
+
+            import json
+            plan_data = row["plan"]
+            if isinstance(plan_data, str):
+                plan_data = json.loads(plan_data)
+                
+            return {"plan_date": str(plan_date), "plan": plan_data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch meal plan: {str(e)}")
+
+
+@app.post("/api/meals")
+async def save_meal_plan(request: MealPlanRequest, user_id: int = Depends(get_current_user_id)):
+    """Upsert the user's meal plan for a given date."""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            existing = await connection.fetchval(
+                "SELECT user_meal_plan_id FROM user_meal_plan WHERE user_id = $1 AND plan_date = $2",
+                user_id,
+                request.plan_date,
+            )
+
+            import json
+            plan_str = json.dumps(request.plan)
+
+            if existing:
+                await connection.execute(
+                    """
+                    UPDATE user_meal_plan
+                    SET plan = $1::jsonb, updated_at = NOW()
+                    WHERE user_meal_plan_id = $2
+                    """,
+                    plan_str,
+                    existing,
+                )
+            else:
+                await connection.execute(
+                    """
+                    INSERT INTO user_meal_plan (user_id, plan_date, plan)
+                    VALUES ($1, $2, $3::jsonb)
+                    """,
+                    user_id,
+                    request.plan_date,
+                    plan_str,
+                )
+
+            return {"success": True, "plan_date": str(request.plan_date)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save meal plan: {str(e)}")
+
+
+# ==================== WEEKLY PLAN ENDPOINTS ====================
+
+@app.get("/api/weekly-plan")
+async def get_weekly_plan(user_id: int = Depends(get_current_user_id)):
+    """Get the user's weekly workout plan (day -> list of routine names)."""
+    try:
+        import json
+        async with app.state.db_pool.acquire() as connection:
+            row = await connection.fetchrow(
+                "SELECT plan FROM user_weekly_plan WHERE user_id = $1",
+                user_id,
+            )
+            if not row:
+                return {"plan": {}}
+            plan_data = row["plan"]
+            if isinstance(plan_data, str):
+                plan_data = json.loads(plan_data)
+            return {"plan": plan_data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch weekly plan: {str(e)}")
+
+
+@app.post("/api/weekly-plan")
+async def save_weekly_plan(request: WeeklyPlanRequest, user_id: int = Depends(get_current_user_id)):
+    """Upsert the user's weekly workout plan."""
+    try:
+        import json
+        plan_str = json.dumps(request.plan)
+        async with app.state.db_pool.acquire() as connection:
+            await connection.execute("""
+                INSERT INTO user_weekly_plan (user_id, plan, updated_at)
+                VALUES ($1, $2::jsonb, NOW())
+                ON CONFLICT (user_id) DO UPDATE
+                    SET plan = $2::jsonb, updated_at = NOW()
+            """, user_id, plan_str)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save weekly plan: {str(e)}")
 
 
 def format_exercise(row: asyncpg.Record) -> dict:

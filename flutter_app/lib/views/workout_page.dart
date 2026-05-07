@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import '../dialogs/excercise_search_dialog.dart';
 import '../dialogs/generate_workout_dialog.dart';
 import '../dialogs/finish_workout_dialog.dart';
-import '../services/auth_service.dart';
-import '../services/workout_history_service.dart';
 import '../services/workout_storage.dart';
+import '../services/workout_history_service.dart';
+import '../services/streak_service.dart';
+import '../services/weekly_plan_service.dart';
 import '../widgets/common/navbar.dart';
 import '../widgets/common/finish_button.dart';
 import '../widgets/common/streak_display.dart';
 import 'exercise_library_page.dart';
+import 'workout_calendar_page.dart';
+import '../services/user_stats_service.dart';
+import '../widgets/xp_bar.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
@@ -26,13 +30,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
   int _selectedTab = 0;
   List<Map<String, dynamic>> _savedWorkouts = [];
   bool _loadingSavedWorkouts = true;
+  int _streakRefreshToken = 0;
+  /// Maps routine name -> list of day names it is assigned to.
+  Map<String, List<String>> _assignedRoutineDays = {};
+  int _currentXP = 0;
 
   @override
   void initState() {
     super.initState();
     _loadSavedWorkoutSession();
     _loadSavedWorkouts();
-    // If launched with recommendation tags, open the search dialog after build
+    _loadAssignedRoutines();
+    _loadXP();
     if (widget.initialRecommendationTags != null &&
         widget.initialRecommendationTags!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -41,29 +50,75 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
+  Future<void> _loadAssignedRoutines() async {
+    try {
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      if (plan != null && mounted) {
+        const dayLabels = {
+          'monday': 'Mon', 'tuesday': 'Tue', 'wednesday': 'Wed',
+          'thursday': 'Thu', 'friday': 'Fri',
+          'saturday': 'Sat', 'sunday': 'Sun',
+        };
+        final Map<String, List<String>> result = {};
+        plan.forEach((day, names) {
+          final label = dayLabels[day] ?? day;
+          for (final name in names) {
+            result.putIfAbsent(name, () => []).add(label);
+          }
+        });
+        setState(() => _assignedRoutineDays = result);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _loadSavedWorkouts() async {
     try {
-      final localWorkouts = await WorkoutStorage.getWorkouts();
-      var mergedWorkouts = List<Map<String, dynamic>>.from(localWorkouts);
+      final localWorkouts = (await WorkoutStorage.getWorkouts())
+          .map((w) => {
+                ...w,
+                'source': 'local',
+              })
+          .toList();
 
+      List<Map<String, dynamic>> apiWorkouts = [];
       try {
-        final isLoggedIn = await AuthService.isLoggedIn();
-        if (isLoggedIn) {
-          final apiHistory =
-              await WorkoutHistoryService.getWorkoutHistory(limit: 50);
-          final apiWorkouts = _mapApiWorkoutsToRoutines(apiHistory);
-          mergedWorkouts = [
-            ...apiWorkouts,
-            ...localWorkouts,
-          ];
-        }
-      } catch (_) {
-        // Fallback to local routines if API is temporarily unavailable.
+        final apiHistory = await WorkoutHistoryService.getWorkoutHistory();
+        apiWorkouts = _mapApiWorkoutsToRoutines(apiHistory);
+      } catch (e) {
+        print('Error fetching API workouts: $e');
       }
+
+      final List<Map<String, dynamic>> combined = [];
+      final Set<String> seenHashes = {};
+
+      // Merge and deduplicate
+      for (final w in [...localWorkouts, ...apiWorkouts]) {
+        final name = w['name']?.toString() ?? 'Workout';
+        final dateStr = w['date']?.toString() ?? '';
+        final datePrefix =
+            dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
+        final exercises = w['exercises'] as List? ?? [];
+
+        // Hash based on name, day, and exercise count to reliably deduplicate
+        final hash = '$name-$datePrefix-${exercises.length}';
+
+        if (!seenHashes.contains(hash)) {
+          seenHashes.add(hash);
+          combined.add(w);
+        }
+      }
+
+      combined.sort((a, b) {
+        final dateA =
+            DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA); // Newest first
+      });
 
       if (!mounted) return;
       setState(() {
-        _savedWorkouts = mergedWorkouts;
+        _savedWorkouts = combined;
         _loadingSavedWorkouts = false;
       });
     } catch (e) {
@@ -73,6 +128,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
         _loadingSavedWorkouts = false;
       });
     }
+  }
+
+  Future<void> _loadXP() async {
+    final xp = await UserStatsService.getXP();
+    if (mounted) setState(() => _currentXP = xp);
   }
 
   List<Map<String, dynamic>> _mapApiWorkoutsToRoutines(
@@ -87,20 +147,27 @@ class _WorkoutPageState extends State<WorkoutPage> {
         final exerId = ex['exer_id'];
         final reps = ex['reps'] ?? 0;
         final weight = ex['weight'] ?? 0;
+        final setCountRaw = ex['sets'];
+        final int setCount = (setCountRaw is int)
+            ? setCountRaw
+            : (int.tryParse(setCountRaw?.toString() ?? '1') ?? 1);
 
         return {
           'exer_id': exerId,
-          'exer_name': ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
-          'sets': [
-            {
-              'kg': weight.toString(),
-              'reps': reps.toString(),
-            }
-          ],
+          'exer_name': ex['name']?.toString().isNotEmpty == true
+              ? ex['name']
+              : ex['exer_name'] ?? 'Exercise ${exerId ?? ''}',
+          'sets': List.generate(
+              setCount > 0 ? setCount : 1,
+              (index) => {
+                    'kg': weight.toString(),
+                    'reps': reps.toString(),
+                  }),
         };
       }).toList();
 
       return {
+        'id': workout['workout_id'],
         'date': workout['created_at']?.toString() ??
             DateTime.now().toIso8601String(),
         'name': workout['notes']?.toString().isNotEmpty == true
@@ -133,16 +200,26 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
         savedSets.forEach((indexStr, sets) {
           final index = int.tryParse(indexStr.toString()) ?? 0;
-          if (sets is List) {
+          if (sets is List && index < _workoutExercises.length) {
+            final exercise = _workoutExercises[index];
+            final exerType = exercise['exer_type']?.toString() ?? 'strength';
+            final isCardio = exerType.toLowerCase() == 'cardio';
             _setControllers[index] = [];
             for (final set in sets) {
               final setMap = set is Map ? Map<String, dynamic>.from(set) : {};
-              _setControllers[index]!.add({
-                'kg': _createAutoSaveController(
-                    initialText: setMap['kg']?.toString() ?? ''),
-                'reps': _createAutoSaveController(
-                    initialText: setMap['reps']?.toString() ?? ''),
-              });
+              _setControllers[index]!.add(isCardio
+                  ? {
+                      'time': _createAutoSaveController(
+                          initialText: setMap['time']?.toString() ?? ''),
+                      'calories': _createAutoSaveController(
+                          initialText: setMap['calories']?.toString() ?? ''),
+                    }
+                  : {
+                      'kg': _createAutoSaveController(
+                          initialText: setMap['kg']?.toString() ?? ''),
+                      'reps': _createAutoSaveController(
+                          initialText: setMap['reps']?.toString() ?? ''),
+                    });
             }
           }
         });
@@ -164,11 +241,20 @@ class _WorkoutPageState extends State<WorkoutPage> {
     try {
       final serializableSets = <int, List<Map<String, String>>>{};
       _setControllers.forEach((index, sets) {
+        final exercise =
+            index < _workoutExercises.length ? _workoutExercises[index] : null;
+        final exerType = exercise?['exer_type']?.toString() ?? 'strength';
+        final isCardio = exerType.toLowerCase() == 'cardio';
         serializableSets[index] = sets
-            .map((set) => {
-                  'kg': set['kg']!.text,
-                  'reps': set['reps']!.text,
-                })
+            .map((set) => isCardio
+                ? {
+                    'time': set['time']!.text,
+                    'calories': set['calories']!.text,
+                  }
+                : {
+                    'kg': set['kg']!.text,
+                    'reps': set['reps']!.text,
+                  })
             .toList();
       });
 
@@ -209,11 +295,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
     setState(() {
       final normalizedExercise = _normalizeExercise(exercise);
       _workoutExercises.add(normalizedExercise);
+      final exerType =
+          normalizedExercise['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
       _setControllers[_workoutExercises.length - 1] = [
-        {
-          'kg': _createAutoSaveController(),
-          'reps': _createAutoSaveController(),
-        },
+        isCardio
+            ? {
+                'time': _createAutoSaveController(),
+                'calories': _createAutoSaveController(),
+              }
+            : {
+                'kg': _createAutoSaveController(),
+                'reps': _createAutoSaveController(),
+              },
       ];
     });
     _saveCurrentWorkoutSession();
@@ -224,7 +318,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
     // Ensure all fields have defaults
     normalized['exer_id'] = normalized['exer_id'] ?? 0;
     normalized['exer_name'] =
-        normalized['exer_name']?.toString() ?? 'Unknown Exercise';
+        (normalized['exer_name']?.toString().isNotEmpty == true
+            ? normalized['exer_name']
+            : normalized['name']?.toString().isNotEmpty == true
+                ? normalized['name']
+                : null) ??
+        'Unknown Exercise';
     normalized['exer_descrip'] = normalized['exer_descrip']?.toString() ?? '';
     normalized['exer_body_area'] =
         normalized['exer_body_area']?.toString() ?? 'Unknown';
@@ -236,9 +335,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   void _removeExercise(int index) {
     if (_setControllers.containsKey(index)) {
+      final exercise = _workoutExercises[index];
+      final exerType = exercise['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
+
       for (final set in _setControllers[index]!) {
-        set['kg']!.dispose();
-        set['reps']!.dispose();
+        if (isCardio) {
+          set['time']?.dispose();
+          set['calories']?.dispose();
+        } else {
+          set['kg']?.dispose();
+          set['reps']?.dispose();
+        }
       }
       _setControllers.remove(index);
     }
@@ -261,12 +369,22 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _addSet(int exerciseIndex) {
+    final exercise = exerciseIndex < _workoutExercises.length
+        ? _workoutExercises[exerciseIndex]
+        : null;
+    final exerType = exercise?['exer_type']?.toString() ?? 'strength';
+    final isCardio = exerType.toLowerCase() == 'cardio';
     setState(() {
       _setControllers[exerciseIndex]?.add(
-        {
-          'kg': _createAutoSaveController(),
-          'reps': _createAutoSaveController(),
-        },
+        isCardio
+            ? {
+                'time': _createAutoSaveController(),
+                'calories': _createAutoSaveController(),
+              }
+            : {
+                'kg': _createAutoSaveController(),
+                'reps': _createAutoSaveController(),
+              },
       );
     });
     _saveCurrentWorkoutSession();
@@ -276,8 +394,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
     if ((_setControllers[exerciseIndex]?.length ?? 0) <= 1) return;
     setState(() {
       final set = _setControllers[exerciseIndex]!.removeAt(setIndex);
-      set['kg']!.dispose();
-      set['reps']!.dispose();
+      final exercise = exerciseIndex < _workoutExercises.length
+          ? _workoutExercises[exerciseIndex]
+          : null;
+      final exerType = exercise?['exer_type']?.toString() ?? 'strength';
+      final isCardio = exerType.toLowerCase() == 'cardio';
+      if (isCardio) {
+        set['time']!.dispose();
+        set['calories']!.dispose();
+      } else {
+        set['kg']!.dispose();
+        set['reps']!.dispose();
+      }
     });
     _saveCurrentWorkoutSession();
   }
@@ -332,6 +460,150 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
+  Future<void> _deleteRoutine(int index) async {
+    final workout = _savedWorkouts[index];
+    final routineName = workout['name']?.toString() ?? 'Workout';
+    final pageContext = context;
+
+    // Check if this routine is assigned to any days in the weekly plan
+    List<String> assignedDays = [];
+    try {
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      if (plan != null) {
+        const dayNames = {
+          'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday',
+          'thursday': 'Thursday', 'friday': 'Friday',
+          'saturday': 'Saturday', 'sunday': 'Sunday',
+        };
+        for (final entry in plan.entries) {
+          if (entry.value.contains(routineName)) {
+            assignedDays.add(dayNames[entry.key] ?? entry.key);
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete Routine',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete "$routineName"?',
+              style: const TextStyle(color: Colors.grey),
+            ),
+            if (assignedDays.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.orange, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This routine is assigned to: '
+                        '${assignedDays.join(', ')}.\n'
+                        'It will be removed from those days.',
+                        style: const TextStyle(
+                            color: Colors.orange, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey[700],
+            ),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              try {
+                // Remove from weekly plan first if assigned
+                if (assignedDays.isNotEmpty) {
+                  final plan = await WeeklyPlanService.getWeeklyPlan();
+                  if (plan != null) {
+                    for (final day in plan.keys) {
+                      plan[day]?.remove(routineName);
+                    }
+                    await WeeklyPlanService.saveWeeklyPlan(plan);
+                  }
+                }
+
+                if (workout['source'] == 'local') {
+                  final localWorkouts = _savedWorkouts
+                      .where((w) => w['source'] == 'local')
+                      .toList();
+                  final localIndex = localWorkouts.indexOf(workout);
+                  if (localIndex != -1) {
+                    await WorkoutStorage.deleteWorkout(localIndex);
+                  }
+                } else if (workout['source'] == 'api') {
+                  if (workout['id'] != null) {
+                    final success = await WorkoutHistoryService.deleteWorkout(
+                        workout['id'] as int);
+                    if (!success) throw Exception('API returned failure');
+                  }
+                }
+
+                await _loadSavedWorkouts();
+
+                if (mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('$routineName deleted'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   void _openRoutineDetailsDialog(
       Map<String, dynamic> workout, String routineName) {
     final exercises = workout['exercises'];
@@ -341,6 +613,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF0D0D14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         insetPadding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
           child: Column(
@@ -348,11 +622,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1C1C2E),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
                   ),
                 ),
                 child: Row(
@@ -363,37 +637,40 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Date: $dateText',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'EXERCISES',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4A9FFF),
+                        letterSpacing: 1.2,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Exercises',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     exerciseList.isEmpty
                         ? Padding(
                             padding: const EdgeInsets.all(16),
@@ -413,12 +690,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border:
-                                      Border.all(color: Colors.grey.shade200),
+                                  color: const Color(0xFF1C1C2E),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,11 +702,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                     Text(
                                       exerName,
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 12),
                                     ...List.generate(setsList.length, (setIdx) {
                                       final set = setsList[setIdx];
                                       final kg = set['kg']?.toString() ?? '0';
@@ -438,13 +715,34 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                           set['reps']?.toString() ?? '0';
                                       return Padding(
                                         padding:
-                                            const EdgeInsets.only(bottom: 4),
-                                        child: Text(
-                                          'Set ${setIdx + 1}: $reps × ${kg}kg',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
+                                            const EdgeInsets.only(bottom: 6),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.05),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                'Set ${setIdx + 1}',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.grey[400],
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              '$reps × ${kg}kg',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       );
                                     }),
@@ -453,13 +751,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               );
                             }),
                           ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: const Color(0xFF1C1C2E),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                          ),
                         ),
                         child: const Text('Close'),
                       ),
@@ -487,11 +791,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
           setState(() {
             _workoutExercises.clear();
             _setControllers.clear();
+            _streakRefreshToken++;
           });
           // Update the saved sessions
           await _saveCurrentWorkoutSession();
           // Refresh the routines list to show the newly saved workout
           await _loadSavedWorkouts();
+          await _loadXP();
+          StreakService.notifyStreakChanged();
         },
       ),
     );
@@ -501,8 +808,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
   void dispose() {
     for (final sets in _setControllers.values) {
       for (final set in sets) {
-        set['kg']!.dispose();
-        set['reps']!.dispose();
+        set['kg']?.dispose();
+        set['reps']?.dispose();
+        set['time']?.dispose();
+        set['calories']?.dispose();
       }
     }
     super.dispose();
@@ -557,8 +866,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: const [
-          StreakDisplay(compact: true),
+        actions: [
+          StreakDisplay(
+            compact: true,
+            refreshToken: _streakRefreshToken,
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -583,271 +895,364 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 ),
               ),
             ),
+            // XP Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: XPBar(xp: _currentXP),
+            ),
             // Current Workout Section
-            if (_workoutExercises.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Current Workout',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '${_setControllers.values.fold<int>(0, (sum, sets) => sum + sets.length)} sets',
-                            style: const TextStyle(
-                              color: Colors.orange,
+            if (_selectedTab == 0) ...[
+              if (_workoutExercises.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Current Workout',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ..._workoutExercises.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final exercise = entry.value;
-                      final sets = _setControllers[index] ?? [];
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1C1C2E),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    exercise['exer_name']?.toString() ??
-                                        'Unknown',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                            child: Text(
+                              '${_setControllers.values.fold<int>(0, (sum, sets) => sum + sets.length)} sets',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ..._workoutExercises.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final exercise = entry.value;
+                        final sets = _setControllers[index] ?? [];
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1C1C2E),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      exercise['exer_name']?.toString() ??
+                                          'Unknown',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      size: 18, color: Colors.redAccent),
-                                  onPressed: () => _removeExercise(index),
-                                  constraints: const BoxConstraints(),
-                                  padding: EdgeInsets.zero,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ...List.generate(sets.length, (setIndex) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Text('Set ${setIndex + 1}:',
-                                        style: TextStyle(
-                                            color: Colors.grey[400],
-                                            fontSize: 12)),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: TextField(
-                                        controller: sets[setIndex]['kg'],
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                        decoration: InputDecoration(
-                                          labelText: 'kg',
-                                          labelStyle: TextStyle(
-                                              color: Colors.grey[500]),
-                                          filled: true,
-                                          fillColor: const Color(0xFF252538),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            borderSide: BorderSide.none,
+                                  IconButton(
+                                    icon: const Icon(Icons.delete,
+                                        size: 18, color: Colors.redAccent),
+                                    onPressed: () => _removeExercise(index),
+                                    constraints: const BoxConstraints(),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              ...List.generate(sets.length, (setIndex) {
+                                final exerType =
+                                    exercise['exer_type']?.toString() ??
+                                        'strength';
+                                final isCardio =
+                                    exerType.toLowerCase() == 'cardio';
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Text('Set ${setIndex + 1}:',
+                                          style: TextStyle(
+                                              color: Colors.grey[400],
+                                              fontSize: 12)),
+                                      const SizedBox(width: 8),
+                                      if (isCardio) ...[
+                                        Expanded(
+                                          child: TextField(
+                                            controller: sets[setIndex]['time'],
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                            decoration: InputDecoration(
+                                              labelText: 'time (min)',
+                                              labelStyle: TextStyle(
+                                                  color: Colors.grey[500]),
+                                              filled: true,
+                                              fillColor:
+                                                  const Color(0xFF252538),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.all(8),
+                                              errorText: _validatePositive(
+                                                  sets[setIndex]['time']!.text,
+                                                  'Time'),
+                                            ),
+                                            keyboardType: TextInputType.number,
                                           ),
-                                          isDense: true,
-                                          contentPadding:
-                                              const EdgeInsets.all(8),
                                         ),
-                                        keyboardType: TextInputType.number,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: TextField(
-                                        controller: sets[setIndex]['reps'],
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                        decoration: InputDecoration(
-                                          labelText: 'reps',
-                                          labelStyle: TextStyle(
-                                              color: Colors.grey[500]),
-                                          filled: true,
-                                          fillColor: const Color(0xFF252538),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            borderSide: BorderSide.none,
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: sets[setIndex]
+                                                ['calories'],
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                            decoration: InputDecoration(
+                                              labelText: 'calories',
+                                              labelStyle: TextStyle(
+                                                  color: Colors.grey[500]),
+                                              filled: true,
+                                              fillColor:
+                                                  const Color(0xFF252538),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.all(8),
+                                              errorText: _validatePositive(
+                                                  sets[setIndex]['calories']!
+                                                      .text,
+                                                  'Calories'),
+                                            ),
+                                            keyboardType: TextInputType.number,
                                           ),
-                                          isDense: true,
-                                          contentPadding:
-                                              const EdgeInsets.all(8),
+                                        )
+                                      ] else ...[
+                                        Expanded(
+                                          child: TextField(
+                                            controller: sets[setIndex]['kg'],
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                            decoration: InputDecoration(
+                                              labelText: 'kg',
+                                              labelStyle: TextStyle(
+                                                  color: Colors.grey[500]),
+                                              filled: true,
+                                              fillColor:
+                                                  const Color(0xFF252538),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.all(8),
+                                              errorText: _validatePositive(
+                                                  sets[setIndex]['kg']!.text,
+                                                  'kg'),
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                          ),
                                         ),
-                                        keyboardType: TextInputType.number,
-                                      ),
-                                    ),
-                                    if (sets.length > 1)
-                                      IconButton(
-                                        icon: const Icon(Icons.remove_circle,
-                                            size: 18, color: Colors.redAccent),
-                                        onPressed: () =>
-                                            _removeSet(index, setIndex),
-                                        constraints: const BoxConstraints(),
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            TextButton.icon(
-                              onPressed: () => _addSet(index),
-                              icon: const Icon(Icons.add,
-                                  size: 16, color: Color(0xFF4A9FFF)),
-                              label: const Text('Add Set',
-                                  style: TextStyle(
-                                      fontSize: 12, color: Color(0xFF4A9FFF))),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _openFinishDialog,
-                        icon: const Icon(Icons.check),
-                        label: const Text('Finish & Save Workout'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4CAF50),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: sets[setIndex]['reps'],
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                            decoration: InputDecoration(
+                                              labelText: 'reps',
+                                              labelStyle: TextStyle(
+                                                  color: Colors.grey[500]),
+                                              filled: true,
+                                              fillColor:
+                                                  const Color(0xFF252538),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.all(8),
+                                              errorText: _validatePositive(
+                                                  sets[setIndex]['reps']!.text,
+                                                  'reps'),
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                          ),
+                                        )
+                                      ],
+                                      if (sets.length > 1)
+                                        IconButton(
+                                          icon: const Icon(Icons.remove_circle,
+                                              size: 18,
+                                              color: Colors.redAccent),
+                                          onPressed: () =>
+                                              _removeSet(index, setIndex),
+                                          constraints: const BoxConstraints(),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              TextButton.icon(
+                                onPressed: () => _addSet(index),
+                                icon: const Icon(Icons.add,
+                                    size: 16, color: Color(0xFF4A9FFF)),
+                                label: const Text('Add Set',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF4A9FFF))),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _openFinishDialog,
+                          icon: const Icon(Icons.check),
+                          label: const Text('Finish & Save Workout'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4CAF50),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14)),
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              // ── Action Cards ──────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _buildActionCard(
+                  label: 'Exercise Library',
+                  icon: Icons.fitness_center,
+                  iconColor: const Color(0xFF4A9FFF),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ExerciseLibraryPage()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              // ── New Workout ───────────────────────────────────
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'New Workout',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildActionCard(
+                  label: 'Start Empty Workout',
+                  icon: Icons.assignment_outlined,
+                  iconColor: const Color(0xFFFFB74D),
+                  onTap: _openSearchDialog,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildActionCard(
+                  label: 'Generate Workout',
+                  icon: Icons.autorenew_rounded,
+                  iconColor: const Color(0xFF4CAF50),
+                  onTap: _openGenerateDialog,
+                ),
+              ),
+              const SizedBox(height: 28),
+              // ── Routines ──────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Routines',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.folder_outlined,
+                            color: Colors.grey[400], size: 22),
+                        const SizedBox(width: 14),
+                        Icon(Icons.add, color: Colors.grey[400], size: 22),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-            // ── Action Cards ──────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: _buildActionCard(
-                label: 'Exercise Library',
-                icon: Icons.fitness_center,
-                iconColor: const Color(0xFF4A9FFF),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const ExerciseLibraryPage()),
-                  );
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildRoutinesSection(),
+              ),
+              const SizedBox(height: 100),
+            ] else ...[
+              WorkoutCalendarPage(
+                savedWorkouts: _savedWorkouts,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                onRefresh: () {
+                  _loadSavedWorkouts();
+                  _loadXP();
                 },
               ),
-            ),
-            const SizedBox(height: 20),
-            // ── New Workout ───────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'New Workout',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildActionCard(
-                label: 'Start Empty Workout',
-                icon: Icons.assignment_outlined,
-                iconColor: const Color(0xFFFFB74D),
-                onTap: _openSearchDialog,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildActionCard(
-                label: 'Generate Workout',
-                icon: Icons.autorenew_rounded,
-                iconColor: const Color(0xFF4CAF50),
-                onTap: _openGenerateDialog,
-              ),
-            ),
-            const SizedBox(height: 28),
-            // ── Routines ──────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Routines',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.folder_outlined,
-                          color: Colors.grey[400], size: 22),
-                      const SizedBox(width: 14),
-                      Icon(Icons.add, color: Colors.grey[400], size: 22),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildRoutinesSection(),
-            ),
-            const SizedBox(height: 100),
+              const SizedBox(height: 100),
+            ],
           ],
         ),
       ),
@@ -879,6 +1284,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
+
+  String? _validatePositive(String value, String fieldName) {
+    if (value.isEmpty) return null;
+    final numValue = double.tryParse(value);
+    if (numValue == null) return 'Must be a valid number';
+    if (numValue <= 0) return '$fieldName must be > 0';
+    return null;
+  }
 
   Widget _buildActionCard({
     required String label,
@@ -990,6 +1403,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     final workoutNumber = _savedWorkouts.length - idx;
                     final routineName =
                         workout['name']?.toString() ?? 'Workout $workoutNumber';
+                    final assignedDays =
+                        _assignedRoutineDays[routineName] ?? [];
+                    final isAssigned = assignedDays.isNotEmpty;
 
                     return GestureDetector(
                       onTap: () =>
@@ -999,8 +1415,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF252538),
+                          color: isAssigned
+                              ? const Color(0xFF1E1A3A)
+                              : const Color(0xFF252538),
                           borderRadius: BorderRadius.circular(12),
+                          border: isAssigned
+                              ? Border.all(
+                                  color: const Color(0xFF7C5CBF),
+                                  width: 1.2,
+                                )
+                              : null,
                         ),
                         child: Row(
                           children: [
@@ -1008,13 +1432,53 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    routineName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          routineName,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isAssigned)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF7C5CBF)
+                                                .withOpacity(0.25),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: const Color(0xFF7C5CBF),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.calendar_today_rounded,
+                                                size: 11,
+                                                color: Color(0xFFB39DDB),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                assignedDays.join(', '),
+                                                style: const TextStyle(
+                                                  color: Color(0xFFB39DDB),
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
@@ -1025,8 +1489,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 ],
                               ),
                             ),
-                            Icon(Icons.more_vert,
-                                color: Colors.grey[400], size: 20),
+                            IconButton(
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.redAccent, size: 20),
+                              onPressed: () => _deleteRoutine(idx),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                            ),
                           ],
                         ),
                       ),
