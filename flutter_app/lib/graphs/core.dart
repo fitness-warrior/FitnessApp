@@ -11,6 +11,8 @@ class Core extends StatefulWidget {
   final List<double>? dataValues;
   final double? start;
   final double? range;
+  final String y;
+  final String x;
   final List<String>? labels;
 
   /// Create a pie chart core card.
@@ -19,13 +21,13 @@ class Core extends StatefulWidget {
   const Core.pie({
     super.key,
     required this.name,
-    required List<double> dataValues,
-    required List<String> labels,
+    required this.dataValues,
+    required this.labels,
     this.height,
-  })  : dataValues = dataValues,
-        labels = labels,
-        start = null,
+  })  : start = null,
         range = null,
+        y = "",
+        x = "",
         tableType = 'pie';
 
   /// Create a bar chart core card.
@@ -35,12 +37,13 @@ class Core extends StatefulWidget {
   const Core.bar({
     super.key,
     required this.name,
-    required List<double> dataValues,
+    required this.dataValues,
     required this.start,
     required this.range,
+    required this.y,
+    required this.x,
     this.height,
-  })  : dataValues = dataValues,
-        labels = null,
+  })  : labels = null,
         tableType = 'bar';
   
   @override
@@ -82,6 +85,8 @@ class _CoreState extends State<Core> {
                   dataInt: widget.dataValues ?? <double>[],
                   start: widget.start ?? 0.0,
                   range: widget.range ?? 0.0,
+                  y: widget.y,
+                  x: widget.x,
                 );
               }
 
