@@ -16,7 +16,6 @@ const String windCostumeKey = 'wind';
 const List<Boss> demoBosses = [
   Boss(
     name: 'Burger Baron',
-    // TODO: add a real boss sprite here later - using the fallback icon for now
     imagePath: 'images/game_costume/game_chars/boss1.png',
     background: 'images/game_costume/backgrounds/City1.png',
     maxHealth: 100,

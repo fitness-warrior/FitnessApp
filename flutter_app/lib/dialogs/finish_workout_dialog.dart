@@ -292,21 +292,21 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
+      if (!mounted) return;
+
       widget.onSuccess({});
       Navigator.pop(context);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              saveAsRoutine
-                  ? 'Workout saved successfully!'
-                  : 'Workout completed!',
-            ),
-            duration: const Duration(seconds: 2),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            saveAsRoutine
+                ? 'Workout saved successfully!'
+                : 'Workout completed!',
           ),
-        );
-      }
+          duration: const Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
       setState(() {
         _error = e.toString();
