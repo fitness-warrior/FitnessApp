@@ -6,6 +6,7 @@ class Core extends StatefulWidget {
   final String name;
   final String tableType;
   final double? height;
+  final VoidCallback? onDismissed;
 
   // common data used by either chart type
   final List<double>? dataValues;
@@ -24,6 +25,7 @@ class Core extends StatefulWidget {
     required this.dataValues,
     required this.labels,
     this.height,
+    this.onDismissed,
   })  : start = null,
         range = null,
         y = "",
@@ -43,6 +45,7 @@ class Core extends StatefulWidget {
     required this.y,
     required this.x,
     this.height,
+    this.onDismissed,
   })  : labels = null,
         tableType = 'bar';
   
@@ -56,50 +59,63 @@ class _CoreState extends State<Core> {
     final defaultHeight = widget.tableType == 'bar' ? 220.0 : 340.0;
     final containerHeight = widget.height ?? defaultHeight;
 
-    return Container(
-      height: containerHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.blueGrey,
-        borderRadius: BorderRadius.circular(10.0),
-        border: Border.all(color: const Color.fromARGB(255, 76, 175, 80), width: 3.0),
+    return Dismissible(
+      key: widget.key ?? ValueKey('${widget.tableType}-${widget.name}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.redAccent,
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            widget.name, 
-            style: const TextStyle(
-              fontSize: 20,
-              color: Color.fromARGB(255, 142, 202, 132)
-            ),
-            textAlign: TextAlign.left,
-            ),
+      onDismissed: (_) => widget.onDismissed?.call(),
+      child: Container(
+        height: containerHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.blueGrey,
+          borderRadius: BorderRadius.circular(10.0),
+          border: Border.all(color: const Color.fromARGB(255, 76, 175, 80), width: 3.0),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.name, 
+              style: const TextStyle(
+                fontSize: 20,
+                color: Color.fromARGB(255, 142, 202, 132)
+              ),
+              textAlign: TextAlign.left,
+              ),
 
-          const SizedBox(height: 20),
-          Expanded(
-            child: Builder(builder: (ctx) {
+            const SizedBox(height: 20),
+            Expanded(
+              child: Builder(builder: (ctx) {
 
-              if (widget.tableType == 'bar') {
-                return MyBarGraph(
-                  dataInt: widget.dataValues ?? <double>[],
-                  start: widget.start ?? 0.0,
-                  range: widget.range ?? 0.0,
-                  y: widget.y,
-                  x: widget.x,
+                if (widget.tableType == 'bar') {
+                  return MyBarGraph(
+                    dataInt: widget.dataValues ?? <double>[],
+                    start: widget.start ?? 0.0,
+                    range: widget.range ?? 0.0,
+                    y: widget.y,
+                    x: widget.x,
+                  );
+                }
+
+                // default to pie
+                return MyPieChart(
+                  num: widget.dataValues ?? <double>[0.0, 0.0, 0.0, 0.0],
+                  order: widget.labels ?? <String>['A', 'B', 'C', 'D'],
                 );
-              }
-
-              // default to pie
-              return MyPieChart(
-                num: widget.dataValues ?? <double>[0.0, 0.0, 0.0, 0.0],
-                order: widget.labels ?? <String>['A', 'B', 'C', 'D'],
-              );
-            }),
-          ),
-        ],
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-
