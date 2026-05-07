@@ -12,6 +12,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./flutter_app/sql/create_database:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitness -d fitnessapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   backend:
     build:
@@ -23,7 +29,8 @@ services:
     ports:
       - "5001:5001"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:
