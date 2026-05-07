@@ -1,7 +1,5 @@
 import 'package:fitness_app_flutter/graphs/core.dart';
 import 'package:fitness_app_flutter/views/recipe_list_page.dart';
-import 'package:fitness_app_flutter/views/profile_page.dart';
-import 'package:fitness_app_flutter/widgets/common/header.dart';
 import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
 import 'package:flutter/material.dart';
 import '../widgets/common/navbar.dart';
