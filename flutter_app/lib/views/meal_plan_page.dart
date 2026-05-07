@@ -194,13 +194,17 @@ class _MealPlanPageState extends State<MealPlanPage> {
   Widget build(BuildContext context) {
     if (_loadingPlan) {
       return const Scaffold(
+        backgroundColor: Color(0xFF0D0D14),
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFF0D0D14),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0D0D14),
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: HeaderWithDropdown(
           title: 'My Meal',
           onMenuSelected: (value) {

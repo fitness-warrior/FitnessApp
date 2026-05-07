@@ -118,11 +118,12 @@ class _DashboardPage extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFF0D0D14),
       appBar: AppBar(
-        
+        backgroundColor: const Color(0xFF0D0D14),
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: const Text('My Chart'),
-
         actions: [
           const StreakDisplay(compact: true),
           IconButton(
@@ -132,12 +133,11 @@ class _DashboardPage extends State<DashboardPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const RecipeListPage(), //temp area
+                  builder: (context) => const RecipeListPage(),
                 ),
               );
             },
           ),
-
         ],
       ),
       body: SingleChildScrollView(
