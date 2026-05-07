@@ -122,16 +122,9 @@ class _DashboardPage extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: HeaderWithDropdown(
-          title: 'My Chart',
-          onMenuSelected: (value) {
-            final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
-            const routes = {'/my_workout', '/my_meal', '/shop'};
-            if (routes.contains(route)) {
-              Navigator.of(context).pushReplacementNamed(route);
-            }
-          },
-        ),
+        
+        title: const Text('My Chart'),
+
         actions: [
           const StreakDisplay(compact: true),
           IconButton(
@@ -146,18 +139,7 @@ class _DashboardPage extends State<DashboardPage> {
               );
             },
           ),
-          IconButton(
-            icon: const CircleAvatar(
-              radius: 14,
-              child: Icon(Icons.person, size: 18),
-            ),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
-              );
-            },
-            tooltip: 'Profile',
-          ),
+
         ],
       ),
       body: SingleChildScrollView(
