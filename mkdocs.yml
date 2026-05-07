@@ -9,7 +9,11 @@ nav:
   - Home: index.md
   - Introduction: introduction.md
   - Setup Guide: setup.md
+  - Usage Guide: usageguide.md
   - Features: features.md
   - Requirements: requirements.md
   - Testing: testing.md
   - Architecture: architecture.md
+  - Project Structure: projectstructure.md
+  - Future Improvements: futureimprovements.md
+  - Authors: authors.md
