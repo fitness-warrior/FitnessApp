@@ -93,7 +93,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
   Future<void> _showSaveConfirmationDialog() async {
     if (!_validateWorkoutData()) {
       setState(() {
-        _error = 'Invalid values: kg must be 0-500, reps must be positive integers';
+        _error =
+            'Invalid values: kg must be 0-500, reps must be positive integers';
       });
       return;
     }
@@ -460,12 +461,14 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       OutlinedButton(
-                        onPressed: _isLoading ? null : () => Navigator.pop(context),
+                        onPressed:
+                            _isLoading ? null : () => Navigator.pop(context),
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _showSaveConfirmationDialog,
+                        onPressed:
+                            _isLoading ? null : _showSaveConfirmationDialog,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                         ),
@@ -475,8 +478,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : const Text('Finish & Save'),
