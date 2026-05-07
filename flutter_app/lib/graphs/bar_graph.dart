@@ -6,11 +6,15 @@ class MyBarGraph extends StatelessWidget{
   final List<double> dataInt;
   final double start;
   final double range;
+  final String y;
+  final String x;
 
   const MyBarGraph({super.key,
   required this.dataInt,
   required this.start,
   required this.range,
+  required this.y,
+  required this.x,
   });
   
   @override
@@ -34,6 +38,44 @@ class MyBarGraph extends StatelessWidget{
         maxY: (start + range).ceilToDouble(),
         minY: (start - range).ceilToDouble(),
         gridData: const FlGridData(show: false),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            axisNameWidget: Text(x),
+            axisNameSize: 24,
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 4,
+              getTitlesWidget: (value, meta) => const SizedBox.shrink(),
+            ),
+          ),
+          leftTitles: AxisTitles(
+            axisNameWidget: Text(y),
+            axisNameSize: 24,
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (value, meta) {
+                if ((value - value.roundToDouble()).abs() > 0.001) {
+                  return const SizedBox.shrink();
+                }
+                return SideTitleWidget(
+                  meta: meta,
+                  child: Text(
+                    value.toInt().toString(),
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                );
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
         extraLinesData: ExtraLinesData(
           horizontalLines: [
             HorizontalLine(
@@ -41,6 +83,7 @@ class MyBarGraph extends StatelessWidget{
               color: const Color.fromARGB(255, 46, 64, 83),
               strokeWidth: 2,
               dashArray: [6, 4],
+              
             ),
           ],
         ),
@@ -52,7 +95,8 @@ class MyBarGraph extends StatelessWidget{
                 toY: data.y,
                 color: const Color.fromARGB(255, 142, 202, 132),
                 width: 20,
-                borderRadius: BorderRadius.circular(4)
+                borderRadius: BorderRadius.circular(4),
+                
                 ),
             ],
           )
