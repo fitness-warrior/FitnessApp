@@ -111,6 +111,19 @@ class StreakService {
     };
   }
 
+  /// Reads just the saved weekly goal (defaults to 3 if never set).
+  static Future<int> readWeeklyGoal() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_kWeeklyGoal) ?? 3;
+  }
+
+  /// Saves the user's chosen weekly workout goal.
+  static Future<void> setWeeklyGoal(int days) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kWeeklyGoal, days.clamp(1, 7));
+    notifyStreakChanged(); // refresh any listening widgets
+  }
+
   // ── Public API ─────────────────────────────────────────────────────────────
 
   /// Update streak after a workout is completed.
