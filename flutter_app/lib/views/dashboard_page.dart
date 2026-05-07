@@ -123,6 +123,8 @@ class _DashboardPage extends State<DashboardPage> {
                 dataValues: weight,
                 start: start,
                 range: range,
+                y: "weight (kg)",
+                x: "days"
               ),
             ),
             const SizedBox(height: 12),
@@ -133,6 +135,8 @@ class _DashboardPage extends State<DashboardPage> {
                 dataValues: cal,
                 start: calStart,
                 range: maxCalDeviation,
+                y: "calorie intake/defist",
+                x: "days"
               ),
             ),
             const SizedBox(height: 12),
