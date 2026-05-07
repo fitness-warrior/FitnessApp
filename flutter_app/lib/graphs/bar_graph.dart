@@ -16,6 +16,8 @@ class MyBarGraph extends StatelessWidget{
   required this.y,
   required this.x,
   });
+
+  // i want to have control with having how many bars
   
   @override
   Widget build(BuildContext context) {
