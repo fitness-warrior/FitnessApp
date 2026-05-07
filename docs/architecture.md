@@ -19,11 +19,19 @@ The frontend is built using flutter and dart, it's respnsibilities include:
 
 ## Backend
 
-The backend is written in python using the FastAPI, acting as the middle layer between our frontend and database, it's responsibilities include;
+Our project contains two FastAPI backend services:
 
-- Processing buisness logic such as generating workout plans
-- Querying the database and displaying results to the frontend
-- Handling user authentication and validating user inputs
+**Main Backend ('backend/main.py)** - The primary backend handling:
+- User authentication 
+- User profile and fitness questionnaire
+- Workout saving and history
+- Streak tracking
+- Meal planning
+- Weekly workout plans
+- XP and level system
+- Exercise library
+
+**Original Backend ('flutter_app/python/app.py')** - Earlier version of the backend made to handle exercise filtering and workout saving.
 
 ## Database
 
