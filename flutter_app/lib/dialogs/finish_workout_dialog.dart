@@ -133,12 +133,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
   Future<void> _showSaveConfirmationDialog() async {
     if (!_validateWorkoutData()) {
       setState(() {
-<<<<<<< HEAD
-        _error =
-            'Invalid values: kg must be 0-500, reps must be positive integers';
-=======
         _error = 'Invalid values: All fields must be positive numbers';
->>>>>>> 3b61fb2d08a04dc5e1416069b7f6924894645e39
       });
       return;
     }
@@ -356,25 +351,13 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
-<<<<<<< HEAD
-      if (!mounted) return;
-=======
       // Grant XP: 10 XP per exercise
       final xpEarned = exerciseData.length * 10;
       await UserStatsService.addXP(xpEarned);
->>>>>>> 3b61fb2d08a04dc5e1416069b7f6924894645e39
 
       widget.onSuccess({});
       Navigator.pop(context);
 
-<<<<<<< HEAD
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            saveAsRoutine
-                ? 'Workout saved successfully!'
-                : 'Workout completed!',
-=======
       if (mounted) {
         final message = saveAsRoutine
             ? 'Workout saved! +$xpEarned XP earned!'
@@ -392,11 +375,9 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             duration: const Duration(seconds: 3),
->>>>>>> 3b61fb2d08a04dc5e1416069b7f6924894645e39
           ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+        );
+      }
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -554,17 +535,10 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-<<<<<<< HEAD
-                      OutlinedButton(
-                        onPressed:
-                            _isLoading ? null : () => Navigator.pop(context),
-                        child: const Text('Cancel'),
-=======
                       TextButton(
                         onPressed:
                             _isLoading ? null : () => Navigator.pop(context),
                         child: Text('Cancel', style: TextStyle(color: Colors.grey[500])),
->>>>>>> 3b61fb2d08a04dc5e1416069b7f6924894645e39
                       ),
                       const SizedBox(width: 16),
                       ElevatedButton(
