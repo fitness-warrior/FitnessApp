@@ -567,6 +567,63 @@ async def save_workout(
                     exc.weight,
                     exc.notes
                 )
+
+            # --- begin: populate training tables for analytics ---
+            # Get body_id for this user
+            body = await connection.fetchrow(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id
+            )
+
+            if body:
+                body_id = body["body_id"]
+
+                # Aggregate reps and compute an effort value
+                total_reps = 0
+                exercise_effort_sum = 0.0
+                valid_exercises = 0
+
+                for exc in request.exercises:
+                    sets = exc.sets or 0
+                    reps = exc.reps or 0
+                    weight = exc.weight or 0.0
+
+                    if sets > 0 and reps > 0:
+                        total_reps += sets * reps
+                        effort = (weight if weight > 0 else 5.0) * reps * sets
+                        exercise_effort_sum += effort
+                        valid_exercises += 1
+
+                avg_effort = (exercise_effort_sum / valid_exercises) if valid_exercises > 0 else 0.0
+
+                # Insert into training
+                training = await connection.fetchrow(
+                    """
+                    INSERT INTO training (train_data, train_mins, train_reps, train_effort)
+                    VALUES (NOW(), $1, $2, $3)
+                    RETURNING train_id
+                    """,
+                    request.duration_minutes,
+                    total_reps,
+                    avg_effort
+                )
+                train_id = training["train_id"]
+
+                # Link exercises
+                for exc in request.exercises:
+                    await connection.execute(
+                        "INSERT INTO training_exercise (train_id, exer_id) VALUES ($1, $2)",
+                        train_id,
+                        exc.exer_id
+                    )
+
+                # Link body
+                await connection.execute(
+                    "INSERT INTO training_body (train_id, body_id) VALUES ($1, $2)",
+                    train_id,
+                    body_id
+                )
+            # --- end ---
             
             # Update streak automatically
             from datetime import date, timedelta
