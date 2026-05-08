@@ -1,6 +1,6 @@
 import '../models/chart_model.dart';
  
-final demoRecipes = [
+final chartSelection = [
   Chart(
     name: 'track callories',
     measure: [
