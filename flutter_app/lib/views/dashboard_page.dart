@@ -123,7 +123,19 @@ class _DashboardPage extends State<DashboardPage> {
         backgroundColor: const Color(0xFF0D0D14),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('My Chart'),
+        centerTitle: true,
+        title: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('My Chart'),
+            SizedBox(height: 2),
+            Text(
+              '<---- Swipe left to delete chart',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
         actions: [
           const StreakDisplay(compact: true),
           IconButton(
