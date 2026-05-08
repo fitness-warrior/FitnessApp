@@ -91,7 +91,7 @@ class _CoreState extends State<Core> {
               ),
               textAlign: TextAlign.left,
               ),
-
+            
             const SizedBox(height: 20),
             Expanded(
               child: Builder(builder: (ctx) {

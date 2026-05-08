@@ -1,5 +1,5 @@
 import 'package:fitness_app_flutter/graphs/core.dart';
-import 'package:fitness_app_flutter/views/recipe_list_page.dart';
+import 'package:fitness_app_flutter/views/add_chart_page.dart';
 import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
 import 'package:flutter/material.dart';
 import '../widgets/common/navbar.dart';
@@ -123,7 +123,19 @@ class _DashboardPage extends State<DashboardPage> {
         backgroundColor: const Color(0xFF0D0D14),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('My Chart'),
+        centerTitle: true,
+        title: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('My Chart'),
+            SizedBox(height: 2),
+            Text(
+              '<---- Swipe left to delete chart',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
         actions: [
           const StreakDisplay(compact: true),
           IconButton(
@@ -133,7 +145,7 @@ class _DashboardPage extends State<DashboardPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const RecipeListPage(),
+                  builder: (context) => const AddChart(),
                 ),
               );
             },
