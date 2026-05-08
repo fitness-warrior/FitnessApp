@@ -65,10 +65,10 @@ class CollectedData:
             LIMIT 7
         """, (self.body_id, self.body_id, name))
         return self.cur.fetchall()
-    
+
     def _get_cadio_callories (self):
         self.cur.execute("""
-            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_easy, e.exer_mid, e.exer_hard
+            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_light, e.exer_mid, e.exer_high
             FROM training t
             JOIN training_exercise te ON t.train_id = te.train_id 
             JOIN exercise e ON e.exer_id = te.exer_id 
@@ -84,9 +84,11 @@ class CollectedData:
     
     def day_cadio_callories (self):
         rows = self._get_cadio_callories()
+        if not rows:
+            return []
+        
         final_collection = []
-        i = 0
-        date = rows[0][0]
+        date = self._formatted_date(rows[0][0])
         total = 0
         for row in rows:
             speed = (row[2]*1000) / row[1]
@@ -100,14 +102,16 @@ class CollectedData:
                 
             exerices_cal = met * row[3] * (row[1]/60)
             
-            if row[0] == date:
+            formatted_row_date = self._formatted_date(row[0])
+            if formatted_row_date == date:
                 total += exerices_cal
             else:
-                final_collection.append(row[0],total)
-                total = 0
-            
-            i += 1
-            
+                final_collection.append([date, total])
+                date = formatted_row_date
+                total = exerices_cal
+        
+        # Append the final accumulated total
+        final_collection.append([date, total])
         return final_collection
             
         #get all for the day ✅
