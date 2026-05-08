@@ -39,8 +39,8 @@ class CollectedData:
             SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps, e.exer_type
             FROM training t
             JOIN training_body tb ON tb.train_id = t.train_id
-            JOIN train_exercise te ON te.train_id = t.train_id
-            JOIN exercies e ON e.exer_id = te.exer_id 
+            JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id 
             JOIN (
                 SELECT t2.train_data AS train_data, MAX(t2.train_effort) AS max_effort
                 FROM training t2
@@ -54,12 +54,12 @@ class CollectedData:
         """, (self.body_id, self.body_id))
         return self.cur.fetchall()
     
-    def _get_cadio_callories (self):
+    def _get_cardio_calories (self):
         self.cur.execute("""
-            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_easy, e.exer_mid, e.exer_hard,
+            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_easy, e.exer_mid, e.exer_hard
             FROM training t
             JOIN training_exercise te ON t.train_id = te.train_id 
-            JOIN exercies e ON e.exer_id = te.exer_id 
+                 JOIN exercise e ON e.exer_id = te.exer_id 
             JOIN training_body tb ON tb.train_id = t.train_id 
             JOIN body_metrics bm ON bm.body_id = tb.body_id 
             Where bm.body_id = %s
@@ -70,8 +70,8 @@ class CollectedData:
     
 #set a limmit for 7 days but not max how much 1 can do in a day 
     
-    def day_cadio_callories (self):
-        rows = self._get_cadio_callories()
+    def day_cardio_calories (self):
+        rows = self._get_cadio_calories()
         final_collection = []
         i = 0
         date = rows[0][0]
@@ -91,7 +91,7 @@ class CollectedData:
             if row[0] == date:
                 total += exerices_cal
             else:
-                final_collection.append(row[0],total)
+                final_collection.append([row[0], total])
                 total = 0
             
             i += 1
