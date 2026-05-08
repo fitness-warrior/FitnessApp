@@ -119,7 +119,7 @@ class CollectedData:
         #out put the last 7 days 
             
     
-    def max_min_weight (self,name):
+    def max_mins_weight (self,name):
         #1 = endurance
         #2 = distance/weight make code to know what one is needed km/kg
         rows = self._collect_rows(name)
@@ -155,8 +155,8 @@ if __name__ == "__main__":
     print(CD.find_user_done())
     print(CD.cardio_speed("Jump Rope")) #average
     print(CD.strength_total("Bench Press")) #add rep and weight
-    print(CD.max_min_weight("Jump Rope" )) #should be km and mins
-    print(CD.max_min_weight("Bench Press")) #should be kg and weight
+    print(CD.max_mins_weight("Jump Rope" )) #should be km and mins
+    print(CD.max_mins_weight("Bench Press")) #should be kg and weight
     
     print(CD.day_cadio_callories())
     
