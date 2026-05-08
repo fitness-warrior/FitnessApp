@@ -15,9 +15,12 @@ class CollectedData:
         rows = self._get_train_name(name)
         if rows is None:
             return None
+        formatted_rows = []
         for row in rows:
-            row[0] = self._formatted_date(row[0])
-        return rows
+            formatted_row = list(row)
+            formatted_row[0] = self._formatted_date(formatted_row[0])
+            formatted_rows.append(formatted_row)
+        return formatted_rows
     
     def find_user_done(self):
         self.cur.execute("""
@@ -39,8 +42,8 @@ class CollectedData:
             SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps, e.exer_type
             FROM training t
             JOIN training_body tb ON tb.train_id = t.train_id
-            JOIN train_exercise te ON te.train_id = t.train_id
-            JOIN exercies e ON e.exer_id = te.exer_id 
+            JOIN training_exercise te ON te.train_id = t.train_id
+            JOIN exercise e ON e.exer_id = te.exer_id 
             JOIN (
                 SELECT t2.train_data AS train_data, MAX(t2.train_effort) AS max_effort
                 FROM training t2
@@ -59,7 +62,7 @@ class CollectedData:
             SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_easy, e.exer_mid, e.exer_hard,
             FROM training t
             JOIN training_exercise te ON t.train_id = te.train_id 
-            JOIN exercies e ON e.exer_id = te.exer_id 
+            JOIN exercise e ON e.exer_id = te.exer_id 
             JOIN training_body tb ON tb.train_id = t.train_id 
             JOIN body_metrics bm ON bm.body_id = tb.body_id 
             Where bm.body_id = %s
@@ -131,7 +134,7 @@ class CollectedData:
             new_row = [row[0],total]
             final_collection.append (new_row)
         return final_collection  
-      
+       
 
 if __name__ == "__main__":
     CD = CollectedData(4)
