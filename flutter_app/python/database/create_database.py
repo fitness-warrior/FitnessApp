@@ -82,9 +82,9 @@ CREATE TABLE body_metrics (
     body_location VARCHAR(20),
     body_days_per_week INT,
     body_session_length INT,
-    body_injuries TEXT[],
+    body_injuries TEXT,
     body_diet_preference VARCHAR(50),
-    body_allergies TEXT[]
+    body_allergies TEXT
 );
 
 ---------------- EXERCISE ----------------
@@ -99,7 +99,7 @@ CREATE TABLE exercise (
     exer_equip equip NOT NULL,
     exer_light Float NOT NULL,
     exer_mid Float NOT NULL,
-    exer_high Float NOT NULL,
+    exer_high Float NOT NULL
 );
 
 CREATE TABLE training (
