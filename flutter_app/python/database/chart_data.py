@@ -22,6 +22,14 @@ class CollectedData:
             formatted_rows.append(formatted_row)
         return formatted_rows
     
+    def _find_type(self,exer):
+        measure = "kg"
+        find = 3
+        if exer == "cardio":
+            measure = "km"
+            find = 1
+        return measure, find
+    
     def find_user_done(self):
         self.cur.execute("""
             SELECT e.exer_name, pe.plan_exer_PB
@@ -52,23 +60,24 @@ class CollectedData:
                 GROUP BY t2.train_data
             ) m ON t.train_data = m.train_data AND t.train_effort = m.max_effort
             WHERE tb.body_id = %s
+            AND e.exer_name = %s
             ORDER BY t.train_data
             LIMIT 7
-        """, (self.body_id, self.body_id))
+        """, (self.body_id, self.body_id, name))
         return self.cur.fetchall()
     
     def _get_cadio_callories (self):
         self.cur.execute("""
-            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_easy, e.exer_mid, e.exer_hard,
+            SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_easy, e.exer_mid, e.exer_hard
             FROM training t
             JOIN training_exercise te ON t.train_id = te.train_id 
             JOIN exercise e ON e.exer_id = te.exer_id 
             JOIN training_body tb ON tb.train_id = t.train_id 
             JOIN body_metrics bm ON bm.body_id = tb.body_id 
-            Where bm.body_id = %s
-            AND exer_type = "cardio"
+            WHERE bm.body_id = %s
+            AND e.exer_type = 'cardio'
             ORDER BY t.train_data
-""", (self.body_id))
+""", (self.body_id,))
         return self.cur.fetchall()
     
 #set a limmit for 7 days but not max how much 1 can do in a day 
@@ -106,15 +115,16 @@ class CollectedData:
         #out put the last 7 days 
             
     
-    def no_change_data (self,name,find,type):
+    def max_min_weight (self,name):
         #1 = endurance
         #2 = distance/weight make code to know what one is needed km/kg
         rows = self._collect_rows(name)
+        measure, find = self._find_type(rows[0][4])
         final_collection = []
         for row in rows:
             new_row = [row[0],row[find]]
             final_collection.append (new_row)
-        return final_collection 
+        return final_collection, measure
 
     def cardio_speed(self,name):
         rows = self._collect_rows(name)
@@ -139,4 +149,10 @@ class CollectedData:
 if __name__ == "__main__":
     CD = CollectedData(4)
     print(CD.find_user_done())
-    print(CD.cardio_speed("Jump Rope"))
+    print(CD.cardio_speed("Jump Rope")) #average
+    print(CD.strength_total("Bench Press")) #add rep and weight
+    print(CD.max_min_weight("Jump Rope" )) #should be km and mins
+    print(CD.max_min_weight("Bench Press")) #should be kg and weight
+    
+    print(CD.day_cadio_callories())
+    
