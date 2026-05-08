@@ -1,5 +1,5 @@
 import 'package:fitness_app_flutter/graphs/core.dart';
-import 'package:fitness_app_flutter/views/recipe_list_page.dart';
+import 'package:fitness_app_flutter/views/add_chart_page.dart';
 import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
 import 'package:flutter/material.dart';
 import '../widgets/common/navbar.dart';
@@ -145,7 +145,7 @@ class _DashboardPage extends State<DashboardPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const RecipeListPage(),
+                  builder: (context) => const AddChart(),
                 ),
               );
             },
