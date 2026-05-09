@@ -123,9 +123,28 @@ class WorkoutStorage {
     final key = await _getNamespacedKey(_key);
     final existing = prefs.getString(key);
     final List<dynamic> all = existing != null ? jsonDecode(existing) : [];
+
+    String finalName = workoutName?.trim() ?? '';
+    if (finalName.isEmpty) {
+      int maxNum = 0;
+      for (final w in all) {
+        final n = w['name']?.toString() ?? '';
+        if (n.startsWith('Workout ')) {
+          final parts = n.split(' ');
+          if (parts.length == 2) {
+            final num = int.tryParse(parts[1]);
+            if (num != null && num > maxNum) {
+              maxNum = num;
+            }
+          }
+        }
+      }
+      finalName = 'Workout ${maxNum + 1}';
+    }
+
     all.add({
       'date': DateTime.now().toIso8601String(),
-      'name': workoutName,
+      'name': finalName,
       'exercises': exercises,
     });
     await prefs.setString(key, jsonEncode(all));
