@@ -48,9 +48,9 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
           if (isCardio) {
             // Validate cardio fields
             final time = set['time']?.text.trim() ?? '';
-            final calories = set['calories']?.text.trim() ?? '';
+            final distance = set['distance']?.text.trim() ?? '';
 
-            if (time.isEmpty || calories.isEmpty) {
+            if (time.isEmpty || distance.isEmpty) {
               return false;
             }
 
@@ -59,8 +59,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
               return false;
             }
 
-            final caloriesValue = double.tryParse(calories);
-            if (caloriesValue == null || caloriesValue <= 0) {
+            final distanceValue = double.tryParse(distance);
+            if (distanceValue == null || distanceValue <= 0) {
               return false;
             }
           } else {
@@ -104,8 +104,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
               'time': set['time']?.text.isNotEmpty == true
                   ? set['time']!.text
                   : '0',
-              'calories': set['calories']?.text.isNotEmpty == true
-                  ? set['calories']!.text
+              'distance': set['distance']?.text.isNotEmpty == true
+                  ? set['distance']!.text
                   : '0',
             });
           } else {
@@ -489,7 +489,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '${sets.length} set${sets.length > 1 ? 's' : ''} • ${sets.map((s) => isCardio ? '${s['time']}min' : '${s['reps']}x${s['kg']}kg').join(', ')}',
+                                '${sets.length} set${sets.length > 1 ? 's' : ''} • ${sets.map((s) => isCardio ? '${s['time']}min/${s['distance']}km' : '${s['reps']}x${s['kg']}kg').join(', ')}',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey[400],

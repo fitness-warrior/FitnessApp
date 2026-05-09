@@ -183,8 +183,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ? {
                       'time': _createAutoSaveController(
                           initialText: setMap['time']?.toString() ?? ''),
-                      'calories': _createAutoSaveController(
-                          initialText: setMap['calories']?.toString() ?? ''),
+                      'distance': _createAutoSaveController(
+                          initialText: setMap['distance']?.toString() ?? ''),
                     }
                   : {
                       'kg': _createAutoSaveController(
@@ -221,7 +221,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
             .map((set) => isCardio
                 ? {
                     'time': set['time']!.text,
-                    'calories': set['calories']!.text,
+                    'distance': set['distance']!.text,
                   }
                 : {
                     'kg': set['kg']!.text,
@@ -274,7 +274,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         isCardio
             ? {
                 'time': _createAutoSaveController(),
-                'calories': _createAutoSaveController(),
+                'distance': _createAutoSaveController(),
               }
             : {
                 'kg': _createAutoSaveController(),
@@ -314,7 +314,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       for (final set in _setControllers[index]!) {
         if (isCardio) {
           set['time']?.dispose();
-          set['calories']?.dispose();
+          set['distance']?.dispose();
         } else {
           set['kg']?.dispose();
           set['reps']?.dispose();
@@ -351,7 +351,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         isCardio
             ? {
                 'time': _createAutoSaveController(),
-                'calories': _createAutoSaveController(),
+                'distance': _createAutoSaveController(),
               }
             : {
                 'kg': _createAutoSaveController(),
@@ -373,7 +373,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       final isCardio = exerType.toLowerCase() == 'cardio';
       if (isCardio) {
         set['time']!.dispose();
-        set['calories']!.dispose();
+        set['distance']!.dispose();
       } else {
         set['kg']!.dispose();
         set['reps']!.dispose();
@@ -783,7 +783,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         set['kg']?.dispose();
         set['reps']?.dispose();
         set['time']?.dispose();
-        set['calories']?.dispose();
+        set['distance']?.dispose();
       }
     }
     super.dispose();
@@ -1002,11 +1002,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                         Expanded(
                                           child: TextField(
                                             controller: sets[setIndex]
-                                                ['calories'],
+                                                ['distance'],
                                             style: const TextStyle(
                                                 color: Colors.white),
                                             decoration: InputDecoration(
-                                              labelText: 'calories',
+                                              labelText: 'distance (km)',
                                               labelStyle: TextStyle(
                                                   color: Colors.grey[500]),
                                               filled: true,
@@ -1021,9 +1021,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                               contentPadding:
                                                   const EdgeInsets.all(8),
                                               errorText: _validatePositive(
-                                                  sets[setIndex]['calories']!
+                                                  sets[setIndex]['distance']!
                                                       .text,
-                                                  'Calories'),
+                                                  'Distance'),
                                             ),
                                             keyboardType: TextInputType.number,
                                           ),
