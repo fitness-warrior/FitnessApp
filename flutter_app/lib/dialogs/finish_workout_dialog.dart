@@ -351,22 +351,18 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
-      // Grant XP: 10 XP per exercise
-      final xpEarned = exerciseData.length * 10;
-      await UserStatsService.addXP(xpEarned);
-
       widget.onSuccess({});
       Navigator.pop(context);
 
       if (mounted) {
         final message = saveAsRoutine
-            ? 'Workout saved! +$xpEarned XP earned!'
-            : 'Workout completed! +$xpEarned XP earned!';
+            ? 'Workout saved!'
+            : 'Workout completed!';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.star_rounded, color: Color(0xFF66BB6A), size: 20),
+                const Icon(Icons.check_circle, color: Color(0xFF66BB6A), size: 20),
                 const SizedBox(width: 10),
                 Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
               ],

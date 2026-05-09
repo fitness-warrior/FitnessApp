@@ -80,35 +80,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
               })
           .toList();
 
-      List<Map<String, dynamic>> apiWorkouts = [];
-      try {
-        final apiHistory = await WorkoutHistoryService.getWorkoutHistory();
-        apiWorkouts = _mapApiWorkoutsToRoutines(apiHistory);
-      } catch (e) {
-        print('Error fetching API workouts: $e');
-      }
-
-      final List<Map<String, dynamic>> combined = [];
-      final Set<String> seenHashes = {};
-
-      // Merge and deduplicate
-      for (final w in [...localWorkouts, ...apiWorkouts]) {
-        final name = w['name']?.toString() ?? 'Workout';
-        final dateStr = w['date']?.toString() ?? '';
-        final datePrefix =
-            dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
-        final exercises = w['exercises'] as List? ?? [];
-
-        // Hash based on name, day, and exercise count to reliably deduplicate
-        final hash = '$name-$datePrefix-${exercises.length}';
-
-        if (!seenHashes.contains(hash)) {
-          seenHashes.add(hash);
-          combined.add(w);
-        }
-      }
-
-      combined.sort((a, b) {
+      localWorkouts.sort((a, b) {
         final dateA =
             DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
         final dateB =
@@ -118,7 +90,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
       if (!mounted) return;
       setState(() {
-        _savedWorkouts = combined;
+        _savedWorkouts = localWorkouts;
         _loadingSavedWorkouts = false;
       });
     } catch (e) {
