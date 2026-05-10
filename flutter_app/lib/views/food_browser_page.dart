@@ -4,14 +4,19 @@ import '../data/food_db.dart';
 
 class FoodBrowserPage extends StatelessWidget {
   final List<String> allergies;
+  final String dietPreference;
 
-  const FoodBrowserPage({Key? key, this.allergies = const []})
+  const FoodBrowserPage({
+    Key? key,
+    this.allergies = const [],
+    this.dietPreference = 'non-veg',
+  })
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final allergyKeywords = _buildAllergyKeywords(allergies);
-    final foods = FoodDb.all()
+    final foods = FoodDb.all(dietPreference: dietPreference)
         .where((food) => !_containsAllergen(food, allergyKeywords))
         .toList();
 

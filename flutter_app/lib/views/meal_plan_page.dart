@@ -26,6 +26,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
   bool _loadingPlan = true;
   double _dailyGoal = 2000.0;
   List<String> _allergies = const [];
+  String _dietPreference = 'non-veg';
 
   Map<MealSlot, List<MealItem>> _demoSlotsFor(DateTime date) => {
         MealSlot.breakfast: [
@@ -109,10 +110,12 @@ class _MealPlanPageState extends State<MealPlanPage> {
     final profile = await _loadFitnessProfile();
     final goal = _calculateDailyGoal(profile);
     final allergies = _extractAllergies(profile);
+    final dietPreference = _extractDietPreference(profile);
     if (!mounted) return;
     setState(() {
       _dailyGoal = goal ?? 2000.0;
       _allergies = allergies;
+      _dietPreference = dietPreference;
     });
   }
 
@@ -240,6 +243,15 @@ class _MealPlanPageState extends State<MealPlanPage> {
     return const [];
   }
 
+  String _extractDietPreference(Map<String, dynamic>? profile) {
+    if (profile == null) return 'non-veg';
+    final raw = profile['diet_preference'] ?? profile['diet'];
+    final normalized = raw?.toString().trim().toLowerCase() ?? '';
+    if (normalized == 'veg' || normalized == 'vegetarian') return 'veg';
+    if (normalized == 'non-veg' || normalized == 'non_veg') return 'non-veg';
+    return 'non-veg';
+  }
+
   Future<void> _loadPlanForDate(DateTime date) async {
     final normalizedDate = DateTime(date.year, date.month, date.day);
 
@@ -275,10 +287,23 @@ class _MealPlanPageState extends State<MealPlanPage> {
   }
 
   Future<void> _addFood(MealSlot slot) async {
+    final profile = await _loadFitnessProfile();
+    final allergies = _extractAllergies(profile);
+    final dietPreference = _extractDietPreference(profile);
+    if (mounted) {
+      setState(() {
+        _allergies = allergies;
+        _dietPreference = dietPreference;
+      });
+    }
+
     final selectedFood = await Navigator.push<MealItem>(
       context,
       MaterialPageRoute(
-        builder: (context) => FoodBrowserPage(allergies: _allergies),
+        builder: (context) => FoodBrowserPage(
+          allergies: allergies,
+          dietPreference: dietPreference,
+        ),
       ),
     );
 
