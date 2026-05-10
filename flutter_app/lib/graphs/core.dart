@@ -15,6 +15,7 @@ class Core extends StatefulWidget {
   final String y;
   final String x;
   final List<String>? labels;
+  final List<String>? dates;
 
   /// Create a pie chart core card.
   ///
@@ -30,6 +31,7 @@ class Core extends StatefulWidget {
         range = null,
         y = "",
         x = "",
+        dates = null,
         tableType = 'pie';
 
   /// Create a bar chart core card.
@@ -46,6 +48,7 @@ class Core extends StatefulWidget {
     required this.x,
     this.height,
     this.onDismissed,
+    this.dates,
   })  : labels = null,
         tableType = 'bar';
   
@@ -103,6 +106,7 @@ class _CoreState extends State<Core> {
                     range: widget.range ?? 0.0,
                     y: widget.y,
                     x: widget.x,
+                    dates: widget.dates,
                   );
                 }
 
