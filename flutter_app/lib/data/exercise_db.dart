@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
@@ -59,11 +60,11 @@ class ExerciseDb {
             .map((e) => _normalizeRow(Map<String, dynamic>.from(e)))
             .toList();
       } else {
-        print('Failed to load exercises: ${response.statusCode}');
+        debugPrint('Failed to load exercises: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('Error fetching exercises: $e');
+      debugPrint('Error fetching exercises: $e');
       return [];
     }
   }
@@ -79,11 +80,11 @@ class ExerciseDb {
         final data = json.decode(response.body);
         return _normalizeRow(Map<String, dynamic>.from(data));
       } else {
-        print('Failed to load exercise $id: ${response.statusCode}');
+        debugPrint('Failed to load exercise $id: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('Error fetching exercise $id: $e');
+      debugPrint('Error fetching exercise $id: $e');
       return null;
     }
   }
@@ -104,7 +105,7 @@ class ExerciseDb {
         return [];
       }
     } catch (e) {
-      print('Error searching exercises: $e');
+      debugPrint('Error searching exercises: $e');
       return [];
     }
   }
