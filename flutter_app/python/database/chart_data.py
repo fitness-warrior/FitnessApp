@@ -32,7 +32,7 @@ class CollectedData:
     
     def find_user_done(self):
         self.cur.execute("""
-            SELECT e.exer_name, pe.plan_exer_PB
+            SELECT e.exer_name, e.exer_type, pe.plan_exer_PB
             FROM exercise e
             JOIN plan_exercise pe ON pe.exer_id = e.exer_id
             JOIN training_exercise te ON te.exer_id = e.exer_id
@@ -40,7 +40,9 @@ class CollectedData:
             JOIN training_body tb ON tb.train_id = t.train_id
             WHERE t.train_data IS NOT NULL
             AND tb.body_id = %s
-            ORDER BY pe.plan_exer_PB DESC
+            ORDER BY
+                CASE WHEN e.exer_type = 'cardio' THEN 0 ELSE 1 END,
+                pe.plan_exer_PB DESC
         """, (self.body_id,))
         return self.cur.fetchall()
     
