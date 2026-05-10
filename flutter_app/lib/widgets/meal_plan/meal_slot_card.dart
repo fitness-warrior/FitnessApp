@@ -29,7 +29,8 @@ class MealSlotCard extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: Colors.grey[100],
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(14)),
             ),
             padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
             child: Row(
@@ -76,7 +77,8 @@ class MealSlotCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(14)),
             ),
             child: Row(
               children: [
@@ -136,10 +138,11 @@ class MealSlotCard extends StatelessWidget {
               children: [
                 Text(
                   food.name,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 Text(
-                  food.type,
+                  '${food.type} • ${_formatQuantity(food.quantity)} ${food.unit.symbol}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -157,7 +160,7 @@ class MealSlotCard extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.delete_outline, size: 18),
             color: Colors.red[200],
-            onPressed: onDeleteFood != null 
+            onPressed: onDeleteFood != null
                 ? () => onDeleteFood!(items.indexOf(food))
                 : null,
             visualDensity: VisualDensity.compact,
@@ -210,5 +213,12 @@ class MealSlotCard extends StatelessWidget {
       default:
         return Colors.grey;
     }
+  }
+
+  String _formatQuantity(double quantity) {
+    if (quantity == quantity.roundToDouble()) {
+      return quantity.toInt().toString();
+    }
+    return quantity.toStringAsFixed(1);
   }
 }

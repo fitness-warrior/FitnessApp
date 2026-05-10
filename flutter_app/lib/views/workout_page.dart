@@ -80,35 +80,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
               })
           .toList();
 
-      List<Map<String, dynamic>> apiWorkouts = [];
-      try {
-        final apiHistory = await WorkoutHistoryService.getWorkoutHistory();
-        apiWorkouts = _mapApiWorkoutsToRoutines(apiHistory);
-      } catch (e) {
-        print('Error fetching API workouts: $e');
-      }
-
-      final List<Map<String, dynamic>> combined = [];
-      final Set<String> seenHashes = {};
-
-      // Merge and deduplicate
-      for (final w in [...localWorkouts, ...apiWorkouts]) {
-        final name = w['name']?.toString() ?? 'Workout';
-        final dateStr = w['date']?.toString() ?? '';
-        final datePrefix =
-            dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
-        final exercises = w['exercises'] as List? ?? [];
-
-        // Hash based on name, day, and exercise count to reliably deduplicate
-        final hash = '$name-$datePrefix-${exercises.length}';
-
-        if (!seenHashes.contains(hash)) {
-          seenHashes.add(hash);
-          combined.add(w);
-        }
-      }
-
-      combined.sort((a, b) {
+      localWorkouts.sort((a, b) {
         final dateA =
             DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
         final dateB =
@@ -118,7 +90,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
       if (!mounted) return;
       setState(() {
-        _savedWorkouts = combined;
+        _savedWorkouts = localWorkouts;
         _loadingSavedWorkouts = false;
       });
     } catch (e) {
@@ -211,8 +183,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ? {
                       'time': _createAutoSaveController(
                           initialText: setMap['time']?.toString() ?? ''),
-                      'calories': _createAutoSaveController(
-                          initialText: setMap['calories']?.toString() ?? ''),
+                      'distance': _createAutoSaveController(
+                          initialText: setMap['distance']?.toString() ?? ''),
                     }
                   : {
                       'kg': _createAutoSaveController(
@@ -249,7 +221,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
             .map((set) => isCardio
                 ? {
                     'time': set['time']!.text,
-                    'calories': set['calories']!.text,
+                    'distance': set['distance']!.text,
                   }
                 : {
                     'kg': set['kg']!.text,
@@ -302,7 +274,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         isCardio
             ? {
                 'time': _createAutoSaveController(),
-                'calories': _createAutoSaveController(),
+                'distance': _createAutoSaveController(),
               }
             : {
                 'kg': _createAutoSaveController(),
@@ -342,7 +314,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       for (final set in _setControllers[index]!) {
         if (isCardio) {
           set['time']?.dispose();
-          set['calories']?.dispose();
+          set['distance']?.dispose();
         } else {
           set['kg']?.dispose();
           set['reps']?.dispose();
@@ -379,7 +351,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         isCardio
             ? {
                 'time': _createAutoSaveController(),
-                'calories': _createAutoSaveController(),
+                'distance': _createAutoSaveController(),
               }
             : {
                 'kg': _createAutoSaveController(),
@@ -401,7 +373,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       final isCardio = exerType.toLowerCase() == 'cardio';
       if (isCardio) {
         set['time']!.dispose();
-        set['calories']!.dispose();
+        set['distance']!.dispose();
       } else {
         set['kg']!.dispose();
         set['reps']!.dispose();
@@ -811,7 +783,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         set['kg']?.dispose();
         set['reps']?.dispose();
         set['time']?.dispose();
-        set['calories']?.dispose();
+        set['distance']?.dispose();
       }
     }
     super.dispose();
@@ -1030,11 +1002,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                         Expanded(
                                           child: TextField(
                                             controller: sets[setIndex]
-                                                ['calories'],
+                                                ['distance'],
                                             style: const TextStyle(
                                                 color: Colors.white),
                                             decoration: InputDecoration(
-                                              labelText: 'calories',
+                                              labelText: 'distance (km)',
                                               labelStyle: TextStyle(
                                                   color: Colors.grey[500]),
                                               filled: true,
@@ -1049,9 +1021,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                               contentPadding:
                                                   const EdgeInsets.all(8),
                                               errorText: _validatePositive(
-                                                  sets[setIndex]['calories']!
+                                                  sets[setIndex]['distance']!
                                                       .text,
-                                                  'Calories'),
+                                                  'Distance'),
                                             ),
                                             keyboardType: TextInputType.number,
                                           ),
