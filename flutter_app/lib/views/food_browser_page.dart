@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
-// ignore: unused_import
 import '../models/meal_item.dart';
 import '../data/food_db.dart';
 
 class FoodBrowserPage extends StatelessWidget {
-  const FoodBrowserPage({Key? key}) : super(key: key);
+  final List<String> allergies;
+
+  const FoodBrowserPage({Key? key, this.allergies = const []})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final foods = FoodDb.all();
+    final allergyKeywords = _buildAllergyKeywords(allergies);
+    final foods = FoodDb.all()
+        .where((food) => !_containsAllergen(food, allergyKeywords))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -39,6 +44,46 @@ class FoodBrowserPage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  bool _containsAllergen(MealItem food, Set<String> keywords) {
+    if (keywords.isEmpty) return false;
+    final hay = food.name.toLowerCase();
+    for (final keyword in keywords) {
+      if (hay.contains(keyword)) return true;
+    }
+    return false;
+  }
+
+  Set<String> _buildAllergyKeywords(List<String> allergies) {
+    final keywords = <String>{};
+    for (final allergy in allergies) {
+      final normalized = allergy.trim().toLowerCase();
+      if (normalized.isEmpty || normalized == 'none') continue;
+      switch (normalized) {
+        case 'milk':
+          keywords.addAll(['milk', 'dairy', 'cheese', 'yogurt', 'whey']);
+          break;
+        case 'nuts':
+          keywords.addAll(['nut', 'nuts', 'almond', 'peanut']);
+          break;
+        case 'eggs':
+          keywords.addAll(['egg', 'eggs']);
+          break;
+        case 'soy':
+          keywords.add('soy');
+          break;
+        case 'wheat':
+          keywords.addAll(['wheat', 'bread', 'flour', 'gluten']);
+          break;
+        case 'shellfish':
+          keywords.addAll(['shellfish', 'shrimp', 'crab', 'lobster']);
+          break;
+        default:
+          keywords.add(normalized);
+      }
+    }
+    return keywords;
   }
 
   Color _typeColor(String type) {
