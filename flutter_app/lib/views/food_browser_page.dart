@@ -10,8 +10,7 @@ class FoodBrowserPage extends StatelessWidget {
     Key? key,
     this.allergies = const [],
     this.dietPreference = 'non-veg',
-  })
-      : super(key: key);
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
