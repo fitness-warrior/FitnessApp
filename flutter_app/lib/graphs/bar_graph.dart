@@ -8,6 +8,7 @@ class MyBarGraph extends StatelessWidget{
   final double range;
   final String y;
   final String x;
+  final List<String>? dates;
 
   const MyBarGraph({super.key,
   required this.dataInt,
@@ -15,21 +16,19 @@ class MyBarGraph extends StatelessWidget{
   required this.range,
   required this.y,
   required this.x,
+    this.dates,
   });
 
   // i want to have control with having how many bars
   
   @override
   Widget build(BuildContext context) {
+    // Create default dates if not provided
+    final List<String> displayDates = dates ?? List.generate(dataInt.length, (i) => 'Day ${i + 1}');
+    
     final BarData myBarData = BarData(
-      data7: dataInt[0], 
-      data6: dataInt[1], 
-      data5: dataInt[2], 
-      data4: dataInt[3], 
-      data3: dataInt[4], 
-      data2: dataInt[5], 
-      data1: dataInt[6], 
-      data0: dataInt[7]
+      values: dataInt,
+      dates: displayDates,
     );
 
     // Populate the list used by barGroups.
@@ -48,7 +47,20 @@ class MyBarGraph extends StatelessWidget{
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 4,
-              getTitlesWidget: (value, meta) => const SizedBox.shrink(),
+               getTitlesWidget: (value, meta) {
+                 final index = value.toInt();
+                 if (index >= 0 && index < displayDates.length) {
+                   return Padding(
+                     padding: const EdgeInsets.only(top: 8.0),
+                     child: Text(
+                       displayDates[index],
+                       style: const TextStyle(fontSize: 9),
+                       textAlign: TextAlign.center,
+                     ),
+                   );
+                 }
+                 return const SizedBox.shrink();
+               },
             ),
           ),
           leftTitles: AxisTitles(
