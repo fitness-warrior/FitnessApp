@@ -171,103 +171,222 @@ class _StreakDisplayState extends State<StreakDisplay> {
   void _showStreakDetails(BuildContext context, StreakData streak) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Your Streak'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+      builder: (context) => _StreakDetailsDialog(
+        streak: streak,
+        onGoalChanged: (newGoal) async {
+          await StreakService.setWeeklyGoal(newGoal);
+          // The notifyStreakChanged inside setWeeklyGoal will rebuild the display
+        },
+      ),
+    );
+  }
+
+}
+
+// ── Stateful dialog so the weekly goal updates in real time ──────────────────
+
+class _StreakDetailsDialog extends StatefulWidget {
+  final StreakData streak;
+  final Future<void> Function(int) onGoalChanged;
+
+  const _StreakDetailsDialog({
+    required this.streak,
+    required this.onGoalChanged,
+  });
+
+  @override
+  State<_StreakDetailsDialog> createState() => _StreakDetailsDialogState();
+}
+
+class _StreakDetailsDialogState extends State<_StreakDetailsDialog> {
+  late int _weeklyGoal;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _weeklyGoal = widget.streak.weeklyGoal;
+  }
+
+  Future<void> _pickGoal() async {
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Workouts per week'),
+        children: List.generate(7, (i) {
+          final days = i + 1;
+          return SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, days),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
                 children: [
-                  const Icon(
-                    Icons.local_fire_department,
-                    color: Colors.orange,
-                    size: 32,
+                  Icon(
+                    days == _weeklyGoal
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
+                    color: const Color(0xFF4A9FFF),
+                    size: 20,
                   ),
                   const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Text(
+                    '$days ${days == 1 ? 'day' : 'days'}',
+                    style: TextStyle(
+                      fontWeight: days == _weeklyGoal
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+
+    if (picked != null && picked != _weeklyGoal) {
+      setState(() {
+        _weeklyGoal = picked;
+        _saving = true;
+      });
+      await widget.onGoalChanged(picked);
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final workoutsThisWeek = widget.streak.workoutsThisWeek;
+    final remaining = (_weeklyGoal - workoutsThisWeek).clamp(0, _weeklyGoal);
+    final progress = (workoutsThisWeek / _weeklyGoal).clamp(0.0, 1.0);
+    final goalMet = workoutsThisWeek >= _weeklyGoal;
+
+    return AlertDialog(
+      title: const Text('Your Streak'),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Current streak row ────────────────────────────────────────
+            Row(
+              children: [
+                const Icon(Icons.local_fire_department,
+                    color: Colors.orange, size: 32),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Current Streak'),
+                    Text(
+                      '${widget.streak.currentStreak} days',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ── Stats box ─────────────────────────────────────────────────
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C2E),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _statRow('Longest Streak',
+                      '${widget.streak.longestStreak} days'),
+                  _statRow('This Week', '$workoutsThisWeek/$_weeklyGoal'),
+                  _statRow('Days Remaining', '$remaining'),
+
+                  // ── Weekly goal editor ────────────────────────────────
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Current Streak'),
-                      Text(
-                        '${streak.currentStreak} days',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange,
+                      const Text('Weekly Goal',
+                          style: TextStyle(fontSize: 12)),
+                      GestureDetector(
+                        onTap: _saving ? null : _pickGoal,
+                        child: Row(
+                          children: [
+                            Text(
+                              '$_weeklyGoal ${_weeklyGoal == 1 ? 'day' : 'days'}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF4A9FFF),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            _saving
+                                ? const SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 1.5),
+                                  )
+                                : const Icon(Icons.edit,
+                                    size: 13, color: Color(0xFF4A9FFF)),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildStatRow(
-                        'Longest Streak', '${streak.longestStreak} days'),
-                    _buildStatRow('This Week',
-                        '${streak.workoutsThisWeek}/${streak.weeklyGoal}'),
-                    _buildStatRow(
-                        'Days Remaining', '${streak.workoutsRemaining}'),
-                  ],
-                ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Progress bar ──────────────────────────────────────────────
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 12,
+              backgroundColor: const Color(0xFF2E2E45),
+              color: goalMet ? Colors.green : const Color(0xFF4A9FFF),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              goalMet
+                  ? '✅ Weekly goal met!'
+                  : 'Keep it up! $remaining more to go.',
+              style: TextStyle(
+                fontSize: 12,
+                color: goalMet ? Colors.green : Colors.orange,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 12),
-              LinearProgressIndicator(
-                value: streak.weeklyProgressPercent / 100,
-                minHeight: 12,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                streak.goalMet
-                    ? '✅ Weekly goal met!'
-                    : 'Keep it up! ${streak.workoutsRemaining} more to go.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: streak.goalMet ? Colors.green : Colors.orange,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _refreshStreak();
-            },
-            child: const Text('Refresh'),
-          ),
-        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 
-  Widget _buildStatRow(String label, String value) {
+  Widget _statRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontSize: 12)),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.bold)),
         ],
       ),
     );

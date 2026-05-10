@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/daily_meal_plan.dart';
 import '../models/meal_item.dart';
 import '../services/meal_storage.dart';
+import '../services/recommendation_storage.dart';
+import '../services/user_service.dart';
 import '../widgets/common/header.dart';
 import '../widgets/common/navbar.dart';
 import 'recipe_list_page.dart';
@@ -22,6 +24,9 @@ class _MealPlanPageState extends State<MealPlanPage> {
       DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
   DailyMealPlan _currentPlan = DailyMealPlan(date: DateTime.now());
   bool _loadingPlan = true;
+  double _dailyGoal = 2000.0;
+  List<String> _allergies = const [];
+  String _dietPreference = 'non-veg';
 
   Map<MealSlot, List<MealItem>> _demoSlotsFor(DateTime date) => {
         MealSlot.breakfast: [
@@ -98,6 +103,153 @@ class _MealPlanPageState extends State<MealPlanPage> {
   void initState() {
     super.initState();
     _loadPlanForDate(_selectedDate);
+    _loadDailyGoal();
+  }
+
+  Future<void> _loadDailyGoal() async {
+    final profile = await _loadFitnessProfile();
+    final goal = _calculateDailyGoal(profile);
+    final allergies = _extractAllergies(profile);
+    final dietPreference = _extractDietPreference(profile);
+    if (!mounted) return;
+    setState(() {
+      _dailyGoal = goal ?? 2000.0;
+      _allergies = allergies;
+      _dietPreference = dietPreference;
+    });
+  }
+
+  Future<Map<String, dynamic>?> _loadFitnessProfile() async {
+    Map<String, dynamic>? fitness;
+
+    final cached = await RecommendationStorage.loadProfile();
+    if (cached != null) {
+      fitness = {
+        'goal': cached.goal,
+        'experience': cached.experience,
+        'age': cached.age > 0 ? cached.age : null,
+      };
+    }
+
+    final cachedQuestionnaire =
+        await RecommendationStorage.loadQuestionnaireResponse();
+    if (cachedQuestionnaire != null && cachedQuestionnaire.isNotEmpty) {
+      fitness = {
+        ...?fitness,
+        ...cachedQuestionnaire,
+      };
+    }
+
+    try {
+      final apiFitness = await UserService.getQuestionnaireResponse()
+          .timeout(const Duration(seconds: 4));
+      if (apiFitness != null && apiFitness.isNotEmpty) {
+        fitness = {
+          ...?fitness,
+          ...apiFitness,
+        };
+      }
+    } catch (_) {
+      // Keep cached values if API is unavailable
+    }
+
+    return fitness;
+  }
+
+  double? _calculateDailyGoal(Map<String, dynamic>? profile) {
+    if (profile == null) return null;
+
+    final age = _toInt(profile['age']) ?? _toInt(profile['body_age']) ?? 0;
+    final height =
+        _toDouble(profile['height']) ?? _toDouble(profile['body_height']);
+    final weight =
+        _toDouble(profile['weight']) ?? _toDouble(profile['body_weight']);
+    if (age <= 0 || height == null || weight == null) return null;
+
+    final meters = height / 100.0;
+    if (meters <= 0) return null;
+
+    final bmi = weight / (meters * meters);
+    final bmiClass = _bmiCategory(bmi);
+    final bmr = (10 * weight) + (6.25 * height) - (5 * age);
+    final exp = profile['experience']?.toString() ??
+        profile['body_experience']?.toString();
+    final tdee = bmr * _experienceMultiplier(exp);
+
+    final goal = _goalKey(
+        profile['goal']?.toString() ?? profile['body_goal']?.toString());
+
+    if (goal == 'weight_loss') {
+      double deficit = 400;
+      if (bmiClass == 'Overweight') deficit = 600;
+      if (bmiClass == 'Obese') deficit = 800;
+
+      final mealReduction = deficit * 0.6;
+      return tdee - mealReduction;
+    }
+
+    if (goal == 'weight_gain') return tdee + 400;
+    if (goal == 'build_muscle') return tdee + 250;
+    return tdee;
+  }
+
+  double? _toDouble(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw.toString());
+  }
+
+  int? _toInt(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is int) return raw;
+    if (raw is num) return raw.round();
+    return int.tryParse(raw.toString());
+  }
+
+  String _bmiCategory(double? bmi) {
+    if (bmi == null) return '—';
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25.0) return 'Normal';
+    if (bmi < 30.0) return 'Overweight';
+    return 'Obese';
+  }
+
+  double _experienceMultiplier(String? raw) {
+    final s = (raw ?? '').toLowerCase();
+    if (s.contains('beginner')) return 1.3;
+    if (s.contains('intermediate')) return 1.5;
+    if (s.contains('advanced')) return 1.7;
+    return 1.3;
+  }
+
+  String _goalKey(String? raw) {
+    final s = (raw ?? '').toLowerCase();
+    if (s.contains('lose') || s.contains('fat_loss')) return 'weight_loss';
+    if (s.contains('gain') || s.contains('weight_gain')) return 'weight_gain';
+    if (s.contains('build') || s.contains('strength')) return 'build_muscle';
+    if (s.contains('stay') || s.contains('general_fitness')) return 'stay_fit';
+    return 'stay_fit';
+  }
+
+  List<String> _extractAllergies(Map<String, dynamic>? profile) {
+    if (profile == null) return const [];
+    final raw = profile['allergies'];
+    if (raw is List) {
+      return raw
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty && e.toLowerCase() != 'none')
+          .toList();
+    }
+    return const [];
+  }
+
+  String _extractDietPreference(Map<String, dynamic>? profile) {
+    if (profile == null) return 'non-veg';
+    final raw = profile['diet_preference'] ?? profile['diet'];
+    final normalized = raw?.toString().trim().toLowerCase() ?? '';
+    if (normalized == 'veg' || normalized == 'vegetarian') return 'veg';
+    if (normalized == 'non-veg' || normalized == 'non_veg') return 'non-veg';
+    return 'non-veg';
   }
 
   Future<void> _loadPlanForDate(DateTime date) async {
@@ -135,10 +287,23 @@ class _MealPlanPageState extends State<MealPlanPage> {
   }
 
   Future<void> _addFood(MealSlot slot) async {
+    final profile = await _loadFitnessProfile();
+    final allergies = _extractAllergies(profile);
+    final dietPreference = _extractDietPreference(profile);
+    if (mounted) {
+      setState(() {
+        _allergies = allergies;
+        _dietPreference = dietPreference;
+      });
+    }
+
     final selectedFood = await Navigator.push<MealItem>(
       context,
       MaterialPageRoute(
-        builder: (context) => const FoodBrowserPage(),
+        builder: (context) => FoodBrowserPage(
+          allergies: allergies,
+          dietPreference: dietPreference,
+        ),
       ),
     );
 
@@ -194,13 +359,17 @@ class _MealPlanPageState extends State<MealPlanPage> {
   Widget build(BuildContext context) {
     if (_loadingPlan) {
       return const Scaffold(
+        backgroundColor: Color(0xFF0D0D14),
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFF0D0D14),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0D0D14),
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: HeaderWithDropdown(
           title: 'My Meal',
           onMenuSelected: (value) {
@@ -252,6 +421,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
               proteinCalories: _proteinCalories,
               carbCalories: _carbCalories,
               fatCalories: _fatCalories,
+              dailyGoal: _dailyGoal,
               onPreviousDay: _previousDay,
               onNextDay: _nextDay,
             ),

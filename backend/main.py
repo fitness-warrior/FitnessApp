@@ -814,23 +814,37 @@ async def get_streak(user_id: int = Depends(get_current_user_id)):
                 user_id
             )
             
+          
             if not streak:
-                raise HTTPException(status_code=404, detail="Streak not found")
-            
+                from datetime import date as _date
+                _today = _date.today()
+                await connection.execute(
+                    """
+                    INSERT INTO user_streak
+                    (user_id, current_streak, longest_streak, workouts_this_week, week_start_date)
+                    VALUES ($1, 0, 0, 0, $2)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    user_id, _today
+                )
+                streak = {"current_streak": 0, "longest_streak": 0,
+                          "streak_start_date": None, "last_workout_date": None,
+                          "workouts_this_week": 0, "week_start_date": str(_today)}
+
             # Fetch the user's weekly goal
             profile = await connection.fetchval(
                 "SELECT days_per_week_goal FROM user_fitness_profile WHERE user_id = $1",
                 user_id
             )
-            
+
             return {
                 "current_streak": streak["current_streak"],
                 "longest_streak": streak["longest_streak"],
                 "streak_start_date": str(streak["streak_start_date"]) if streak["streak_start_date"] else None,
                 "last_workout_date": str(streak["last_workout_date"]) if streak["last_workout_date"] else None,
-                "workouts_this_week": streak["workouts_this_week"],
+                "workouts_this_week": streak["workouts_this_week"] or 0,
                 "week_start_date": str(streak["week_start_date"]) if streak["week_start_date"] else None,
-                "weekly_goal": profile or 3,  # Default to 3 if not set
+                "weekly_goal": profile or 3,
             }
     except HTTPException:
         raise
@@ -863,8 +877,28 @@ async def update_streak(user_id: int = Depends(get_current_user_id)):
                 user_id
             )
             
+            # Auto-create streak row instead of 404-ing
             if not streak:
-                raise HTTPException(status_code=404, detail="Streak not found")
+                week_start_auto = today - timedelta(days=today.weekday())
+                await connection.execute(
+                    """
+                    INSERT INTO user_streak
+                    (user_id, current_streak, longest_streak, workouts_this_week, week_start_date)
+                    VALUES ($1, 0, 0, 0, $2)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    user_id, week_start_auto
+                )
+                streak = await connection.fetchrow(
+                    """
+                    SELECT current_streak, longest_streak, streak_start_date,
+                           last_workout_date, workouts_this_week, week_start_date
+                    FROM user_streak WHERE user_id = $1
+                    """,
+                    user_id
+                )
+                if not streak:
+                    raise HTTPException(status_code=500, detail="Failed to create streak record")
             
             last_workout = streak["last_workout_date"]
             current_streak = streak["current_streak"]

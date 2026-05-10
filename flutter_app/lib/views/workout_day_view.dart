@@ -105,8 +105,8 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                 text: setMap['reps']?.toString() ?? '0'),
             'time': TextEditingController(
                 text: setMap['time']?.toString() ?? ''),
-            'calories': TextEditingController(
-                text: setMap['calories']?.toString() ?? ''),
+            'distance': TextEditingController(
+                text: setMap['distance']?.toString() ?? ''),
           };
         });
       }
@@ -123,7 +123,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
           set['kg']?.dispose();
           set['reps']?.dispose();
           set['time']?.dispose();
-          set['calories']?.dispose();
+          set['distance']?.dispose();
         }
       }
     }
@@ -168,15 +168,15 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
 
     if (isCardio) {
       final timeText = controllers['time']!.text.trim();
-      final caloriesText = controllers['calories']!.text.trim();
+      final distanceText = controllers['distance']!.text.trim();
       final time = double.tryParse(timeText);
-      final calories = double.tryParse(caloriesText);
+      final distance = double.tryParse(distanceText);
 
-      if ((timeText.isEmpty && caloriesText.isEmpty) ||
+      if ((timeText.isEmpty && distanceText.isEmpty) ||
           (time != null && time < 0) ||
-          (calories != null && calories < 0)) {
+          (distance != null && distance < 0)) {
         isValid = false;
-        errorMessage = 'Please enter valid time or calories.';
+        errorMessage = 'Please enter valid time or distance.';
       }
     } else {
       final kgText = controllers['kg']!.text.trim();
@@ -249,13 +249,22 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
       for (int eIndex = 0; eIndex < exercises.length; eIndex++) {
         final exercise = exercises[eIndex];
         final sets = <Map<String, dynamic>>[];
+        final exerType = exercise['exer_type']?.toString() ?? 'strength';
+        final isCardio = exerType.toLowerCase() == 'cardio';
         final controllers = _setControllers[rIndex]?[eIndex] ?? [];
 
         for (var setControllers in controllers) {
-          sets.add({
-            'kg': setControllers['kg']?.text ?? '0',
-            'reps': setControllers['reps']?.text ?? '0',
-          });
+          if (isCardio) {
+            sets.add({
+              'time': setControllers['time']?.text ?? '0',
+              'distance': setControllers['distance']?.text ?? '0',
+            });
+          } else {
+            sets.add({
+              'kg': setControllers['kg']?.text ?? '0',
+              'reps': setControllers['reps']?.text ?? '0',
+            });
+          }
         }
 
         allExercises.add({
@@ -534,7 +543,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                                   _setControllers[rIndex]![eIndex]![sIndex];
                               final isCardio =
                                   controllers['time']!.text.isNotEmpty ||
-                                      controllers['calories']!.text.isNotEmpty;
+                                      controllers['distance']!.text.isNotEmpty;
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
@@ -567,8 +576,8 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                                       Expanded(
                                           child: _buildCompactTextField(
                                               controller:
-                                                  controllers['calories']!,
-                                              label: 'cal',
+                                                  controllers['distance']!,
+                                              label: 'km',
                                               isComplete: isSetComplete)),
                                     ] else ...[
                                       Expanded(

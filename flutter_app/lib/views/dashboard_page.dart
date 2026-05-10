@@ -1,21 +1,15 @@
 import 'package:fitness_app_flutter/graphs/core.dart';
-import 'package:fitness_app_flutter/views/recipe_list_page.dart';
-import 'package:fitness_app_flutter/views/profile_page.dart';
-import 'package:fitness_app_flutter/widgets/common/header.dart';
+import 'package:fitness_app_flutter/views/add_chart_page.dart';
 import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
 import 'package:flutter/material.dart';
 import '../widgets/common/navbar.dart';
 
-/*
-for weight
-inputs type (week/month)
+class _ChartCard {
+  final String id;
+  final Widget Function(VoidCallback onDismissed) builder;
 
-gets last 8 weeks or months of data 
-
-line grath of weight +-10 of current 
-if above 7 of the start, 5 in the direction of the graph headed 
-
-*/
+  const _ChartCard({required this.id, required this.builder});
+}
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -25,7 +19,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPage extends State<DashboardPage> {
-  //examples
   final double start = 92.1;
   final double range = 10;
   List<double> weight = [
@@ -61,26 +54,87 @@ class _DashboardPage extends State<DashboardPage> {
     "arms",
   ];
 
+  late List<_ChartCard> _charts;
+
   @override
   void initState() {
     super.initState();
     maxCalDeviation = cal.reduce((a, b) => a.abs() > b.abs() ? a : b).abs();
+    _charts = [
+      _ChartCard(
+        id: 'weight',
+        builder: (onDismissed) => SizedBox(
+          height: 200,
+          child: Core.bar(
+            key: const ValueKey('weight-chart'),
+            name: 'Weight',
+            dataValues: weight,
+            start: start,
+            range: range,
+            y: 'weight (kg)',
+            x: 'days',
+            onDismissed: onDismissed,
+          ),
+        ),
+      ),
+      _ChartCard(
+        id: 'calories',
+        builder: (onDismissed) => SizedBox(
+          height: 300,
+          child: Core.bar(
+            key: const ValueKey('calories-chart'),
+            name: 'Calories',
+            dataValues: cal,
+            start: calStart,
+            range: maxCalDeviation,
+            y: 'calorie intake/defist',
+            x: 'days',
+            onDismissed: onDismissed,
+          ),
+        ),
+      ),
+      _ChartCard(
+        id: 'targets',
+        builder: (onDismissed) => SizedBox(
+          height: 300,
+          child: Core.pie(
+            key: const ValueKey('targets-chart'),
+            name: 'Targets',
+            dataValues: target,
+            labels: order,
+            onDismissed: onDismissed,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  void _removeChart(String id) {
+    setState(() {
+      _charts.removeWhere((chart) => chart.id == id);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFF0D0D14),
       appBar: AppBar(
-        title: HeaderWithDropdown(
-          title: 'My Chart',
-          onMenuSelected: (value) {
-            final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
-            const routes = {'/my_workout', '/my_meal', '/shop'};
-            if (routes.contains(route)) {
-              Navigator.of(context).pushReplacementNamed(route);
-            }
-          },
+        backgroundColor: const Color(0xFF0D0D14),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('My Chart'),
+            SizedBox(height: 2),
+            Text(
+              '<---- Swipe left to delete chart',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
         ),
         actions: [
           const StreakDisplay(compact: true),
@@ -91,63 +145,24 @@ class _DashboardPage extends State<DashboardPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const RecipeListPage(), //temp area
+                  builder: (context) => const AddChart(),
                 ),
               );
             },
           ),
-          IconButton(
-            icon: const CircleAvatar(
-              radius: 14,
-              child: Icon(Icons.person, size: 18),
-            ),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
-              );
-            },
-            tooltip: 'Profile',
-          ),
         ],
       ),
-
-      // start of making pages :)
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Column(
           children: [
-            SizedBox(
-              height: 200,
-              child: Core.bar(
-                name: 'Weight',
-                dataValues: weight,
-                start: start,
-                range: range,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 300,
-              child: Core.bar(
-                name: 'Calories',
-                dataValues: cal,
-                start: calStart,
-                range: maxCalDeviation,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 300,
-              child: Core.pie(
-                name: 'Targets',
-                dataValues: target,
-                labels: order,
-              ),
-            ),
+            for (final chart in _charts) ...[
+              chart.builder(() => _removeChart(chart.id)),
+              const SizedBox(height: 12),
+            ],
           ],
         ),
       ),
-
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
