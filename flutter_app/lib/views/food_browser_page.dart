@@ -12,8 +12,22 @@ class FoodBrowserPage extends StatelessWidget {
     this.dietPreference = 'non-veg',
   }) : super(key: key);
 
-  Future<MealItem?> _promptForGrams(BuildContext context, MealItem food) async {
+  QuantityUnit _defaultUnitFor(MealItem food) {
+    final lowerName = food.name.toLowerCase();
+    if (food.type == 'Drink' ||
+        lowerName.contains('milk') ||
+        lowerName.contains('coffee') ||
+        lowerName.contains('shake') ||
+        lowerName.contains('juice')) {
+      return QuantityUnit.ml;
+    }
+    return QuantityUnit.g;
+  }
+
+  Future<MealItem?> _promptForQuantity(
+      BuildContext context, MealItem food) async {
     final controller = TextEditingController(text: '100');
+    var selectedUnit = _defaultUnitFor(food);
     String? errorText;
 
     final picked = await showDialog<MealItem>(
@@ -33,15 +47,38 @@ class FoodBrowserPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${food.caloriesPer100g.toInt()} kcal per 100 g',
+                    '${food.caloriesPer100Unit.toInt()} kcal per 100 ${selectedUnit.symbol}',
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const SizedBox(height: 12),
+                  DropdownButtonFormField<QuantityUnit>(
+                    initialValue: selectedUnit,
+                    decoration: const InputDecoration(
+                      labelText: 'Unit',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: QuantityUnit.g,
+                        child: Text('grams (g)'),
+                      ),
+                      DropdownMenuItem(
+                        value: QuantityUnit.ml,
+                        child: Text('millilitres (ml)'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setDialogState(() {
+                        selectedUnit = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: controller,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: 'Quantity (g)',
+                      labelText: 'Quantity (${selectedUnit.symbol})',
                       hintText: 'e.g. 100',
                       errorText: errorText,
                     ),
@@ -55,14 +92,20 @@ class FoodBrowserPage extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    final grams = double.tryParse(controller.text.trim());
-                    if (grams == null || grams <= 0 || grams > 2000) {
+                    final quantity = double.tryParse(controller.text.trim());
+                    if (quantity == null || quantity <= 0 || quantity > 2000) {
                       setDialogState(() {
                         errorText = 'Enter a value between 1 and 2000.';
                       });
                       return;
                     }
-                    Navigator.pop(dialogContext, food.copyWithGrams(grams));
+                    Navigator.pop(
+                      dialogContext,
+                      food.copyWithQuantity(
+                        nextQuantity: quantity,
+                        nextUnit: selectedUnit,
+                      ),
+                    );
                   },
                   child: const Text('Add'),
                 ),
@@ -105,10 +148,10 @@ class FoodBrowserPage extends StatelessWidget {
             ),
             title: Text(food.name),
             subtitle: Text(
-                '${food.type} • ${food.caloriesPer100g.toInt()} kcal / 100g'),
+                '${food.type} • ${food.caloriesPer100Unit.toInt()} kcal / 100 ${_defaultUnitFor(food).symbol}'),
             trailing: const Icon(Icons.add_circle_outline),
             onTap: () async {
-              final withQuantity = await _promptForGrams(context, food);
+              final withQuantity = await _promptForQuantity(context, food);
               if (withQuantity != null && context.mounted) {
                 Navigator.pop(context, withQuantity);
               }

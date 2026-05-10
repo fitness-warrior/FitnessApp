@@ -142,7 +142,7 @@ class MealSlotCard extends StatelessWidget {
                       fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 Text(
-                  '${food.type} • ${_formatGrams(food.grams)} g',
+                  '${food.type} • ${_formatQuantity(food.quantity)} ${food.unit.symbol}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -215,10 +215,10 @@ class MealSlotCard extends StatelessWidget {
     }
   }
 
-  String _formatGrams(double grams) {
-    if (grams == grams.roundToDouble()) {
-      return grams.toInt().toString();
+  String _formatQuantity(double quantity) {
+    if (quantity == quantity.roundToDouble()) {
+      return quantity.toInt().toString();
     }
-    return grams.toStringAsFixed(1);
+    return quantity.toStringAsFixed(1);
   }
 }
