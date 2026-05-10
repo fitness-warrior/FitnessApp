@@ -12,6 +12,71 @@ class FoodBrowserPage extends StatelessWidget {
     this.dietPreference = 'non-veg',
   }) : super(key: key);
 
+  Future<MealItem?> _promptForGrams(BuildContext context, MealItem food) async {
+    final controller = TextEditingController(text: '100');
+    String? errorText;
+
+    final picked = await showDialog<MealItem>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Set quantity'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    food.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${food.caloriesPer100g.toInt()} kcal per 100 g',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Quantity (g)',
+                      hintText: 'e.g. 100',
+                      errorText: errorText,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final grams = double.tryParse(controller.text.trim());
+                    if (grams == null || grams <= 0 || grams > 2000) {
+                      setDialogState(() {
+                        errorText = 'Enter a value between 1 and 2000.';
+                      });
+                      return;
+                    }
+                    Navigator.pop(dialogContext, food.copyWithGrams(grams));
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
+    return picked;
+  }
+
   @override
   Widget build(BuildContext context) {
     final allergyKeywords = _buildAllergyKeywords(allergies);
@@ -39,10 +104,14 @@ class FoodBrowserPage extends StatelessWidget {
               ),
             ),
             title: Text(food.name),
-            subtitle: Text('${food.type} • ${food.calories.toInt()} kcal'),
+            subtitle: Text(
+                '${food.type} • ${food.caloriesPer100g.toInt()} kcal / 100g'),
             trailing: const Icon(Icons.add_circle_outline),
-            onTap: () {
-              Navigator.pop(context, food);
+            onTap: () async {
+              final withQuantity = await _promptForGrams(context, food);
+              if (withQuantity != null && context.mounted) {
+                Navigator.pop(context, withQuantity);
+              }
             },
           );
         },
