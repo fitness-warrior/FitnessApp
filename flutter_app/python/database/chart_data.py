@@ -204,7 +204,6 @@ class CollectedData:
         return self.cur.fetchall()
     
     def get_daily_calories_7(self):
-        """Collect total calories eaten per day for the past 7 days"""
         rows = self._get_meal_calories()
         if not rows:
             return []
@@ -224,6 +223,36 @@ class CollectedData:
         final_collection = []
         for date in sorted(daily_totals.keys()):
             final_collection.append([date, round(daily_totals[date], 2)])
+        
+        return final_collection
+    
+    def total_calories_7(self):
+        intake_data = self.get_daily_calories_7()
+        exercise_data = self.day_cadio_callories()
+        
+        # Create a dictionary for intake by date
+        intake_by_date = {}
+        for date, calories in intake_data:
+            intake_by_date[date] = calories
+        
+        # Create a dictionary for exercise by date
+        exercise_by_date = {}
+        for date, calories in exercise_data:
+            exercise_by_date[date] = calories
+        
+        # Combine both datasets
+        all_dates = set(intake_by_date.keys()) | set(exercise_by_date.keys())
+        final_collection = []
+        
+        for date in sorted(all_dates):
+            intake = intake_by_date.get(date, 0)
+            exercise = exercise_by_date.get(date, 0)
+            final_collection.append({
+                "date": date,
+                "intake_calories": intake,
+                "exercise_calories_burned": round(exercise, 2),
+                "net_calories": round(intake - exercise, 2)
+            })
         
         return final_collection
        
