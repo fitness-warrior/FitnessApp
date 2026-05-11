@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/workout_storage.dart';
+import '../services/workout_service.dart';
 import '../services/streak_service.dart';
 import '../services/user_stats_service.dart';
 
@@ -281,6 +282,14 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
       allExercises,
       workoutName: widget.dayName,
     );
+
+    // Sync to API (Best effort)
+    try {
+      await WorkoutService.submitWorkout(
+        allExercises,
+        notes: widget.dayName,
+      ).timeout(const Duration(seconds: 5));
+    } catch (_) {}
 
     // Update streak for the user
     try {
