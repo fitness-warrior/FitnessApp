@@ -73,6 +73,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Future<void> _loadSavedWorkouts() async {
     try {
+      // 1. Load local workouts
       final localWorkouts = (await WorkoutStorage.getWorkouts())
           .map((w) => {
                 ...w,
@@ -80,21 +81,93 @@ class _WorkoutPageState extends State<WorkoutPage> {
               })
           .toList();
 
-      localWorkouts.sort((a, b) {
-        final dateA =
-            DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
-        final dateB =
-            DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
-        return dateB.compareTo(dateA); // Newest first
+      // 2. Load API workouts
+      List<Map<String, dynamic>> apiWorkouts = [];
+      try {
+        final history = await WorkoutHistoryService.getWorkoutHistory();
+        apiWorkouts = _mapApiWorkoutsToRoutines(history);
+      } catch (e) {
+        debugPrint('Error loading API history: $e');
+      }
+
+      // 3. Combine and deduplicate using robust UTC + Content matching
+      final List<Map<String, dynamic>> combinedList = [];
+      
+      // API workouts are the source of truth
+      for (var apiW in apiWorkouts) {
+        combinedList.add(Map<String, dynamic>.from(apiW));
+      }
+      
+      // Merge local workouts only if they don't match an API entry
+      for (var localW in localWorkouts) {
+        bool isDuplicate = false;
+        final localDate = DateTime.tryParse(localW['date']?.toString() ?? '')?.toUtc() ?? DateTime.now().toUtc();
+        final localName = (localW['name']?.toString() ?? '').trim().toLowerCase();
+
+        for (var apiW in apiWorkouts) {
+          final apiDate = DateTime.tryParse(apiW['date']?.toString() ?? '')?.toUtc() ?? DateTime.now().toUtc();
+          final apiName = (apiW['name']?.toString() ?? '').trim().toLowerCase();
+          
+          // 1. Check if names are identical and timestamps are within 60 minutes (UTC)
+          final timeMatch = localName == apiName && (localDate.difference(apiDate).abs().inMinutes < 60);
+          
+          if (timeMatch) {
+            isDuplicate = true;
+            break;
+          }
+
+          // 2. Content-based fallback: same day, same name, same exercises
+          final sameDay = localDate.year == apiDate.year && localDate.month == apiDate.month && localDate.day == apiDate.day;
+          if (sameDay && localName == apiName) {
+            final localExs = localW['exercises'] as List? ?? [];
+            final apiExs = apiW['exercises'] as List? ?? [];
+            if (localExs.length == apiExs.length && localExs.isNotEmpty) {
+              final localExNames = localExs.map((e) => e['exer_name']?.toString() ?? '').join(',');
+              final apiExNames = apiExs.map((e) => e['exer_name']?.toString() ?? '').join(',');
+              if (localExNames == apiExNames) {
+                isDuplicate = true;
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!isDuplicate) {
+          combinedList.add(Map<String, dynamic>.from(localW));
+        }
+      }
+
+      // 4. Sort Oldest to Newest to assign sequential "Workout N" names
+      final allWorkouts = combinedList;
+      allWorkouts.sort((a, b) {
+        final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        return dateA.compareTo(dateB);
+      });
+
+      int namelessCount = 0;
+      for (var w in allWorkouts) {
+        final name = (w['name']?.toString() ?? '').trim();
+        if (name.isEmpty) {
+          namelessCount++;
+          w['name'] = 'Workout $namelessCount';
+        }
+      }
+
+      // 5. Sort Newest to Oldest for display
+      allWorkouts.sort((a, b) {
+        final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA);
       });
 
       if (!mounted) return;
       setState(() {
-        _savedWorkouts = localWorkouts;
+        _savedWorkouts = allWorkouts;
         _loadingSavedWorkouts = false;
       });
     } catch (e) {
-      print('Error loading saved workouts: $e');
+      debugPrint('Error loading saved workouts: $e');
       if (!mounted) return;
       setState(() {
         _loadingSavedWorkouts = false;
@@ -142,9 +215,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         'id': workout['workout_id'],
         'date': workout['created_at']?.toString() ??
             DateTime.now().toIso8601String(),
-        'name': workout['notes']?.toString().isNotEmpty == true
-            ? workout['notes']
-            : 'Workout ${workout['workout_id'] ?? ''}',
+        'name': workout['notes']?.toString() ?? '',
         'exercises': mappedExercises,
         'source': 'api',
       };
