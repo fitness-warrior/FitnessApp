@@ -96,24 +96,13 @@ async def signup(request: SignupRequest):
             # Hash password
             hashed_password = hash_password(request.password)
             
-            # Create a default game character for compatibility
-            game_char = await connection.fetchrow(
-                """
-                INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, 
-                                       game_char_hp, game_char_attack, game_char_speed)
-                VALUES (1, 'blue', 'a', 100, 10, 5)
-                RETURNING game_char_id
-                """
-            )
-            
             # Insert new user
             user = await connection.fetchrow(
                 """
-                INSERT INTO users (game_char_id, user_name, user_email, user_password)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO users (user_name, user_email, user_password)
+                VALUES ($1, $2, $3)
                 RETURNING user_id, user_email, user_name
                 """,
-                game_char["game_char_id"],
                 request.username,
                 request.email,
                 hashed_password
