@@ -46,7 +46,36 @@ class CollectedData:
         """, (self.body_id,))
         return self.cur.fetchall()
     
-    
+    def find_body_type(self):
+        self.cur.execute("""
+            SELECT e.exer_body_area, COUNT(*) AS area_count
+            FROM training t
+            JOIN training_body tb ON tb.train_id = t.train_id
+            JOIN training_exercise te ON te.train_id = t.train_id
+            JOIN exercise e ON e.exer_id = te.exer_id
+            WHERE tb.body_id = %s
+              AND t.train_data IS NOT NULL
+            GROUP BY e.exer_body_area
+            ORDER BY area_count DESC, e.exer_body_area
+        """, (self.body_id,))
+
+        rows = self.cur.fetchall()
+        if not rows:
+            return []
+
+        total_done = sum(row[1] for row in rows)
+        if total_done == 0:
+            return []
+
+        return [
+            {
+                "body_area": row[0],
+                "count": row[1],
+                "percentage": round((row[1] / total_done) * 100, 2),
+            }
+            for row in rows
+        ]
+        
     def _get_train_name(self,name):
         self.cur.execute("""
             SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps, e.exer_type
@@ -159,6 +188,7 @@ if __name__ == "__main__":
     print(CD.strength_total("Bench Press")) #add rep and weight
     print(CD.max_mins_weight("Jump Rope" )) #should be km and mins
     print(CD.max_mins_weight("Bench Press")) #should be kg and weight
+    print(CD.find_body_type())
     
     print(CD.day_cadio_callories())
     
