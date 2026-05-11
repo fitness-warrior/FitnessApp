@@ -111,6 +111,14 @@ class CollectedData:
 """, (self.body_id,))
         return self.cur.fetchall()
     
+    def get_weight(self):
+        self.cur.execute("""
+            SELECT b.body_weight, b.body_weight_past
+            FROM body_metrics
+            WHERE bm.body_id = %s
+""", (self.body_id,))
+        return self.cur.fetchone()
+    
 #set a limmit for 7 days but not max how much 1 can do in a day 
     
     def day_cadio_callories (self):
@@ -189,6 +197,7 @@ if __name__ == "__main__":
     print(CD.max_mins_weight("Jump Rope" )) #should be km and mins
     print(CD.max_mins_weight("Bench Press")) #should be kg and weight
     print(CD.find_body_type())
+    print(CD.get_weight())
     
     print(CD.day_cadio_callories())
     
