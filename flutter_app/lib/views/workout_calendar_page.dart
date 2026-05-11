@@ -180,11 +180,11 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     if (alreadyDone) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
+          content: const Row(
             children: [
-              const Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
-              const SizedBox(width: 12),
-              const Text(
+              Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
+              SizedBox(width: 12),
+              Text(
                 'Rest you did your workout',
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
