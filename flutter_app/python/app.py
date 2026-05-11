@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from database.exercise import ExerciseSelection
+from database.chart_data import CollectedData
 from database.workout_save import WorkoutSave
 
 app = FastAPI(title="FitnessApp API")
@@ -109,7 +110,31 @@ def get_workout_logs(work_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/charts/options")
+def get_chart_options(body_id: int):
+    try:
+        rows = CollectedData(body_id).find_user_done()
+
+        cardio = []
+        strength = []
+        for exercise_name, exercise_type, _pb in rows:
+            if exercise_type == "cardio" and exercise_name not in cardio:
+                cardio.append(exercise_name)
+            elif exercise_type == "strength" and exercise_name not in strength:
+                strength.append(exercise_name)
+
+        return [
+            {"name": "track callories", "measure": ["total", "just intake", "just cardio"]},
+            {"name": "cardio speed", "measure": cardio},
+            {"name": "cardio enduance", "measure": cardio},
+            {"name": "total weight lifted", "measure": strength},
+            {"name": "weight personal bests", "measure": strength},
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run(app, host="0.0.0.0", port=5000)

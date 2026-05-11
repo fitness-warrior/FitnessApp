@@ -96,24 +96,13 @@ async def signup(request: SignupRequest):
             # Hash password
             hashed_password = hash_password(request.password)
             
-            # Create a default game character for compatibility
-            game_char = await connection.fetchrow(
-                """
-                INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, 
-                                       game_char_hp, game_char_attack, game_char_speed)
-                VALUES (1, 'blue', 'a', 100, 10, 5)
-                RETURNING game_char_id
-                """
-            )
-            
             # Insert new user
             user = await connection.fetchrow(
                 """
-                INSERT INTO users (game_char_id, user_name, user_email, user_password)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO users (user_name, user_email, user_password)
+                VALUES ($1, $2, $3)
                 RETURNING user_id, user_email, user_name
                 """,
-                game_char["game_char_id"],
                 request.username,
                 request.email,
                 hashed_password
@@ -376,9 +365,10 @@ async def get_user_profile(
         async with app.state.db_pool.acquire() as connection:
             user = await connection.fetchrow(
                 """
-                SELECT user_id, user_email, user_name, user_surname
-                FROM users
-                WHERE user_id = $1
+                SELECT u.user_id, u.user_email, u.user_name, u.user_surname, bm.body_id
+                FROM users u
+                LEFT JOIN body_metrics bm ON bm.user_id = u.user_id
+                WHERE u.user_id = $1
                 """,
                 user_id
             )
@@ -390,12 +380,69 @@ async def get_user_profile(
                 "user_id": user["user_id"],
                 "email": user["user_email"],
                 "username": user["user_name"],
-                "surname": user["user_surname"]
+                "surname": user["user_surname"],
+                "body_id": user["body_id"]
             }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
+
+
+@app.get("/api/charts/options")
+async def get_chart_options(
+    user_id: int = Depends(get_current_user_id),
+):
+    """Return chart picker options grouped by cardio and strength exercises."""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            body_id = await connection.fetchval(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id,
+            )
+
+            if not body_id:
+                raise HTTPException(status_code=404, detail="Body metrics not found")
+
+            rows = await connection.fetch(
+                """
+                SELECT e.exer_name, e.exer_type, pe.plan_exer_PB
+                FROM exercise e
+                JOIN plan_exercise pe ON pe.exer_id = e.exer_id
+                JOIN training_exercise te ON te.exer_id = e.exer_id
+                JOIN training t ON t.train_id = te.train_id
+                JOIN training_body tb ON tb.train_id = t.train_id
+                WHERE tb.body_id = $1
+                  AND t.train_data IS NOT NULL
+                                ORDER BY
+                                    CASE WHEN e.exer_type = 'cardio' THEN 0 ELSE 1 END,
+                                    pe.plan_exer_PB DESC
+                """,
+                body_id,
+            )
+
+            cardio = []
+            strength = []
+
+            for row in rows:
+                exercise_name = row["exer_name"]
+                exercise_type = row["exer_type"]
+                if exercise_type == "cardio" and exercise_name not in cardio:
+                    cardio.append(exercise_name)
+                elif exercise_type == "strength" and exercise_name not in strength:
+                    strength.append(exercise_name)
+
+            return [
+                {"name": "track callories", "measure": ["total", "just intake", "just cardio"]},
+                {"name": "cardio speed", "measure": cardio},
+                {"name": "cardio enduance", "measure": cardio},
+                {"name": "total weight lifted", "measure": strength},
+                {"name": "weight personal bests", "measure": strength},
+            ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch chart options: {str(e)}")
 
 
 @app.put("/api/users/profile")

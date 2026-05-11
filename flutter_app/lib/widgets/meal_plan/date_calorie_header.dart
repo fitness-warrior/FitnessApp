@@ -6,6 +6,7 @@ class DateAndCalorieHeader extends StatelessWidget {
   final double proteinCalories;
   final double carbCalories;
   final double fatCalories;
+  final double dailyGoal;
   final VoidCallback? onPreviousDay;
   final VoidCallback? onNextDay;
 
@@ -16,13 +17,13 @@ class DateAndCalorieHeader extends StatelessWidget {
     required this.proteinCalories,
     required this.carbCalories,
     required this.fatCalories,
+    required this.dailyGoal,
     this.onPreviousDay,
     this.onNextDay,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    const dailyGoal = 2000.0;
     const exercise = 0.0;
     final remaining = (dailyGoal - totalCalories + exercise).toInt();
     final progress = (totalCalories / dailyGoal).clamp(0.0, 1.0);

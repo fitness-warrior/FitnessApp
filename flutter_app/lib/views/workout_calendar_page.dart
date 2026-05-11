@@ -178,26 +178,40 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     });
 
     if (alreadyDone) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
+      final bool? proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1C1C2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
             children: [
-              const Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
-              const SizedBox(width: 12),
-              const Text(
-                'Rest you did your workout',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
+              Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
+              SizedBox(width: 12),
+              Text('Session Done', style: TextStyle(color: Colors.white)),
             ],
           ),
-          backgroundColor: const Color(0xFF1C1C2E),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
+          content: const Text(
+            'You have already completed a workout today. Would you like to start another session?',
+            style: TextStyle(color: Colors.grey, fontSize: 15),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A9FFF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Start Workout'),
+            ),
+          ],
         ),
       );
-      return;
+      if (proceed != true) return;
     }
 
     final routines = _resolvedRoutines(day);

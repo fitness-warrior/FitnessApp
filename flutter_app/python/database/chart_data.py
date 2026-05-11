@@ -32,7 +32,7 @@ class CollectedData:
     
     def find_user_done(self):
         self.cur.execute("""
-            SELECT e.exer_name, pe.plan_exer_PB
+            SELECT e.exer_name, e.exer_type, pe.plan_exer_PB
             FROM exercise e
             JOIN plan_exercise pe ON pe.exer_id = e.exer_id
             JOIN training_exercise te ON te.exer_id = e.exer_id
@@ -40,11 +40,42 @@ class CollectedData:
             JOIN training_body tb ON tb.train_id = t.train_id
             WHERE t.train_data IS NOT NULL
             AND tb.body_id = %s
-            ORDER BY pe.plan_exer_PB DESC
+            ORDER BY
+                CASE WHEN e.exer_type = 'cardio' THEN 0 ELSE 1 END,
+                pe.plan_exer_PB DESC
         """, (self.body_id,))
         return self.cur.fetchall()
     
-    
+    def find_body_type(self):
+        self.cur.execute("""
+            SELECT e.exer_body_area, COUNT(*) AS area_count
+            FROM training t
+            JOIN training_body tb ON tb.train_id = t.train_id
+            JOIN training_exercise te ON te.train_id = t.train_id
+            JOIN exercise e ON e.exer_id = te.exer_id
+            WHERE tb.body_id = %s
+              AND t.train_data IS NOT NULL
+            GROUP BY e.exer_body_area
+            ORDER BY area_count DESC, e.exer_body_area
+        """, (self.body_id,))
+
+        rows = self.cur.fetchall()
+        if not rows:
+            return []
+
+        total_done = sum(row[1] for row in rows)
+        if total_done == 0:
+            return []
+
+        return [
+            {
+                "body_area": row[0],
+                "count": row[1],
+                "percentage": round((row[1] / total_done) * 100, 2),
+            }
+            for row in rows
+        ]
+        
     def _get_train_name(self,name):
         self.cur.execute("""
             SELECT t.train_data, t.train_mins, t.train_effort, t.train_reps, e.exer_type
@@ -79,6 +110,16 @@ class CollectedData:
             ORDER BY t.train_data
 """, (self.body_id,))
         return self.cur.fetchall()
+    
+    def get_weight(self):
+        self.cur.execute("""
+            SELECT b.body_weight, b.body_weight_past
+            FROM body_metrics
+            WHERE bm.body_id = %s
+""", (self.body_id,))
+        return self.cur.fetchone()
+    
+    
     
 #set a limmit for 7 days but not max how much 1 can do in a day 
     
@@ -148,6 +189,72 @@ class CollectedData:
             new_row = [row[0],total]
             final_collection.append (new_row)
         return final_collection  
+    
+    def _get_meal_calories(self):
+        """Get all meals and their calories for the past 7 days"""
+        self.cur.execute("""
+            SELECT mp.meal_day, f.food_calories
+            FROM meal_plan mp
+            JOIN food_plan fp ON fp.meal_id = mp.meal_id
+            JOIN food f ON f.food_id = fp.food_id
+            WHERE mp.body_id = %s
+            AND mp.meal_day >= NOW() - INTERVAL 7 DAY
+            ORDER BY mp.meal_day
+        """, (self.body_id,))
+        return self.cur.fetchall()
+    
+    def get_daily_calories_7(self):
+        rows = self._get_meal_calories()
+        if not rows:
+            return []
+        
+        daily_totals = {}
+        
+        # Accumulate calories by day
+        for row in rows:
+            meal_date = self._formatted_date(row[0])
+            calories = row[1]
+            
+            if meal_date not in daily_totals:
+                daily_totals[meal_date] = 0
+            daily_totals[meal_date] += calories
+        
+        # Convert to sorted list
+        final_collection = []
+        for date in sorted(daily_totals.keys()):
+            final_collection.append([date, round(daily_totals[date], 2)])
+        
+        return final_collection
+    
+    def total_calories_7(self):
+        intake_data = self.get_daily_calories_7()
+        exercise_data = self.day_cadio_callories()
+        
+        # Create a dictionary for intake by date
+        intake_by_date = {}
+        for date, calories in intake_data:
+            intake_by_date[date] = calories
+        
+        # Create a dictionary for exercise by date
+        exercise_by_date = {}
+        for date, calories in exercise_data:
+            exercise_by_date[date] = calories
+        
+        # Combine both datasets
+        all_dates = set(intake_by_date.keys()) | set(exercise_by_date.keys())
+        final_collection = []
+        
+        for date in sorted(all_dates):
+            intake = intake_by_date.get(date, 0)
+            exercise = exercise_by_date.get(date, 0)
+            final_collection.append({
+                "date": date,
+                "intake_calories": intake,
+                "exercise_calories_burned": round(exercise, 2),
+                "net_calories": round(intake - exercise, 2)
+            })
+        
+        return final_collection
        
 
 if __name__ == "__main__":
@@ -157,6 +264,8 @@ if __name__ == "__main__":
     print(CD.strength_total("Bench Press")) #add rep and weight
     print(CD.max_mins_weight("Jump Rope" )) #should be km and mins
     print(CD.max_mins_weight("Bench Press")) #should be kg and weight
+    print(CD.find_body_type())
+    print(CD.get_weight())
     
     print(CD.day_cadio_callories())
     
