@@ -1414,14 +1414,31 @@ class _WorkoutPageState extends State<WorkoutPage> {
             childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             collapsedIconColor: Colors.white,
             iconColor: const Color(0xFF4A9FFF),
-            title: Text(
-              'My Routines (${_savedWorkouts.length})',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            title: (() {
+              // Calculate unique routines count for the header
+              final Set<String> uniqueNames = {};
+              int uniqueCount = 0;
+              for (var w in _savedWorkouts) {
+                String name = (w['name']?.toString() ?? '').trim();
+                const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                if (dayNames.contains(name.toLowerCase())) name = '';
+                
+                if (name.isEmpty) {
+                  uniqueCount++; // Nameless ones are always unique in our current logic
+                } else if (!uniqueNames.contains(name.toLowerCase())) {
+                  uniqueNames.add(name.toLowerCase());
+                  uniqueCount++;
+                }
+              }
+              return Text(
+                'My Routines ($uniqueCount)',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              );
+            })(),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1441,113 +1458,119 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       ),
                     )
                   ]
-                : _savedWorkouts.asMap().entries.map((entry) {
-                    final workout = entry.value;
-                    final idx = entry.key;
-                    final exercises = workout['exercises'];
-                    final exerciseList = exercises is List ? exercises : [];
-                    final dateText = workout['date']?.toString() ?? '';
-                    final workoutNumber = _savedWorkouts.length - idx;
-                    final routineName =
-                        workout['name']?.toString() ?? 'Workout $workoutNumber';
-                    final assignedDays =
-                        _assignedRoutineDays[routineName] ?? [];
-                    final isAssigned = assignedDays.isNotEmpty;
+                : (() {
+                    // Get unique routines by name, keeping only the newest one (since list is already sorted newest first)
+                    final Map<String, Map<String, dynamic>> uniqueRoutinesMap = {};
+                    final List<Map<String, dynamic>> displayList = [];
+                    
+                    for (var workout in _savedWorkouts) {
+                      String rawName = (workout['name']?.toString() ?? '').trim();
+                      
+                      // Filter out day names to treat them as nameless
+                      const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                      if (dayNames.contains(rawName.toLowerCase())) {
+                        rawName = '';
+                      }
+                      
+                      if (rawName.isEmpty) {
+                        // Nameless workouts are always shown uniquely
+                        displayList.add(workout);
+                      } else {
+                        if (!uniqueRoutinesMap.containsKey(rawName.toLowerCase())) {
+                          uniqueRoutinesMap[rawName.toLowerCase()] = workout;
+                          displayList.add(workout);
+                        }
+                      }
+                    }
 
-                    return GestureDetector(
-                      onTap: () =>
-                          _openRoutineDetailsDialog(workout, routineName),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isAssigned
-                              ? const Color(0xFF1E1A3A)
-                              : const Color(0xFF252538),
-                          borderRadius: BorderRadius.circular(12),
-                          border: isAssigned
-                              ? Border.all(
-                                  color: const Color(0xFF7C5CBF),
-                                  width: 1.2,
-                                )
-                              : null,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          routineName,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                      ),
-                                      if (isAssigned)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF7C5CBF)
-                                                .withOpacity(0.25),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            border: Border.all(
-                                              color: const Color(0xFF7C5CBF),
-                                              width: 1,
+                    return displayList.map((workout) {
+                      final exercises = workout['exercises'];
+                      final exerciseList = exercises is List ? exercises : [];
+                      final dateText = workout['date']?.toString() ?? '';
+                      
+                      // Numbering based on original list position for consistency
+                      final originalIdx = _savedWorkouts.indexOf(workout);
+                      final workoutNumber = _savedWorkouts.length - originalIdx;
+                      
+                      String routineName = (workout['name']?.toString() ?? '').trim();
+                      const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                      if (dayNames.contains(routineName.toLowerCase()) || routineName.isEmpty) {
+                        routineName = 'Workout $workoutNumber';
+                      }
+
+                      final assignedDays = _assignedRoutineDays[routineName] ?? [];
+                      final isAssigned = assignedDays.isNotEmpty;
+
+                      return GestureDetector(
+                        onTap: () => _openRoutineDetailsDialog(workout, routineName),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isAssigned ? const Color(0xFF1E1A3A) : const Color(0xFF252538),
+                            borderRadius: BorderRadius.circular(12),
+                            border: isAssigned ? Border.all(color: const Color(0xFF7C5CBF), width: 1.2) : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            routineName,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.calendar_today_rounded,
-                                                size: 11,
-                                                color: Color(0xFFB39DDB),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                assignedDays.join(', '),
-                                                style: const TextStyle(
-                                                  color: Color(0xFFB39DDB),
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
                                         ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '${exerciseList.length} exercises  •  $dateText',
-                                    style: TextStyle(
-                                        color: Colors.grey[500], fontSize: 12),
-                                  ),
-                                ],
+                                        if (isAssigned)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF7C5CBF).withOpacity(0.25),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: const Color(0xFF7C5CBF), width: 1),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.calendar_today_rounded, size: 11, color: Color(0xFFB39DDB)),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  assignedDays.join(', '),
+                                                  style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 11, fontWeight: FontWeight.w600),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${exerciseList.length} exercises  •  $dateText',
+                                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete,
-                                  color: Colors.redAccent, size: 20),
-                              onPressed: () => _deleteRoutine(idx),
-                              constraints: const BoxConstraints(),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ],
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                onPressed: () => _deleteRoutine(originalIdx),
+                                constraints: const BoxConstraints(),
+                                padding: EdgeInsets.zero,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList();
+                  })(),
           ),
         ),
       ],

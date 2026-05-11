@@ -277,17 +277,29 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
       }
     }
 
+    // Use the original routine's name if it was a single routine session, otherwise leave nameless
+    String finalName = '';
+    if (widget.routines.length == 1) {
+      finalName = widget.routines.first['name']?.toString() ?? '';
+    }
+    
+    // Safety check: Never allow a workout to be named after a day (e.g. "Monday")
+    const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    if (dayNames.contains(finalName.toLowerCase().trim())) {
+      finalName = '';
+    }
+
     // Save to local history so the app knows we did a workout today
     await WorkoutStorage.saveWorkout(
       allExercises,
-      workoutName: widget.dayName,
+      workoutName: finalName,
     );
 
     // Sync to API (Best effort)
     try {
       await WorkoutService.submitWorkout(
         allExercises,
-        notes: widget.dayName,
+        notes: finalName,
       ).timeout(const Duration(seconds: 5));
     } catch (_) {}
 
