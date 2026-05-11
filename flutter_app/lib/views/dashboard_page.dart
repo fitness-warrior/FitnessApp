@@ -73,51 +73,7 @@ class _DashboardPage extends State<DashboardPage> {
     super.initState();
     maxCalDeviation = cal.reduce((a, b) => a.abs() > b.abs() ? a : b).abs();
     _charts = [
-      _ChartCard(
-        id: 'weight',
-        builder: (onDismissed) => SizedBox(
-          height: 200,
-          child: Core.bar(
-            key: const ValueKey('weight-chart'),
-            name: 'Weight',
-            dataValues: weight,
-            start: start,
-            range: range,
-            y: 'weight (kg)',
-            x: 'days',
-            onDismissed: onDismissed,
-          ),
-        ),
-      ),
-      _ChartCard(
-        id: 'calories',
-        builder: (onDismissed) => SizedBox(
-          height: 200,
-          child: Core.bar(
-            key: const ValueKey('calories-chart'),
-            name: 'Calories',
-            dataValues: cal,
-            start: calStart,
-            range: maxCalDeviation,
-            y: 'calorie intake/defist',
-            x: 'days',
-            onDismissed: onDismissed,
-          ),
-        ),
-      ),
-      _ChartCard(
-        id: 'targets',
-        builder: (onDismissed) => SizedBox(
-          height: 300,
-          child: Core.pie(
-            key: const ValueKey('targets-chart'),
-            name: 'Targets',
-            dataValues: target,
-            labels: order,
-            onDismissed: onDismissed,
-          ),
-        ),
-      ),
+      
     ];
   }
 
@@ -273,6 +229,18 @@ class _DashboardPage extends State<DashboardPage> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Column(
           children: [
+            if (_charts.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                child: Text(
+                  'No charts yet. Use the Add Chart button to create a new chart.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
             for (final chart in _charts) ...[
               chart.builder(() => _removeChart(chart.id)),
               const SizedBox(height: 12),
