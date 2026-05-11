@@ -51,6 +51,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   Future<void> _loadAssignedRoutines() async {
+    // Clear old state first to prevent leakage from previous user session
+    setState(() => _assignedRoutineDays = {});
+    
     try {
       final plan = await WeeklyPlanService.getWeeklyPlan();
       if (plan != null && mounted) {
@@ -72,6 +75,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   Future<void> _loadSavedWorkouts() async {
+    setState(() => _loadingSavedWorkouts = true);
     try {
       // 1. Load local workouts
       final localWorkouts = (await WorkoutStorage.getWorkouts())
