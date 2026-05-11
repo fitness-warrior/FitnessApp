@@ -9,8 +9,7 @@ class MyPieChart extends StatelessWidget {
     super.key,
     required this.num,
     required this.order,
-  })  : assert(num.length >= 4, 'num must contain at least 4 values'),
-        assert(order.length >= 4, 'order must contain at least 4 labels');
+  });
 
   @override
   Widget build(BuildContext context) {
