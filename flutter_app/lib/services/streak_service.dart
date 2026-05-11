@@ -17,6 +17,12 @@ class StreakService {
   static const _kLastWorkoutDate = 'local_last_workout_date';
   static const _kWeekStartDate = 'local_week_start_date';
 
+  static Future<String> _getNamespacedKey(String baseKey) async {
+    final user = await AuthService.getCurrentUser();
+    final userId = user?['user_id']?.toString() ?? user?['id']?.toString() ?? 'anonymous';
+    return '${baseKey}_$userId';
+  }
+
   static void notifyStreakChanged() {
     streakVersion.value++;
   }
@@ -48,12 +54,12 @@ class StreakService {
   static Future<Map<String, dynamic>> _readLocal() async {
     final prefs = await SharedPreferences.getInstance();
     return {
-      'current_streak': prefs.getInt(_kCurrentStreak) ?? 0,
-      'longest_streak': prefs.getInt(_kLongestStreak) ?? 0,
-      'workouts_this_week': prefs.getInt(_kWorkoutsThisWeek) ?? 0,
-      'weekly_goal': prefs.getInt(_kWeeklyGoal) ?? 3,
-      'last_workout_date': prefs.getString(_kLastWorkoutDate),
-      'week_start_date': prefs.getString(_kWeekStartDate),
+      'current_streak': prefs.getInt(await _getNamespacedKey(_kCurrentStreak)) ?? 0,
+      'longest_streak': prefs.getInt(await _getNamespacedKey(_kLongestStreak)) ?? 0,
+      'workouts_this_week': prefs.getInt(await _getNamespacedKey(_kWorkoutsThisWeek)) ?? 0,
+      'weekly_goal': prefs.getInt(await _getNamespacedKey(_kWeeklyGoal)) ?? 3,
+      'last_workout_date': prefs.getString(await _getNamespacedKey(_kLastWorkoutDate)),
+      'week_start_date': prefs.getString(await _getNamespacedKey(_kWeekStartDate)),
     };
   }
 
@@ -64,8 +70,15 @@ class StreakService {
     final today = _todayKey();
     final weekStart = _weekStartKey();
 
-    final lastDate = prefs.getString(_kLastWorkoutDate);
-    final savedWeekStart = prefs.getString(_kWeekStartDate);
+    final lastWorkoutKey = await _getNamespacedKey(_kLastWorkoutDate);
+    final weekStartKey = await _getNamespacedKey(_kWeekStartDate);
+    final workoutsThisWeekKey = await _getNamespacedKey(_kWorkoutsThisWeek);
+    final currentStreakKey = await _getNamespacedKey(_kCurrentStreak);
+    final longestStreakKey = await _getNamespacedKey(_kLongestStreak);
+    final weeklyGoalKey = await _getNamespacedKey(_kWeeklyGoal);
+
+    final lastDate = prefs.getString(lastWorkoutKey);
+    final savedWeekStart = prefs.getString(weekStartKey);
 
     // Already recorded a workout today — don't double-count
     if (lastDate == today) {
@@ -73,39 +86,39 @@ class StreakService {
     }
 
     // Reset weekly counter when a new week starts
-    int workoutsThisWeek = prefs.getInt(_kWorkoutsThisWeek) ?? 0;
+    int workoutsThisWeek = prefs.getInt(workoutsThisWeekKey) ?? 0;
     if (savedWeekStart != weekStart) {
       workoutsThisWeek = 0;
-      await prefs.setString(_kWeekStartDate, weekStart);
+      await prefs.setString(weekStartKey, weekStart);
     }
     workoutsThisWeek++;
-    await prefs.setInt(_kWorkoutsThisWeek, workoutsThisWeek);
+    await prefs.setInt(workoutsThisWeekKey, workoutsThisWeek);
 
     // Calculate streak: extends if last workout was yesterday or today
-    int currentStreak = prefs.getInt(_kCurrentStreak) ?? 0;
+    int currentStreak = prefs.getInt(currentStreakKey) ?? 0;
     if (lastDate == null || _isYesterday(lastDate)) {
       currentStreak++;
     } else {
       // Gap of more than one day — streak resets
       currentStreak = 1;
     }
-    await prefs.setInt(_kCurrentStreak, currentStreak);
+    await prefs.setInt(currentStreakKey, currentStreak);
 
     // Update longest streak
-    int longest = prefs.getInt(_kLongestStreak) ?? 0;
+    int longest = prefs.getInt(longestStreakKey) ?? 0;
     if (currentStreak > longest) {
       longest = currentStreak;
-      await prefs.setInt(_kLongestStreak, longest);
+      await prefs.setInt(longestStreakKey, longest);
     }
 
     // Record today
-    await prefs.setString(_kLastWorkoutDate, today);
+    await prefs.setString(lastWorkoutKey, today);
 
     return {
       'current_streak': currentStreak,
       'longest_streak': longest,
       'workouts_this_week': workoutsThisWeek,
-      'weekly_goal': prefs.getInt(_kWeeklyGoal) ?? 3,
+      'weekly_goal': prefs.getInt(weeklyGoalKey) ?? 3,
       'last_workout_date': today,
       'week_start_date': weekStart,
     };
@@ -114,13 +127,14 @@ class StreakService {
   /// Reads just the saved weekly goal (defaults to 3 if never set).
   static Future<int> readWeeklyGoal() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_kWeeklyGoal) ?? 3;
+    return prefs.getInt(await _getNamespacedKey(_kWeeklyGoal)) ?? 3;
   }
 
   /// Saves the user's chosen weekly workout goal.
   static Future<void> setWeeklyGoal(int days) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_kWeeklyGoal, days.clamp(1, 7));
+    final key = await _getNamespacedKey(_kWeeklyGoal);
+    await prefs.setInt(key, days.clamp(1, 7));
     notifyStreakChanged(); // refresh any listening widgets
   }
 

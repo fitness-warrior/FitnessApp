@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import '../data/possible_chart.dart';
+import '../models/chart_model.dart';
+import '../services/chart_service.dart';
 
 
 class AddChart extends StatefulWidget {
-  const AddChart({Key? key}) : super(key: key);
+  final int bodyId;
+
+  const AddChart({Key? key, required this.bodyId}) : super(key: key);
 
   @override
   State<AddChart> createState() => _AddChartState();
@@ -11,6 +14,36 @@ class AddChart extends StatefulWidget {
 
 class _AddChartState extends State<AddChart> {
   int? _expandedIndex;
+  List<Chart> _charts = [];
+  bool _isLoading = true;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChartOptions();
+  }
+
+  Future<void> _loadChartOptions() async {
+    try {
+      final options = await ChartService.getChartOptions(widget.bodyId);
+      if (mounted) {
+        setState(() {
+          _charts = options;
+          _isLoading = false;
+          _loadError = options.isEmpty ? 'No completed exercises found yet.' : null;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading chart options: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadError = 'Could not load chart options.';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +53,26 @@ class _AddChartState extends State<AddChart> {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: chartSelection.length,
+        itemCount: _isLoading ? 1 : _charts.length,
         itemBuilder: (context, index) {
-          final chart = chartSelection[index];
+          if (_isLoading) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (_loadError != null && _charts.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                _loadError!,
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
+
+          final chart = _charts[index];
           final isExpanded = _expandedIndex == index;
 
           return Card(
@@ -52,7 +102,10 @@ class _AddChartState extends State<AddChart> {
                       ),
                       title: Text(option),
                       onTap: () {
-                        
+                        Navigator.pop(context, {
+                          'chartName': chart.name,
+                          'option': option,
+                        });
                       },
                     ),
                   ),

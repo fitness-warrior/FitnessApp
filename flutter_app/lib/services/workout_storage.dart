@@ -66,16 +66,7 @@ class WorkoutStorage {
     final key = await _getNamespacedKey(_currentWorkoutsKey);
     String? sessionsJson = prefs.getString(key);
 
-    // Migrate from old global key if namespaced key is empty
-    final migratedSessionsKey = '${key}_migrated';
-    if (prefs.getBool(migratedSessionsKey) != true) {
-      final oldSessionsJson = prefs.getString(_currentWorkoutsKey);
-      if (oldSessionsJson != null && (sessionsJson == null || sessionsJson == '[]')) {
-        sessionsJson = oldSessionsJson;
-        await prefs.setString(key, sessionsJson);
-      }
-      await prefs.setBool(migratedSessionsKey, true);
-    }
+    // Removed legacy migration logic that polluted user profiles with global sessions.
 
     if (sessionsJson == null) return [];
     
@@ -125,22 +116,6 @@ class WorkoutStorage {
     final List<dynamic> all = existing != null ? jsonDecode(existing) : [];
 
     String finalName = workoutName?.trim() ?? '';
-    if (finalName.isEmpty) {
-      int maxNum = 0;
-      for (final w in all) {
-        final n = w['name']?.toString() ?? '';
-        if (n.startsWith('Workout ')) {
-          final parts = n.split(' ');
-          if (parts.length == 2) {
-            final num = int.tryParse(parts[1]);
-            if (num != null && num > maxNum) {
-              maxNum = num;
-            }
-          }
-        }
-      }
-      finalName = 'Workout ${maxNum + 1}';
-    }
 
     all.add({
       'date': DateTime.now().toIso8601String(),
@@ -156,20 +131,7 @@ class WorkoutStorage {
     final key = await _getNamespacedKey(_key);
     String? existing = prefs.getString(key);
 
-    // Migration: Copy over the old shared data to this user's profile
-    final migratedKey = '${key}_migrated';
-    if (prefs.getBool(migratedKey) != true) {
-      final oldExisting = prefs.getString(_key);
-      if (oldExisting != null) {
-        final List<dynamic> oldList = jsonDecode(oldExisting);
-        final List<dynamic> currentList = existing != null ? jsonDecode(existing) : [];
-        
-        currentList.insertAll(0, oldList);
-        existing = jsonEncode(currentList);
-        await prefs.setString(key, existing);
-      }
-      await prefs.setBool(migratedKey, true);
-    }
+    // Removed legacy migration logic that polluted user profiles with global routine data.
 
     if (existing == null) return [];
     final List<dynamic> all = jsonDecode(existing);
