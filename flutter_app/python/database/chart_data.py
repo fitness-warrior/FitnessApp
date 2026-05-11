@@ -119,6 +119,8 @@ class CollectedData:
 """, (self.body_id,))
         return self.cur.fetchone()
     
+    
+    
 #set a limmit for 7 days but not max how much 1 can do in a day 
     
     def day_cadio_callories (self):
@@ -187,6 +189,43 @@ class CollectedData:
             new_row = [row[0],total]
             final_collection.append (new_row)
         return final_collection  
+    
+    def _get_meal_calories(self):
+        """Get all meals and their calories for the past 7 days"""
+        self.cur.execute("""
+            SELECT mp.meal_day, f.food_calories
+            FROM meal_plan mp
+            JOIN food_plan fp ON fp.meal_id = mp.meal_id
+            JOIN food f ON f.food_id = fp.food_id
+            WHERE mp.body_id = %s
+            AND mp.meal_day >= NOW() - INTERVAL 7 DAY
+            ORDER BY mp.meal_day
+        """, (self.body_id,))
+        return self.cur.fetchall()
+    
+    def get_daily_calories_7(self):
+        """Collect total calories eaten per day for the past 7 days"""
+        rows = self._get_meal_calories()
+        if not rows:
+            return []
+        
+        daily_totals = {}
+        
+        # Accumulate calories by day
+        for row in rows:
+            meal_date = self._formatted_date(row[0])
+            calories = row[1]
+            
+            if meal_date not in daily_totals:
+                daily_totals[meal_date] = 0
+            daily_totals[meal_date] += calories
+        
+        # Convert to sorted list
+        final_collection = []
+        for date in sorted(daily_totals.keys()):
+            final_collection.append([date, round(daily_totals[date], 2)])
+        
+        return final_collection
        
 
 if __name__ == "__main__":
