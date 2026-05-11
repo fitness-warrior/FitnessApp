@@ -24,10 +24,15 @@ class FoodBrowserPage extends StatelessWidget {
     return QuantityUnit.g;
   }
 
+  bool _supportsMillilitres(MealItem food) {
+    return _defaultUnitFor(food) == QuantityUnit.ml;
+  }
+
   Future<MealItem?> _promptForQuantity(
       BuildContext context, MealItem food) async {
     final controller = TextEditingController(text: '100');
-    var selectedUnit = _defaultUnitFor(food);
+    final supportsMl = _supportsMillilitres(food);
+    var selectedUnit = supportsMl ? QuantityUnit.ml : QuantityUnit.g;
     String? errorText;
 
     final picked = await showDialog<MealItem>(
@@ -51,29 +56,31 @@ class FoodBrowserPage extends StatelessWidget {
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<QuantityUnit>(
-                    initialValue: selectedUnit,
-                    decoration: const InputDecoration(
-                      labelText: 'Unit',
+                  if (supportsMl) ...[
+                    DropdownButtonFormField<QuantityUnit>(
+                      initialValue: selectedUnit,
+                      decoration: const InputDecoration(
+                        labelText: 'Unit',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: QuantityUnit.g,
+                          child: Text('grams (g)'),
+                        ),
+                        DropdownMenuItem(
+                          value: QuantityUnit.ml,
+                          child: Text('millilitres (ml)'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() {
+                          selectedUnit = value;
+                        });
+                      },
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: QuantityUnit.g,
-                        child: Text('grams (g)'),
-                      ),
-                      DropdownMenuItem(
-                        value: QuantityUnit.ml,
-                        child: Text('millilitres (ml)'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setDialogState(() {
-                        selectedUnit = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 8),
+                  ],
                   TextField(
                     controller: controller,
                     keyboardType: TextInputType.number,
