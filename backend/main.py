@@ -51,6 +51,25 @@ async def lifespan(app: FastAPI):
     # Ensure weekly plan table exists on startup
     async with app.state.db_pool.acquire() as _conn:
         await _conn.execute("""
+            ALTER TABLE IF EXISTS training
+            ADD COLUMN IF NOT EXISTS user_id INT
+        """)
+        await _conn.execute("""
+            ALTER TABLE IF EXISTS training_exercise
+            ADD COLUMN IF NOT EXISTS sets INT,
+            ADD COLUMN IF NOT EXISTS reps INT,
+            ADD COLUMN IF NOT EXISTS weight FLOAT,
+            ADD COLUMN IF NOT EXISTS notes TEXT
+        """)
+        await _conn.execute("""
+            UPDATE training t
+            SET user_id = bm.user_id
+            FROM training_body tb
+            JOIN body_metrics bm ON bm.body_id = tb.body_id
+            WHERE t.train_id = tb.train_id
+              AND t.user_id IS NULL
+        """)
+        await _conn.execute("""
             CREATE TABLE IF NOT EXISTS user_weekly_plan (
                 id SERIAL PRIMARY KEY,
                 user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -618,10 +637,10 @@ async def save_workout(
     request: WorkoutRequest,
     user_id: int = Depends(get_current_user_id),
 ):
-    """Save a completed workout for the user"""
+    """Save a completed workout for the user - one training row per exercise"""
     try:
         async with app.state.db_pool.acquire() as connection:
-            # Insert the workout record
+            # Keep the existing workout tables in sync for compatibility.
             workout = await connection.fetchrow(
                 """
                 INSERT INTO user_workout (user_id, created_at, duration_minutes, notes)
@@ -633,9 +652,54 @@ async def save_workout(
                 request.notes
             )
             workout_id = workout["workout_id"]
-            
-            # Insert each exercise in the workout
+
+            body_id = await connection.fetchval(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id,
+            )
+
+            # Insert each exercise in the workout and training tables.
+            # Create one training row per exercise with correct metric mapping
             for exc in request.exercises:
+                # Get exercise type (strength vs cardio)
+                exer_type = await connection.fetchval(
+                    "SELECT exer_type FROM exercise WHERE exer_id = $1",
+                    exc.exer_id
+                )
+
+                # Map metrics based on exercise type
+                train_mins = 0
+                train_reps = 0
+                train_effort = 0.0
+
+                if exer_type == "strength":
+                    # Strength: train_reps = reps performed, train_effort = weight in kg
+                    train_reps = exc.reps or 0
+                    train_effort = float(exc.weight or 0.0)
+                elif exer_type == "cardio":
+                    # Cardio: train_mins = distance in km, train_effort = intensity level
+                    train_mins = int(exc.weight or 0)  # weight field used for distance
+                    train_effort = float(exc.reps or 0)  # reps field used for intensity
+                else:
+                    # Default: treat as strength
+                    train_reps = exc.reps or 0
+                    train_effort = float(exc.weight or 0.0)
+
+                # Insert training row for this exercise
+                training = await connection.fetchrow(
+                    """
+                    INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort)
+                    VALUES ($1, NOW(), $2, $3, $4)
+                    RETURNING train_id
+                    """,
+                    user_id,
+                    train_mins,
+                    train_reps,
+                    train_effort,
+                )
+                train_id = training["train_id"]
+
+                # Insert user_workout_exercise link
                 await connection.execute(
                     """
                     INSERT INTO user_workout_exercise 
@@ -649,6 +713,30 @@ async def save_workout(
                     exc.weight,
                     exc.notes
                 )
+
+                # Insert training_exercise link
+                await connection.execute(
+                    """
+                    INSERT INTO training_exercise (train_id, exer_id, sets, reps, weight, notes)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    """,
+                    train_id,
+                    exc.exer_id,
+                    exc.sets,
+                    exc.reps,
+                    exc.weight,
+                    exc.notes,
+                )
+
+                if body_id is not None:
+                    await connection.execute(
+                        """
+                        INSERT INTO training_body (train_id, body_id)
+                        VALUES ($1, $2)
+                        """,
+                        train_id,
+                        body_id,
+                    )
             
             # Update streak automatically
             from datetime import date, timedelta
