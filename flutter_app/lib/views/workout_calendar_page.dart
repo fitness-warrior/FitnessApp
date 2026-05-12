@@ -32,10 +32,11 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     'saturday': 'Saturday', 'sunday': 'Sunday',
   };
 
-  // Only routine *names* are stored — resolved to full objects at render time.
   final Map<String, List<String>> _weeklyPlanNames = {
     for (final d in ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']) d: [],
   };
+
+  final Map<String, Map<String, dynamic>> _routineCatalog = {};
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -54,8 +55,30 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     if (!mounted) return;
     if (plan != null) {
       setState(() {
+        _routineCatalog.clear();
+
+        final weekPlan = plan['week_plan'] is Map
+            ? Map<String, dynamic>.from(plan['week_plan'] as Map)
+            : plan;
+
         for (final day in _days) {
-          _weeklyPlanNames[day] = List<String>.from(plan[day] ?? []);
+          final names = weekPlan[day];
+          _weeklyPlanNames[day] = names is List
+              ? names.map((n) => n.toString()).toList()
+              : <String>[];
+        }
+
+        final routinesRaw = plan['routines'];
+        if (routinesRaw is List) {
+          for (final routine in routinesRaw) {
+            if (routine is Map) {
+              final data = Map<String, dynamic>.from(routine);
+              final name = data['name']?.toString();
+              if (name != null && name.isNotEmpty) {
+                _routineCatalog[name] = data;
+              }
+            }
+          }
         }
       });
     } else {
@@ -65,9 +88,12 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   Future<void> _saveToApi() async {
-    final snapshot = Map<String, List<String>>.fromEntries(
-      _days.map((d) => MapEntry(d, List<String>.from(_weeklyPlanNames[d] ?? []))),
-    );
+    final snapshot = <String, dynamic>{
+      'week_plan': {
+        for (final day in _days) day: List<String>.from(_weeklyPlanNames[day] ?? []),
+      },
+      'routines': _routineCatalog.values.toList(),
+    };
     final ok = await WeeklyPlanService.saveWeeklyPlan(snapshot);
     if (!mounted) return;
     if (!ok) {
@@ -85,23 +111,38 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     await _saveToApi();
   }
 
-
-
   List<Map<String, dynamic>> _resolvedRoutines(String day) {
     final names = _weeklyPlanNames[day] ?? [];
-    return names
-        .map((name) => widget.savedWorkouts.firstWhere(
-              (w) => w['name']?.toString() == name,
-              orElse: () => <String, dynamic>{},
-            ))
-        .where((w) => w.isNotEmpty)
-        .toList();
+    return names.map((name) {
+      final planRoutine = _routineCatalog[name];
+      if (planRoutine != null && planRoutine.isNotEmpty) {
+        return planRoutine;
+      }
+      return widget.savedWorkouts.firstWhere(
+        (w) => w['name']?.toString() == name,
+        orElse: () => <String, dynamic>{},
+      );
+    }).where((w) => w.isNotEmpty).toList();
   }
 
   // ── Dialogs ───────────────────────────────────────────────────────────────
 
   void _openAssignDialog(String day) {
     List<String> selected = List<String>.from(_weeklyPlanNames[day] ?? []);
+    
+    // Deduplicate routines by name for the assign list
+    final Set<String> seenNames = {};
+    final List<Map<String, dynamic>> uniqueRoutines = [];
+    
+    for (var workout in widget.savedWorkouts) {
+      final name = workout['name']?.toString();
+      if (name == null || name.isEmpty) {
+        uniqueRoutines.add(workout);
+      } else if (!seenNames.contains(name)) {
+        seenNames.add(name);
+        uniqueRoutines.add(workout);
+      }
+    }
 
     showDialog(
       context: context,
@@ -115,7 +156,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           ),
           content: SizedBox(
             width: double.maxFinite,
-            child: widget.savedWorkouts.isEmpty
+            child: uniqueRoutines.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
@@ -126,19 +167,23 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                   )
                 : ListView.builder(
                     shrinkWrap: true,
-                    itemCount: widget.savedWorkouts.length,
+                    itemCount: uniqueRoutines.length,
                     itemBuilder: (_, i) {
-                      final name = widget.savedWorkouts[i]['name']?.toString()
-                          ?? 'Workout ${i + 1}';
+                      final name = uniqueRoutines[i]['name']?.toString() ??
+                          'Workout ${i + 1}';
                       return CheckboxListTile(
-                        title: Text(name, style: const TextStyle(color: Colors.white)),
+                        title: Text(name,
+                            style: const TextStyle(color: Colors.white)),
                         value: selected.contains(name),
                         activeColor: const Color(0xFF4A9FFF),
                         checkColor: Colors.white,
                         side: const BorderSide(color: Colors.grey),
                         onChanged: (v) => setD(() {
-                          if (v == true) { if (!selected.contains(name)) selected.add(name); }
-                          else { selected.remove(name); }
+                          if (v == true) {
+                            if (!selected.contains(name)) selected.add(name);
+                          } else {
+                            selected.remove(name);
+                          }
                         }),
                       );
                     },
@@ -178,26 +223,40 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     });
 
     if (alreadyDone) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
+      final bool? proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1C1C2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
             children: [
-              const Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
-              const SizedBox(width: 12),
-              const Text(
-                'Rest you did your workout',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
+              Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
+              SizedBox(width: 12),
+              Text('Session Done', style: TextStyle(color: Colors.white)),
             ],
           ),
-          backgroundColor: const Color(0xFF1C1C2E),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
+          content: const Text(
+            'You have already completed a workout today. Would you like to start another session?',
+            style: TextStyle(color: Colors.grey, fontSize: 15),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A9FFF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Start Workout'),
+            ),
+          ],
         ),
       );
-      return;
+      if (proceed != true) return;
     }
 
     final routines = _resolvedRoutines(day);
@@ -280,7 +339,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           final isToday = (i + 1) == todayWeekday;
           final isCompleted = _isDayCompleted(i);
           final assignedCount = (_weeklyPlanNames[day] ?? []).length;
-          final resolved = _resolvedRoutines(day);
 
           return GestureDetector(
             onLongPress: () => _openAssignDialog(day),

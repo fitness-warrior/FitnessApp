@@ -26,6 +26,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://fitness:fitness@db:5432/fitnessapp
+      DB_CONNECT_TIMEOUT: "90"
     ports:
       - "5001:5001"
     depends_on:

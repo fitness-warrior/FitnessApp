@@ -40,6 +40,26 @@ class _AuthPageState extends State<AuthPage> {
       return;
     }
 
+    // Email validation
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(emailController.text.trim())) {
+      setState(() => error = 'Please enter a valid email address');
+      return;
+    }
+
+    // Password validation (only required for sign up)
+    if (!isLogin) {
+      final password = passwordController.text;
+      if (password.length < 8) {
+        setState(() => error = 'Password must be at least 8 characters long');
+        return;
+      }
+      if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password)) {
+        setState(() => error = 'Password must contain at least one special character');
+        return;
+      }
+    }
+
     setState(() {
       isLoading = true;
       error = null;

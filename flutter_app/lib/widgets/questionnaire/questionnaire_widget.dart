@@ -145,6 +145,8 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
   final Map<String, Set<String>> _multiSelections = {};
   bool _useMetricBmi = true;
 
+  bool _isLoadingData = false;
+
   @override
   void initState() {
     super.initState();
@@ -158,6 +160,114 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       } else {
         _textControllers[q.id] = TextEditingController();
       }
+    }
+    _loadExistingData();
+  }
+
+  Future<void> _loadExistingData() async {
+    setState(() => _isLoadingData = true);
+    try {
+      // 1. Try local cache
+      final local = await RecommendationStorage.loadQuestionnaireResponse();
+      
+      // 2. Try backend
+      Map<String, dynamic>? backend;
+      try {
+        backend = await UserService.getQuestionnaireResponse();
+      } catch (e) {
+        debugPrint('[Questionnaire] Backend fetch failed: $e');
+      }
+      
+      final data = backend ?? local;
+      
+      if (data != null && mounted) {
+        setState(() {
+          // Q001: Age
+          if (data.containsKey('age')) {
+            final age = data['age'].toString();
+            _responses['Q001'] = age;
+            _textControllers['Q001']?.text = age;
+          }
+          
+          // Q002: BMI (Height/Weight)
+          if (data.containsKey('height') && data.containsKey('weight')) {
+            _textControllers['Q002_height']?.text = data['height'].toString();
+            _textControllers['Q002_weight']?.text = data['weight'].toString();
+            // Re-calculate BMI for response storage
+            final hVal = double.tryParse(data['height'].toString()) ?? 0;
+            final wVal = double.tryParse(data['weight'].toString()) ?? 0;
+            final bmi = _calculateBmi(hVal, wVal, true);
+            _responses['Q002'] = {
+              'unit': 'metric',
+              'height': hVal,
+              'weight': wVal,
+              'bmi': bmi,
+              'bmiClass': _bmiClassification(bmi),
+            };
+          }
+          
+          // Q003: Goal (with mapping back to UI options)
+          if (data.containsKey('goal')) {
+            final backendGoal = data['goal'].toString();
+            String uiGoal = backendGoal;
+            if (backendGoal == 'Fat Loss') uiGoal = 'Lose weight';
+            else if (backendGoal == 'Muscle Gain') uiGoal = 'Build muscle';
+            else if (backendGoal == 'General Fitness') uiGoal = 'Stay fit';
+            else if (backendGoal == 'Endurance Improvement') uiGoal = 'Improve endurance';
+            else if (backendGoal == 'Injury Rehabilitation') uiGoal = 'Recover from injury';
+            
+            // Special case for 'Gain weight' which maps to 'Muscle Gain' in backend
+            if (backendGoal == 'Muscle Gain' && local?['goal'] == 'Gain weight') {
+              uiGoal = 'Gain weight';
+            }
+
+            _responses['Q003'] = uiGoal;
+          }
+          
+          // Q004: Experience
+          if (data.containsKey('experience')) {
+            _responses['Q004'] = data['experience'];
+          }
+          
+          // Q005: Location
+          if (data.containsKey('location')) {
+            _responses['Q005'] = data['location'];
+          }
+          
+          // Q006: Days per week
+          if (data.containsKey('days_per_week')) {
+            _responses['Q006'] = data['days_per_week'].toString();
+          }
+          
+          // Q007: Session length
+          if (data.containsKey('session_length')) {
+            _responses['Q007'] = '${data['session_length']} mins';
+          }
+          
+          // Q008: Injuries
+          if (data.containsKey('injuries')) {
+            final injs = (data['injuries'] as List?)?.cast<String>() ?? [];
+            _multiSelections['Q008']?.addAll(injs);
+            _responses['Q008'] = injs;
+          }
+          
+          // Q010: Diet preference
+          if (data.containsKey('diet_preference')) {
+            _responses['Q010'] = data['diet_preference'];
+          }
+          
+          // Q011: Allergies
+          if (data.containsKey('allergies')) {
+            final alls = (data['allergies'] as List?)?.cast<String>() ?? [];
+            _multiSelections['Q011']?.addAll(alls);
+            _responses['Q011'] = alls;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[Questionnaire] Error loading existing data: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingData = false);
     }
   }
 
@@ -341,9 +451,21 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     // Persist profile locally (offline cache) — awaited so it's done before nav
     await RecommendationStorage.saveProfile(profile);
 
-    // Save questionnaire to backend (source of truth) — awaited so Profile
-    // page sees the data as soon as we navigate there
-    await _saveToBackend(_responses);
+    // Save questionnaire to backend (creates/updates body_metrics entry)
+    try {
+      await _saveToBackend(_responses);
+      debugPrint('[Questionnaire] Profile saved successfully to backend');
+    } catch (e) {
+      debugPrint('[Questionnaire] Failed to save profile to backend: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Warning: Could not save to server: $e'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      // Continue anyway - local cache has the data
+    }
 
     if (!mounted) return;
 
@@ -578,10 +700,22 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         'allergies': allergies,
       };
 
+      // Save to local cache first
       await RecommendationStorage.saveQuestionnaireResponse(payload);
-      await UserService.saveQuestionnaireResponse(payload);
+      debugPrint('[Questionnaire] Saved to local storage: $payload');
+
+      // Save to backend (creates or updates body_metrics, user_fitness_profile, user_streak)
+      try {
+        await UserService.saveQuestionnaireResponse(payload);
+        debugPrint('[Questionnaire] Successfully saved to backend');
+      } catch (backendError) {
+        debugPrint('[Questionnaire] Backend save failed: $backendError');
+        // Log but don't block progression if backend is unavailable
+        // User profile will trigger questionnaire again next time
+      }
     } catch (e) {
-      // Silently fail - questionnaire still progresses
+      debugPrint('[Questionnaire] Local save failed: $e');
+      rethrow; // Allow caller to handle if local save fails
     }
   }
 
@@ -590,6 +724,13 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     final q = _questions[_index];
     final progress = (_index + 1) / _questions.length;
     final isLast = _index == _questions.length - 1;
+
+    if (_isLoadingData) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0D0D14),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Onboarding Questionnaire')),

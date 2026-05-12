@@ -82,9 +82,9 @@ CREATE TABLE body_metrics (
     body_location VARCHAR(20),
     body_days_per_week INT,
     body_session_length INT,
-    body_injuries TEXT[],
+    body_injuries TEXT,
     body_diet_preference VARCHAR(50),
-    body_allergies TEXT[]
+    body_allergies TEXT
 );
 
 ---------------- EXERCISE ----------------
@@ -99,11 +99,12 @@ CREATE TABLE exercise (
     exer_equip equip NOT NULL,
     exer_light Float NOT NULL,
     exer_mid Float NOT NULL,
-    exer_high Float NOT NULL,
+    exer_high Float NOT NULL
 );
 
 CREATE TABLE training (
     train_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     train_mins INT,
     train_reps INT,
@@ -167,6 +168,17 @@ CREATE TABLE food_plan (
     food_plan_id SERIAL PRIMARY KEY,
     food_id INT REFERENCES food(food_id),
     meal_id INT REFERENCES meal_plan(meal_id)
+);
+
+CREATE TABLE recipe (
+    recipe_id SERIAL PRIMARY KEY,
+    recipe_meal_name VARCHAR(50) NOT NULL,
+    recipe_ingredients TEXT NOT NULL,
+    recipe_allergy_info TEXT,
+    recipe_calories FLOAT NOT NULL,
+    recipe_diet_type VARCHAR(50) NOT NULL,
+    recipe_instructions TEXT NOT NULL,
+    recipe_image_url TEXT
 );
 
 ---------------- GAME ITEMS ----------------
@@ -400,15 +412,15 @@ VALUES
 ('Power Clean','back','strength','Olympic lifting movement','https://youtube.com/watch?v=pN7MtEuDRfA','Barbells',40,60,80),
 ('Thruster','shoulders','strength','Squat to shoulder press','https://youtube.com/watch?v=b3-u2l_RKm0','Dumbbells',15,20,25);
 
-INSERT INTO training (train_data, train_mins, train_reps, train_effort) VALUES
-('2026-02-01 10:15:00', 45, 120, 7.5),
-('2026-02-02 09:30:00', 50, 140, 8.0),
-('2026-02-03 07:20:00', 35, 90, 6.5),
-('2026-02-04 08:25:00', 55, 160, 8.5),
-('2026-02-05 10:40:00', 40, 110, 7.0),
-('2026-02-06 06:25:00', 30, 100, 9.0),
-('2026-02-07 11:20:00', 60, 180, 9.5),
-('2026-02-08 07:45:00', 25, 70, 5.5);
+INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort) VALUES
+(1, '2026-02-01 10:15:00', 45, 120, 7.5),
+(2, '2026-02-02 09:30:00', 50, 140, 8.0),
+(3, '2026-02-03 07:20:00', 35, 90, 6.5),
+(4, '2026-02-04 08:25:00', 55, 160, 8.5),
+(5, '2026-02-05 10:40:00', 40, 110, 7.0),
+(6, '2026-02-06 06:25:00', 30, 100, 9.0),
+(7, '2026-02-07 11:20:00', 60, 180, 9.5),
+(8, '2026-02-08 07:45:00', 25, 70, 5.5);
 
 INSERT INTO training_exercise (train_id, exer_id) VALUES
 (1, 1),
@@ -496,6 +508,39 @@ INSERT INTO food_plan (food_id, meal_id) VALUES
 (6, 3),
 (7, 4),
 (8, 4);
+
+INSERT INTO recipe (
+    recipe_meal_name,
+    recipe_ingredients,
+    recipe_allergy_info,
+    recipe_calories,
+    recipe_diet_type,
+    recipe_instructions,
+    recipe_image_url
+)
+VALUES
+('Vegan Garden Bowl', 'quinoa, cucumber, tomato, spinach, olive oil, lemon', 'none', 410.0, 'Vegan', 'Cook quinoa. Chop vegetables. Toss with olive oil and lemon.','https://www.cottercrunch.com/wp-content/uploads/2016/07/garden-veggie-vegan-buddha-bowls-4-of-1-copy.jpg'),
+('Lentil Tomato Soup', 'lentils, tomatoes, onion, garlic, vegetable broth', 'none', 360.0, 'Vegan', 'Saute onion and garlic. Add lentils, tomatoes, broth. Simmer 30 minutes.', 'https://static01.nyt.com/images/2025/08/06/multimedia/sd-slow-cooker-tomato-lentil-soup-lkvw/sd-slow-cooker-tomato-lentil-soup-lkvw-mediumSquareAt3X.jpg'),
+('Roasted Veggie Plate', 'zucchini, bell peppers, carrots, olive oil, herbs', 'none', 320.0, 'Vegan', 'Roast vegetables at 200C for 20 minutes. Season with herbs.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSQmOPf0XPCpucg0sfysHzAmkWIR1FxiMSnlA&s'),
+('Black Bean Bowl', 'brown rice, black beans, corn, salsa, avocado', 'none', 520.0, 'Vegan', 'Cook rice. Warm beans and corn. Assemble with salsa and avocado.', 'https://littlespoonfarm.com/wp-content/uploads/2021/08/Black-Bean-Burrito-Bowl-Recipe.jpg'),
+('Fruit Chia Cup', 'chia seeds, almond milk, berries, maple syrup', 'none', 300.0, 'Vegan', 'Mix chia with almond milk. Chill overnight. Top with berries and maple syrup.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGVtFmHw0LIk1OsSbu8LY5v0Ktl53rqrACsg&s'),
+('Tofu Stir Fry', 'tofu, broccoli, bell peppers, soy sauce, garlic', 'contains soy', 460.0, 'Vegan', 'Stir fry tofu and vegetables. Add garlic and soy sauce.', 'https://www.midwestliving.com/thmb/rrI2Z1Wlfa_axLHEicoF8w39TZA=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Capture-One-Session1353-1_green-bean-tofu-stir-fry-ae58438831f34cfeacdae75568c68172.jpg'),
+('Tahini Chickpea Salad', 'chickpeas, spinach, cucumber, tahini, lemon', 'contains sesame', 430.0, 'Vegan', 'Mix chickpeas with vegetables. Stir in tahini and lemon.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSR8q6tpCEutB-0pGURDpQEDvRk1fIB_NNonw&s'),
+('Peanut Noodle Bowl', 'rice noodles, peanut butter, soy sauce, carrots, scallions', 'contains peanuts, soy', 540.0, 'Vegan', 'Cook noodles. Mix sauce with peanut butter and soy. Toss and serve.', 'https://www.makingthymeforhealth.com/wp-content/uploads/2017/05/Peanut-Soba-Noodle-Bowls-10.jpg'),
+('Sesame Veggie Wrap', 'tortilla, lettuce, carrots, cucumber, sesame dressing', 'contains gluten, sesame', 380.0, 'Vegan', 'Fill tortilla with vegetables and sesame dressing. Wrap and serve.', 'https://images.immediate.co.uk/production/volatile/sites/30/2020/08/sesame-stir-fry-wrap-00cce25.jpg'),
+('Mushroom Soy Rice', 'rice, mushrooms, soy sauce, green onion', 'contains soy', 420.0, 'Vegan', 'Cook rice. Saute mushrooms. Add soy sauce and combine.', 'https://plantbasedrdblog.com/wp-content/uploads/2022/06/mushroom-fried-rice_feat.jpg'),
+('Grilled Chicken Salad', 'chicken breast, lettuce, cucumber, tomato, olive oil, lemon juice', 'none', 320.5, 'High Protein', 'Season chicken. Grill 6 minutes per side. Chop vegetables. Slice chicken and serve with olive oil and lemon.', 'https://assets.epicurious.com/photos/64a845e67799ee8651e4fb8f/1:1/w_4198,h_4198,c_limit/AshaGrilledChickenSalad_RECIPE_070523_56498.jpg'),
+('Turkey Rice Plate', 'turkey breast, rice, steamed broccoli, olive oil', 'none', 520.0, 'High Protein', 'Cook rice. Grill turkey. Steam broccoli. Plate and season.', 'https://apaigeofpositivity.com/wp-content/uploads/2025/03/Teriyaki-Ground-Turkey-Bowls-8.jpg'),
+('Baked Salmon Bowl', 'salmon, rice, lemon, herbs, olive oil', 'none', 540.0, 'Pescatarian', 'Bake salmon at 200C for 12 minutes. Serve over rice with lemon.', 'https://thewoodenskillet.com/wp-content/uploads/2024/01/baked-salmon-sushi-bowl-recipe-5.jpg'),
+('Beef Veggie Skillet', 'lean beef, zucchini, peppers, olive oil, garlic', 'none', 560.0, 'Regular', 'Saute beef with vegetables and garlic until cooked.', 'https://gardeninthekitchen.com/wp-content/uploads/2022/07/beef-zucchini-skillet_0318.jpg'),
+('Greek Yogurt Fruit', 'greek yogurt, banana, berries, honey', 'none', 300.0, 'Vegetarian', 'Top yogurt with fruit and honey.', 'https://mycasualpantry.com/wp-content/uploads/2022/07/Greek-Yogurt-with-Granola-and-Fruit-bowl-1200-%C3%97-1200-px.jpg'),
+('Shrimp Pasta', 'shrimp, pasta, garlic, cream, parmesan', 'contains shellfish, milk, gluten', 710.0, 'Regular', 'Boil pasta. Saute shrimp with garlic. Add cream and parmesan. Combine.', 'https://www.eatloveeats.com/wp-content/uploads/2021/07/Lemon-Garlic-Shrimp-Pasta-22.jpg'),
+('Tuna Salad', 'tuna, lettuce, cucumber, olive oil, lemon juice', 'contains fish', 330.0, 'Pescatarian', 'Mix tuna with chopped lettuce and cucumber. Add olive oil and lemon.', 'https://www.lifeisbutadish.com/wp-content/uploads/2017/08/Simple-Tuna-Salad-6-1.jpg'),
+('Chicken Alfredo', 'chicken, pasta, cream, parmesan, garlic', 'contains milk, gluten', 760.0, 'Regular', 'Cook pasta. Grill chicken. Make cream sauce with garlic and parmesan. Combine.', 'https://www.allrecipes.com/thmb/ziUOvj4f_me5yvZhYCUy0n4IKbQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/276725-creamy-chicken-alfredo-VAT-001-Beauty-4x3-c4b026db5cb349f4b8fd627c56f91a42.jpg'),
+('Gluten Free Pancakes', 'gluten free flour, eggs, milk, maple syrup', 'contains eggs, milk', 390.0, 'Gluten Free', 'Mix flour, eggs, and milk. Cook pancakes until golden. Serve with syrup.', 'https://glutenfreebaking.com/wp-content/uploads/2024/06/Stack-of-gluten-free-pancakes.jpg'),
+('Keto Omelette', 'eggs, cheese, spinach, butter', 'contains eggs, milk', 280.0, 'Keto', 'Whisk eggs. Saute spinach in butter. Pour eggs, add cheese, fold and serve.', 'https://images.immediate.co.uk/production/volatile/sites/2/2016/05/22955.jpg?quality=90&resize=600,400');
+
+
 
 INSERT INTO custom_items (item_name, item_effect, item_level, item_type) VALUES
 ('Health Potion', 50, 1, 'consumable'),

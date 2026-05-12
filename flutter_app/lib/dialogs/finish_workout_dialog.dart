@@ -48,9 +48,9 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
           if (isCardio) {
             // Validate cardio fields
             final time = set['time']?.text.trim() ?? '';
-            final calories = set['calories']?.text.trim() ?? '';
+            final distance = set['distance']?.text.trim() ?? '';
 
-            if (time.isEmpty || calories.isEmpty) {
+            if (time.isEmpty || distance.isEmpty) {
               return false;
             }
 
@@ -59,8 +59,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
               return false;
             }
 
-            final caloriesValue = double.tryParse(calories);
-            if (caloriesValue == null || caloriesValue <= 0) {
+            final distanceValue = double.tryParse(distance);
+            if (distanceValue == null || distanceValue <= 0) {
               return false;
             }
           } else {
@@ -104,8 +104,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
               'time': set['time']?.text.isNotEmpty == true
                   ? set['time']!.text
                   : '0',
-              'calories': set['calories']?.text.isNotEmpty == true
-                  ? set['calories']!.text
+              'distance': set['distance']?.text.isNotEmpty == true
+                  ? set['distance']!.text
                   : '0',
             });
           } else {
@@ -351,22 +351,18 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
-      // Grant XP: 10 XP per exercise
-      final xpEarned = exerciseData.length * 10;
-      await UserStatsService.addXP(xpEarned);
-
       widget.onSuccess({});
       Navigator.pop(context);
 
       if (mounted) {
         final message = saveAsRoutine
-            ? 'Workout saved! +$xpEarned XP earned!'
-            : 'Workout completed! +$xpEarned XP earned!';
+            ? 'Workout saved!'
+            : 'Workout completed!';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.star_rounded, color: Color(0xFF66BB6A), size: 20),
+                const Icon(Icons.check_circle, color: Color(0xFF66BB6A), size: 20),
                 const SizedBox(width: 10),
                 Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
               ],
@@ -493,7 +489,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '${sets.length} set${sets.length > 1 ? 's' : ''} • ${sets.map((s) => isCardio ? '${s['time']}min' : '${s['reps']}x${s['kg']}kg').join(', ')}',
+                                '${sets.length} set${sets.length > 1 ? 's' : ''} • ${sets.map((s) => isCardio ? '${s['time']}min/${s['distance']}km' : '${s['reps']}x${s['kg']}kg').join(', ')}',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey[400],

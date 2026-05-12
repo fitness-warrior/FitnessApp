@@ -10,7 +10,7 @@ class WeeklyPlanService {
   /// Fetches the weekly plan from the server.
   /// Returns null if the user is not authenticated or the call fails.
   /// Returns a map (possibly with empty lists) on success.
-  static Future<Map<String, List<String>>?> getWeeklyPlan() async {
+  static Future<Map<String, dynamic>?> getWeeklyPlan() async {
     try {
       final token = await AuthService.getToken();
       if (token == null || token.isEmpty) return null;
@@ -22,13 +22,8 @@ class WeeklyPlanService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final plan = data['plan'] as Map<String, dynamic>? ?? {};
-        return plan.map((day, names) => MapEntry(
-              day,
-              names is List
-                  ? names.map((n) => n.toString()).toList()
-                  : <String>[],
-            ));
+          final plan = data['plan'] as Map<String, dynamic>?;
+          return plan ?? <String, dynamic>{};
       }
       debugPrint('[WeeklyPlan] GET ${response.statusCode}: ${response.body}');
     } catch (e) {
@@ -38,7 +33,7 @@ class WeeklyPlanService {
   }
 
   /// Saves the weekly plan to the server.
-  static Future<bool> saveWeeklyPlan(Map<String, List<String>> plan) async {
+  static Future<bool> saveWeeklyPlan(Map<String, dynamic> plan) async {
     try {
       final token = await AuthService.getToken();
       if (token == null || token.isEmpty) return false;

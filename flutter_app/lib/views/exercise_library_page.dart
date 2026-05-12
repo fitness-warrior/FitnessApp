@@ -64,11 +64,22 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
     setState(() {
       _filtered = _allExercises.where((ex) {
         final name = (ex['name'] ?? ex['exer_name'] ?? '').toString().toLowerCase();
-        final area = (ex['area'] ?? ex['exer_body_area'] ?? '').toString();
+        final area = (ex['area'] ?? ex['exer_body_area'] ?? '').toString().toLowerCase();
+        final type = (ex['type'] ?? ex['exer_type'] ?? '').toString().toLowerCase();
+        
         final matchesSearch = query.isEmpty || name.contains(query);
-        final matchesArea = _selectedArea == null ||
-            _selectedArea == 'All' ||
-            area.toLowerCase() == _selectedArea!.toLowerCase();
+        
+        bool matchesArea = _selectedArea == null || _selectedArea == 'All';
+        if (!matchesArea) {
+          final targetArea = _selectedArea!.toLowerCase();
+          if (targetArea == 'cardio') {
+            // For Cardio, match either area or type
+            matchesArea = (area == 'cardio' || type == 'cardio');
+          } else {
+            matchesArea = (area == targetArea);
+          }
+        }
+        
         return matchesSearch && matchesArea;
       }).toList();
     });

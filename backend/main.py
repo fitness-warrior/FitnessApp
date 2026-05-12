@@ -1,6 +1,9 @@
 import os
+import json
 from pathlib import Path
 from contextlib import asynccontextmanager
+import asyncio
+import time
 from datetime import date
 import asyncpg
 from dotenv import load_dotenv
@@ -8,6 +11,7 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from jose import JWTError, jwt
+from typing import Any
 
 from auth import (
     SignupRequest,
@@ -32,9 +36,51 @@ DATABASE_URL = os.getenv(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+    # Create DB pool with retry/backoff to tolerate transient DB recovery states
+    max_wait = int(os.getenv("DB_CONNECT_TIMEOUT", "60"))
+    backoff = 1
+    start_ts = time.time()
+    while True:
+        try:
+            app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+            break
+        except Exception as e:
+            # If we've waited long enough, re-raise to fail fast
+            if time.time() - start_ts > max_wait:
+                raise
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, 5)
     # Ensure weekly plan table exists on startup
     async with app.state.db_pool.acquire() as _conn:
+        await _conn.execute("""
+            ALTER TABLE IF EXISTS training
+            ADD COLUMN IF NOT EXISTS user_id INT
+        """)
+        await _conn.execute("""
+            ALTER TABLE IF EXISTS training_exercise
+            ADD COLUMN IF NOT EXISTS sets INT,
+            ADD COLUMN IF NOT EXISTS reps INT,
+            ADD COLUMN IF NOT EXISTS weight FLOAT,
+            ADD COLUMN IF NOT EXISTS notes TEXT
+        """)
+        await _conn.execute("""
+            UPDATE training t
+            SET user_id = bm.user_id
+            FROM training_body tb
+            JOIN body_metrics bm ON bm.body_id = tb.body_id
+            WHERE t.train_id = tb.train_id
+              AND t.user_id IS NULL
+        """)
+        await _conn.execute("""
+            ALTER TABLE IF EXISTS body_metrics
+            ADD COLUMN IF NOT EXISTS body_experience VARCHAR(20),
+            ADD COLUMN IF NOT EXISTS body_location VARCHAR(20),
+            ADD COLUMN IF NOT EXISTS body_days_per_week INT,
+            ADD COLUMN IF NOT EXISTS body_session_length INT,
+            ADD COLUMN IF NOT EXISTS body_injuries TEXT,
+            ADD COLUMN IF NOT EXISTS body_diet_preference VARCHAR(50),
+            ADD COLUMN IF NOT EXISTS body_allergies TEXT
+        """)
         await _conn.execute("""
             CREATE TABLE IF NOT EXISTS user_weekly_plan (
                 id SERIAL PRIMARY KEY,
@@ -96,24 +142,13 @@ async def signup(request: SignupRequest):
             # Hash password
             hashed_password = hash_password(request.password)
             
-            # Create a default game character for compatibility
-            game_char = await connection.fetchrow(
-                """
-                INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, 
-                                       game_char_hp, game_char_attack, game_char_speed)
-                VALUES (1, 'blue', 'a', 100, 10, 5)
-                RETURNING game_char_id
-                """
-            )
-            
             # Insert new user
             user = await connection.fetchrow(
                 """
-                INSERT INTO users (game_char_id, user_name, user_email, user_password)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO users (user_name, user_email, user_password)
+                VALUES ($1, $2, $3)
                 RETURNING user_id, user_email, user_name
                 """,
-                game_char["game_char_id"],
                 request.username,
                 request.email,
                 hashed_password
@@ -205,12 +240,639 @@ class QuestionnaireRequest(BaseModel):
     allergies: list
 
 
+WEEK_DAYS = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+]
+
+DAY_LABELS = {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+}
+
+
+def _clamp_int(value: int, minimum: int, maximum: int) -> int:
+    return max(minimum, min(maximum, value))
+
+
+def _round_to_increment(value: float, increment: float = 2.5) -> float:
+    if value <= 0:
+        return 0.0
+    return round(value / increment) * increment
+
+
+def _slugify(value: str) -> str:
+    return " ".join(value.strip().split()).lower()
+
+
+def _normalize_list(values: Any) -> list[str]:
+    if not values:
+        return []
+    if isinstance(values, str):
+        return [values]
+    if isinstance(values, list):
+        return [str(item) for item in values if str(item).strip()]
+    return [str(values)]
+
+
+def _infer_equipment(location: str, preference_notes: list[str] | None = None) -> list[str]:
+    location_l = _slugify(location)
+    notes = " ".join((preference_notes or [])).lower()
+
+    if "home" in location_l:
+        equipment = ["bodyweight", "dumbbell", "mat"]
+    elif "gym" in location_l:
+        equipment = ["machine", "dumbbell", "barbell", "cable", "kettlebell"]
+    else:
+        equipment = ["bodyweight"]
+
+    if "dumbbell" in notes and "dumbbell" not in equipment:
+        equipment.append("dumbbell")
+    if "machine" in notes and "machine" not in equipment:
+        equipment.append("machine")
+
+    return equipment
+
+
+def _infer_goal_slug(goal: str) -> str:
+    g = _slugify(goal)
+    if any(word in g for word in ["lose", "fat", "cut"]):
+        return "fat_loss"
+    if any(word in g for word in ["gain", "build", "muscle", "hypertrophy"]):
+        return "muscle_gain"
+    if any(word in g for word in ["strength", "strong"]):
+        return "strength"
+    if any(word in g for word in ["endurance", "cardio", "stamina"]):
+        return "endurance"
+    return "general_fitness"
+
+
+def _infer_experience_slug(experience: str) -> str:
+    e = _slugify(experience)
+    if "advanced" in e:
+        return "advanced"
+    if "intermediate" in e:
+        return "intermediate"
+    return "beginner"
+
+
+def _infer_injury_areas(injuries: list[str]) -> set[str]:
+    result: set[str] = set()
+    for injury in injuries:
+        s = _slugify(injury)
+        if not s or s == "none":
+            continue
+        if "shoulder" in s:
+            result.update({"shoulder", "chest", "triceps"})
+        if "elbow" in s or "wrist" in s:
+            result.update({"arms", "triceps", "biceps", "shoulder"})
+        if "back" in s:
+            result.update({"back", "lower back", "core"})
+        if "knee" in s:
+            result.update({"legs", "quadriceps", "hamstrings", "calves", "glutes"})
+        if "hip" in s:
+            result.update({"hips", "glutes", "legs"})
+        if "ankle" in s:
+            result.update({"calves", "legs", "jump"})
+    return result
+
+
+def _matches_any(value: str, keywords: list[str]) -> bool:
+    value_l = value.lower()
+    return any(keyword in value_l for keyword in keywords)
+
+
+def _exercise_row_to_dict(row: asyncpg.Record | dict[str, Any]) -> dict[str, Any]:
+    if isinstance(row, dict):
+        return row
+    return {
+        "exer_id": row["exer_id"],
+        "exer_name": row["exer_name"],
+        "exer_body_area": row["exer_body_area"] or "Unknown",
+        "exer_type": row["exer_type"] or "strength",
+        "exer_equip": row["exer_equip"] or "",
+        "exer_descrip": row["exer_descrip"] or "",
+        "exer_vid": row["exer_vid"] or "",
+    }
+
+
+def _exercise_is_safe(exercise: dict[str, Any], avoided_areas: set[str], equipment_keywords: list[str]) -> bool:
+    body_area = _slugify(str(exercise.get("exer_body_area", "")))
+    name = _slugify(str(exercise.get("exer_name", "")))
+    equipment = _slugify(str(exercise.get("exer_equip", "")))
+
+    if avoided_areas:
+        if any(area in body_area or area in name for area in avoided_areas):
+            return False
+
+    if equipment_keywords:
+        if not any(keyword in equipment for keyword in equipment_keywords):
+            return False
+
+    risky_terms = ["jump", "burpee", "snatch", "clean", "deadlift", "upright row", "overhead press"]
+    if any(term in name for term in risky_terms):
+        return False
+
+    return True
+
+
+def _exercise_score(
+    exercise: dict[str, Any],
+    desired_areas: list[str],
+    preferred_equipment: list[str],
+    goal_slug: str,
+    role: str,
+) -> float:
+    body_area = _slugify(str(exercise.get("exer_body_area", "")))
+    name = _slugify(str(exercise.get("exer_name", "")))
+    equipment = _slugify(str(exercise.get("exer_equip", "")))
+    ex_type = _slugify(str(exercise.get("exer_type", "")))
+
+    score = 0.0
+    for area in desired_areas:
+        area_l = _slugify(area)
+        if area_l and (area_l in body_area or area_l in name):
+            score += 3.0
+
+    for item in preferred_equipment:
+        item_l = _slugify(item)
+        if item_l and item_l in equipment:
+            score += 2.0
+
+    if goal_slug in {"strength", "muscle_gain"} and ex_type != "cardio":
+        score += 1.5
+    if goal_slug in {"fat_loss", "endurance"} and ex_type == "cardio":
+        score += 2.5
+    if role == "compound" and ex_type != "cardio":
+        score += 1.5
+    if role == "cardio" and ex_type == "cardio":
+        score += 4.0
+
+    # Bias towards safer, simpler exercises for new users.
+    if goal_slug == "general_fitness" and ex_type != "cardio":
+        score += 0.5
+
+    return score
+
+
+def _round_sets_value(value: float) -> float:
+    return _round_to_increment(max(0.0, value))
+
+
+def _estimate_1rm(exercise: dict[str, Any], body_weight: float, experience_slug: str, role: str) -> float:
+    body_area = _slugify(str(exercise.get("exer_body_area", "")))
+    is_lower = any(term in body_area for term in ["leg", "glute", "hamstring", "quadricep", "calf", "hip"])
+    is_upper = any(term in body_area for term in ["chest", "back", "shoulder", "arm"])
+
+    # Base multiplier of bodyweight to approximate 1RM (very rough)
+    if is_lower:
+        base_mult = 1.6
+    elif is_upper:
+        base_mult = 1.0
+    else:
+        base_mult = 0.9
+
+    exp_mult = 0.85 if experience_slug == "beginner" else 1.0 if experience_slug == "intermediate" else 1.1
+
+    est_1rm = body_weight * base_mult * exp_mult
+
+    # Slightly boost compound movements
+    if role == "compound":
+        est_1rm *= 1.05
+
+    return _round_to_increment(max(0.0, est_1rm))
+
+
+def _estimate_starting_weight(
+    exercise: dict[str, Any],
+    experience_slug: str,
+    body_weight: float,
+    role: str,
+) -> float:
+    ex_type = _slugify(str(exercise.get("exer_type", "")))
+    name = _slugify(str(exercise.get("exer_name", "")))
+    equipment = _slugify(str(exercise.get("exer_equip", "")))
+
+    # Cardio / bodyweight / isometric -> no numeric kg
+    if "cardio" in ex_type or any(term in equipment for term in ["bodyweight", "none"]) or any(
+        term in name for term in ["plank", "hold", "wall sit", "isometric"]
+    ):
+        return 0.0
+
+    est_1rm = _estimate_1rm(exercise, body_weight, experience_slug, role)
+
+    # Target working % depending on goal/role
+    # default working percentage for first program
+    if role == "compound":
+        target_pct = 0.70  # ~70% of 1RM for initial working sets
+    elif role == "accessory":
+        target_pct = 0.60
+    else:
+        target_pct = 0.60
+
+    # Slightly adjust by experience
+    if experience_slug == "beginner":
+        target_pct *= 0.9
+    elif experience_slug == "advanced":
+        target_pct *= 1.05
+
+    starting = est_1rm * target_pct
+    return _round_to_increment(max(0.0, starting))
+
+
+def _rep_range(goal_slug: str, experience_slug: str, role: str) -> tuple[int, int]:
+    if goal_slug == "strength":
+        return (4, 6) if role == "compound" else (6, 8)
+    if goal_slug == "muscle_gain":
+        return (6, 10) if role == "compound" else (10, 12)
+    if goal_slug == "fat_loss":
+        return (10, 14) if role == "compound" else (12, 16)
+    if goal_slug == "endurance":
+        return (12, 18) if role == "compound" else (15, 20)
+    return (8, 12) if role == "compound" else (10, 15)
+
+
+def _build_set_series(
+    weight: float,
+    goal_slug: str,
+    experience_slug: str,
+    role: str,
+    is_cardio: bool,
+    session_length: int,
+) -> list[dict[str, Any]]:
+    if is_cardio:
+        duration = 18 if session_length <= 30 else 24 if session_length <= 45 else 30
+        if goal_slug in {"fat_loss", "endurance"}:
+            duration += 5
+        return [
+            {"time": duration, "calories": 0},
+            {"time": max(10, duration - 5), "calories": 0},
+        ]
+
+    # choose reps based on goal and role
+    rep_min, rep_max = _rep_range(goal_slug, experience_slug, role)
+    # prefer a working rep in upper half of range
+    working_reps = max(rep_min, (rep_min + rep_max) // 2)
+
+    # number of working sets depending on experience/role/session length
+    if experience_slug == "beginner":
+        working_sets = 2 if role != "compound" else 3
+    elif experience_slug == "intermediate":
+        working_sets = 3
+    else:
+        working_sets = 4 if role == "compound" and session_length >= 45 else 3
+
+    series: list[dict[str, Any]] = []
+
+    # Warmup sets for compounds (percentages of working weight)
+    if role == "compound" and working_sets >= 3:
+        # warmups expressed as % of target working weight, with higher reps
+        series.append({"kg": _round_to_increment(weight * 0.5), "reps": max(8, working_reps + 2)})
+        series.append({"kg": _round_to_increment(weight * 0.7), "reps": max(5, working_reps)})
+        # small pause before working sets
+    # Working sets - slight drop across sets for beginners/intermediate
+    for i in range(working_sets):
+        # small progressive drop for beginners (to preserve form), slight increase for advanced
+        if experience_slug == "beginner":
+            set_weight = _round_to_increment(weight * (0.95 - 0.03 * i))
+        elif experience_slug == "advanced":
+            set_weight = _round_to_increment(weight * (1.0 + 0.02 * i))
+        else:
+            set_weight = _round_to_increment(weight)
+        series.append({"kg": set_weight, "reps": working_reps})
+
+    return series
+
+
+def _routine_blueprint(days_per_week: int, goal_slug: str) -> list[dict[str, Any]]:
+    days = _clamp_int(days_per_week, 3, 6)
+
+    if days == 3:
+        return [
+            {"name": "Full Body A", "category": "full_body"},
+            {"name": "Full Body B", "category": "full_body"},
+            {"name": "Low-Impact Conditioning", "category": "conditioning"},
+        ]
+    if days == 4:
+        return [
+            {"name": "Upper Body Push", "category": "upper_push"},
+            {"name": "Lower Body Strength", "category": "lower_body"},
+            {"name": "Upper Body Pull", "category": "upper_pull"},
+            {"name": "Core & Conditioning", "category": "conditioning"},
+        ]
+    if days == 5:
+        return [
+            {"name": "Upper Body Push", "category": "upper_push"},
+            {"name": "Lower Body Strength", "category": "lower_body"},
+            {"name": "Upper Body Pull", "category": "upper_pull"},
+            {"name": "Full Body Strength", "category": "full_body"},
+            {"name": "Low-Impact Conditioning", "category": "conditioning"},
+        ]
+
+    return [
+        {"name": "Upper Body Push", "category": "upper_push"},
+        {"name": "Lower Body Strength", "category": "lower_body"},
+        {"name": "Upper Body Pull", "category": "upper_pull"},
+        {"name": "Lower Body Accessory", "category": "lower_accessory"},
+        {"name": "Full Body Strength", "category": "full_body"},
+        {"name": "Core & Conditioning", "category": "conditioning"},
+    ]
+
+
+def _adjust_category_for_injuries(category: str, avoided_areas: set[str]) -> str:
+    avoided = avoided_areas
+    upper_avoided = any(area in avoided for area in {"shoulder", "chest", "triceps", "biceps", "back", "arms"})
+    lower_avoided = any(area in avoided for area in {"legs", "quadriceps", "hamstrings", "calves", "glutes", "hips"})
+
+    if category in {"upper_push", "upper_pull"} and upper_avoided and not lower_avoided:
+        return "lower_body"
+    if category in {"lower_body", "lower_accessory"} and lower_avoided and not upper_avoided:
+        return "upper_push"
+    if category == "full_body":
+        if upper_avoided and not lower_avoided:
+            return "lower_body"
+        if lower_avoided and not upper_avoided:
+            return "upper_push"
+        if upper_avoided and lower_avoided:
+            return "conditioning"
+    return category
+
+
+def _category_focus(category: str) -> tuple[list[str], list[str], list[str], list[str]]:
+    if category == "upper_push":
+        return ["Chest", "Shoulders", "Triceps"], ["dumbbell", "machine", "cable", "bodyweight"], ["compound", "accessory", "core", "accessory"], ["shoulder", "elbow"]
+    if category == "upper_pull":
+        return ["Back", "Biceps", "Rear Delts"], ["dumbbell", "machine", "cable", "bodyweight"], ["compound", "accessory", "core", "accessory"], ["back", "shoulder"]
+    if category == "lower_body":
+        return ["Quadriceps", "Hamstrings", "Glutes", "Calves"], ["machine", "dumbbell", "barbell", "bodyweight"], ["compound", "compound", "accessory", "accessory"], ["knee", "hip", "ankle"]
+    if category == "lower_accessory":
+        return ["Glutes", "Hamstrings", "Calves", "Quadriceps"], ["dumbbell", "machine", "bodyweight"], ["accessory", "accessory", "core", "core"], ["knee", "hip", "ankle"]
+    if category == "conditioning":
+        return ["Cardio", "Core", "Full Body"], ["bodyweight", "machine", "dumbbell"], ["cardio", "compound", "accessory", "core"], []
+    return ["Chest", "Back", "Quadriceps", "Hamstrings", "Glutes", "Core"], ["dumbbell", "machine", "barbell", "cable", "bodyweight"], ["compound", "compound", "accessory", "accessory", "core"], []
+
+
+def _pick_exercises_for_routine(
+    exercises: list[dict[str, Any]],
+    category: str,
+    goal_slug: str,
+    experience_slug: str,
+    body_weight: float,
+    session_length: int,
+    avoided_areas: set[str],
+) -> list[dict[str, Any]]:
+    desired_areas, preferred_equipment, roles, extra_avoids = _category_focus(category)
+    avoided = set(avoided_areas)
+    avoided.update(_slugify(area) for area in extra_avoids)
+
+    safe = [
+        ex for ex in exercises
+        if _exercise_is_safe(ex, avoided, preferred_equipment)
+    ]
+
+    selected: list[dict[str, Any]] = []
+    used_ids: set[int] = set()
+
+    def choose(role: str, allow_cardio: bool = False) -> dict[str, Any] | None:
+        candidates = [
+            ex for ex in safe
+            if ex.get("exer_id") not in used_ids
+            and (allow_cardio or _slugify(str(ex.get("exer_type", ""))) != "cardio")
+        ]
+        candidates.sort(
+            key=lambda ex: _exercise_score(ex, desired_areas, preferred_equipment, goal_slug, role),
+            reverse=True,
+        )
+        return candidates[0] if candidates else None
+
+    for role in roles:
+        cardio_role = role == "cardio"
+        choice = choose("compound" if role == "compound" else "cardio" if cardio_role else "accessory", allow_cardio=cardio_role)
+        if choice is None and role != "cardio":
+            choice = choose("accessory")
+        if choice is None:
+            continue
+        used_ids.add(int(choice.get("exer_id", 0) or 0))
+        selected.append(choice)
+
+    # Ensure minimum exercise count.
+    fallback_pool = [
+        ex for ex in safe
+        if ex.get("exer_id") not in used_ids
+    ]
+    fallback_pool.sort(
+        key=lambda ex: _exercise_score(ex, desired_areas, preferred_equipment, goal_slug, "accessory"),
+        reverse=True,
+    )
+    while len(selected) < 5 and fallback_pool:
+        choice = fallback_pool.pop(0)
+        used_ids.add(int(choice.get("exer_id", 0) or 0))
+        selected.append(choice)
+
+    return selected[:8]
+
+
+def _weekday_assignments(days_per_week: int) -> list[str]:
+    days = _clamp_int(days_per_week, 3, 6)
+    if days == 3:
+        return ["monday", "wednesday", "friday"]
+    if days == 4:
+        return ["monday", "tuesday", "thursday", "saturday"]
+    if days == 5:
+        return ["monday", "tuesday", "thursday", "friday", "saturday"]
+    return ["monday", "tuesday", "wednesday", "friday", "saturday", "sunday"]
+
+
+async def _load_questionnaire_profile(connection, user_id: int) -> dict[str, Any]:
+    questionnaire = await connection.fetchrow(
+        """
+        SELECT body_age, body_height, body_weight, body_goal, body_gender,
+               body_experience, body_location, body_days_per_week,
+               body_session_length, body_injuries, body_diet_preference,
+               body_allergies
+        FROM body_metrics
+        WHERE user_id = $1
+        """,
+        user_id,
+    )
+    if not questionnaire:
+        raise HTTPException(status_code=404, detail="Questionnaire not found")
+
+    return {
+        "age": int(questionnaire["body_age"] or 0),
+        "height": float(questionnaire["body_height"] or 0),
+        "weight": float(questionnaire["body_weight"] or 0),
+        "goal": str(questionnaire["body_goal"] or "general_fitness"),
+        "gender": str(questionnaire["body_gender"] or ""),
+        "experience": str(questionnaire["body_experience"] or "beginner"),
+        "location": str(questionnaire["body_location"] or "Home"),
+        "days_per_week": int(questionnaire["body_days_per_week"] or 3),
+        "session_length": int(questionnaire["body_session_length"] or 30),
+        "injuries": _normalize_list(questionnaire["body_injuries"]),
+        "diet_preference": str(questionnaire["body_diet_preference"] or ""),
+        "allergies": _normalize_list(questionnaire["body_allergies"]),
+    }
+
+
+async def _generate_weekly_plan_for_user(connection, user_id: int) -> dict[str, Any]:
+    profile = await _load_questionnaire_profile(connection, user_id)
+
+    exercise_rows = await connection.fetch(
+        """
+        SELECT exer_id, exer_name, exer_body_area, exer_type::text AS exer_type,
+               COALESCE(exer_equip::text, '') AS exer_equip,
+               COALESCE(exer_descrip, '') AS exer_descrip,
+               COALESCE(exer_vid, '') AS exer_vid
+        FROM exercise
+        ORDER BY exer_id
+        """
+    )
+    exercises = [_exercise_row_to_dict(row) for row in exercise_rows]
+
+    goal_slug = _infer_goal_slug(profile["goal"])
+    experience_slug = _infer_experience_slug(profile["experience"])
+    equipment_keywords = _infer_equipment(profile["location"], [profile["goal"], profile["experience"]])
+    avoided_areas = _infer_injury_areas(profile["injuries"])
+    days = _clamp_int(profile["days_per_week"], 3, 6)
+    session_length = _clamp_int(profile["session_length"], 20, 90)
+    routine_specs = _routine_blueprint(days, goal_slug)
+    assigned_days = _weekday_assignments(days)
+
+    # Map the assigned days to a stable routine list, adjusting for injuries.
+    week_plan: dict[str, list[str]] = {day: [] for day in WEEK_DAYS}
+    routines: list[dict[str, Any]] = []
+
+    name_map = {
+        "upper_push": "Upper Body Push",
+        "upper_pull": "Upper Body Pull",
+        "lower_body": "Lower Body Strength",
+        "lower_accessory": "Lower Body Accessory",
+        "full_body": "Full Body Strength",
+        "conditioning": "Low-Impact Conditioning",
+    }
+
+    for index, spec in enumerate(routine_specs):
+        category = _adjust_category_for_injuries(spec["category"], avoided_areas)
+        routine_name = name_map.get(category, spec["name"])
+
+        # If the routine name is duplicated because of injury substitutions,
+        # make it unique while preserving the focus.
+        if any(r["name"] == routine_name for r in routines):
+            routine_name = f"{routine_name} {index + 1}"
+
+        selected = _pick_exercises_for_routine(
+            exercises=exercises,
+            category=category,
+            goal_slug=goal_slug,
+            experience_slug=experience_slug,
+            body_weight=profile["weight"],
+            session_length=session_length,
+            avoided_areas=avoided_areas,
+        )
+
+        # Assign weights and sets.
+        generated_exercises: list[dict[str, Any]] = []
+        for exercise in selected:
+            ex_type = _slugify(str(exercise.get("exer_type", "strength")))
+            is_cardio = ex_type == "cardio"
+            role = "cardio" if is_cardio else (
+                "compound" if any(word in _slugify(str(exercise.get("exer_body_area", ""))) for word in ["chest", "back", "quadriceps", "hamstrings", "glutes"]) else "accessory"
+            )
+            starting_weight = _estimate_starting_weight(exercise, experience_slug, profile["weight"], role)
+            sets = _build_set_series(
+                weight=starting_weight,
+                goal_slug=goal_slug,
+                experience_slug=experience_slug,
+                role=role,
+                is_cardio=is_cardio,
+                session_length=session_length,
+            )
+            generated_exercises.append({
+                "exer_id": int(exercise.get("exer_id") or 0),
+                "exer_name": exercise.get("exer_name") or "Unknown Exercise",
+                "exer_type": "cardio" if is_cardio else "strength",
+                "exer_body_area": exercise.get("exer_body_area") or "General",
+                "exer_equip": exercise.get("exer_equip") or "Bodyweight",
+                "sets": sets,
+            })
+
+        estimated_duration = _clamp_int(
+            max(20, int(len(generated_exercises) * 8 + (5 if goal_slug in {"fat_loss", "endurance"} else 0))),
+            20,
+            session_length,
+        )
+
+        routines.append({
+            "name": routine_name,
+            "goal": goal_slug,
+            "estimated_duration_minutes": estimated_duration,
+            "exercises": generated_exercises,
+        })
+
+        if index < len(assigned_days):
+            week_plan[assigned_days[index]] = [routine_name]
+
+    generated_plan = {
+        "week_plan": week_plan,
+        "routines": routines,
+        "generated_from": {
+            "age": profile["age"],
+            "height": profile["height"],
+            "weight": profile["weight"],
+            "goal": profile["goal"],
+            "experience": profile["experience"],
+            "location": profile["location"],
+            "days_per_week": days,
+            "session_length": session_length,
+            "injuries": profile["injuries"],
+        },
+    }
+
+    plan_str = json.dumps(generated_plan)
+    await connection.execute(
+        """
+        INSERT INTO user_weekly_plan (user_id, plan, updated_at)
+        VALUES ($1, $2::jsonb, NOW())
+        ON CONFLICT (user_id) DO UPDATE
+            SET plan = $2::jsonb, updated_at = NOW()
+        """,
+        user_id,
+        plan_str,
+    )
+
+    return generated_plan
+
+
+def _map_body_goal(goal: str) -> str:
+    normalized = (goal or "").strip().lower()
+    if "lose" in normalized:
+        return "Fat Loss"
+    if "build" in normalized:
+        return "Muscle Gain"
+    if "stay" in normalized:
+        return "General Fitness"
+    if "gain" in normalized:
+        return "Muscle Gain"
+    return "General Fitness"
+
+
 @app.post("/api/users/questionnaire")
 async def save_questionnaire(
     request: QuestionnaireRequest,
     user_id: int = Depends(get_current_user_id),
 ):
-    """Save user's questionnaire responses"""
+    """Save user's questionnaire responses (idempotent: creates or updates body_metrics)"""
+    print(f"[QUESTIONNAIRE] User {user_id} submitted: age={request.age}, height={request.height}, weight={request.weight}, goal={request.goal}, experience={request.experience}")
     try:
         async with app.state.db_pool.acquire() as connection:
             # Check if questionnaire already exists for this user
@@ -218,9 +880,11 @@ async def save_questionnaire(
                 "SELECT body_id FROM body_metrics WHERE user_id = $1",
                 user_id
             )
+            print(f"[QUESTIONNAIRE] Existing body_id for user {user_id}: {existing}")
             
             if existing:
-                # Update existing questionnaire
+                # Update existing questionnaire (idempotent - just refreshes data)
+                print(f"[QUESTIONNAIRE] Updating existing body_metrics for user {user_id}")
                 await connection.execute(
                     """
                     UPDATE body_metrics
@@ -235,8 +899,8 @@ async def save_questionnaire(
                     request.age,
                     request.height,
                     request.weight,
-                    request.goal,
-                    'male',  # Default, can be extended later
+                    _map_body_goal(request.goal),
+                    'male',
                     request.experience,
                     request.location,
                     request.days_per_week,
@@ -246,6 +910,7 @@ async def save_questionnaire(
                     request.allergies,
                     user_id
                 )
+                print(f"[QUESTIONNAIRE] Successfully updated body_metrics for user {user_id}")
             else:
                 # Create new body metrics entry
                 await connection.execute(
@@ -260,8 +925,8 @@ async def save_questionnaire(
                     request.age,
                     request.height,
                     request.weight,
-                    request.goal,
-                    'male',  # Default
+                    _map_body_goal(request.goal),
+                    'male',
                     request.experience,
                     request.location,
                     request.days_per_week,
@@ -270,6 +935,8 @@ async def save_questionnaire(
                     request.diet_preference,
                     request.allergies
                 )
+            generated_plan = await _generate_weekly_plan_for_user(connection, user_id)
+            print(f"[QUESTIONNAIRE] Successfully inserted new body_metrics for user {user_id}")
             
             # Save fitness profile with weekly gym days goal
             profile_exists = await connection.fetchval(
@@ -315,13 +982,16 @@ async def save_questionnaire(
                     today
                 )
             
+            print(f"[QUESTIONNAIRE] All data saved successfully for user {user_id}")
             return {
                 "success": True,
                 "message": "Questionnaire saved successfully",
                 "user_id": user_id,
-                "days_per_week_goal": request.days_per_week
+                "days_per_week_goal": request.days_per_week,
+                "generated_plan": generated_plan,
             }
     except Exception as e:
+        print(f"[QUESTIONNAIRE] Error saving for user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to save questionnaire: {str(e)}")
 
 
@@ -367,6 +1037,24 @@ async def get_questionnaire(
         raise HTTPException(status_code=500, detail=f"Failed to fetch questionnaire: {str(e)}")
 
 
+@app.post("/api/users/workout-plan/generate")
+async def generate_workout_plan(
+    user_id: int = Depends(get_current_user_id),
+):
+    """Generate a weekly workout plan from the user's saved questionnaire."""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            plan = await _generate_weekly_plan_for_user(connection, user_id)
+            return {
+                "success": True,
+                "plan": plan,
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate workout plan: {str(e)}")
+
+
 @app.get("/api/users/profile")
 async def get_user_profile(
     user_id: int = Depends(get_current_user_id),
@@ -376,9 +1064,10 @@ async def get_user_profile(
         async with app.state.db_pool.acquire() as connection:
             user = await connection.fetchrow(
                 """
-                SELECT user_id, user_email, user_name, user_surname
-                FROM users
-                WHERE user_id = $1
+                SELECT u.user_id, u.user_email, u.user_name, u.user_surname, bm.body_id
+                FROM users u
+                LEFT JOIN body_metrics bm ON bm.user_id = u.user_id
+                WHERE u.user_id = $1
                 """,
                 user_id
             )
@@ -390,12 +1079,69 @@ async def get_user_profile(
                 "user_id": user["user_id"],
                 "email": user["user_email"],
                 "username": user["user_name"],
-                "surname": user["user_surname"]
+                "surname": user["user_surname"],
+                "body_id": user["body_id"]
             }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
+
+
+@app.get("/api/charts/options")
+async def get_chart_options(
+    user_id: int = Depends(get_current_user_id),
+):
+    """Return chart picker options grouped by cardio and strength exercises."""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            body_id = await connection.fetchval(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id,
+            )
+
+            if not body_id:
+                raise HTTPException(status_code=404, detail="Body metrics not found")
+
+            rows = await connection.fetch(
+                """
+                SELECT e.exer_name, e.exer_type, pe.plan_exer_PB
+                FROM exercise e
+                JOIN plan_exercise pe ON pe.exer_id = e.exer_id
+                JOIN training_exercise te ON te.exer_id = e.exer_id
+                JOIN training t ON t.train_id = te.train_id
+                JOIN training_body tb ON tb.train_id = t.train_id
+                WHERE tb.body_id = $1
+                  AND t.train_data IS NOT NULL
+                                ORDER BY
+                                    CASE WHEN e.exer_type = 'cardio' THEN 0 ELSE 1 END,
+                                    pe.plan_exer_PB DESC
+                """,
+                body_id,
+            )
+
+            cardio = []
+            strength = []
+
+            for row in rows:
+                exercise_name = row["exer_name"]
+                exercise_type = row["exer_type"]
+                if exercise_type == "cardio" and exercise_name not in cardio:
+                    cardio.append(exercise_name)
+                elif exercise_type == "strength" and exercise_name not in strength:
+                    strength.append(exercise_name)
+
+            return [
+                {"name": "track callories", "measure": ["total", "just intake", "just cardio"]},
+                {"name": "cardio speed", "measure": cardio},
+                {"name": "cardio enduance", "measure": cardio},
+                {"name": "total weight lifted", "measure": strength},
+                {"name": "weight personal bests", "measure": strength},
+            ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch chart options: {str(e)}")
 
 
 @app.put("/api/users/profile")
@@ -516,12 +1262,17 @@ class WeeklyPlanRequest(BaseModel):
     plan: dict
 
 
+class SetData(BaseModel):
+    reps: int = 0
+    kg: float = 0
+    time: int = 0
+    distance: float = 0
+
+
 class WorkoutExercise(BaseModel):
     exer_id: int
     exer_name: str
-    sets: int = 0
-    reps: int = 0
-    weight: float = 0
+    sets: list[SetData] = []  # Array of individual set data
     notes: str = ""
 
 
@@ -536,10 +1287,10 @@ async def save_workout(
     request: WorkoutRequest,
     user_id: int = Depends(get_current_user_id),
 ):
-    """Save a completed workout for the user"""
+    """Save a completed workout for the user - one training row per exercise"""
     try:
         async with app.state.db_pool.acquire() as connection:
-            # Insert the workout record
+            # Keep the existing workout tables in sync for compatibility.
             workout = await connection.fetchrow(
                 """
                 INSERT INTO user_workout (user_id, created_at, duration_minutes, notes)
@@ -551,9 +1302,79 @@ async def save_workout(
                 request.notes
             )
             workout_id = workout["workout_id"]
-            
-            # Insert each exercise in the workout
+
+            body_id = await connection.fetchval(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id,
+            )
+
+            # Insert each exercise's individual sets into training table (one row per set)
             for exc in request.exercises:
+                # Get exercise type (strength vs cardio)
+                exer_type = await connection.fetchval(
+                    "SELECT exer_type FROM exercise WHERE exer_id = $1",
+                    exc.exer_id
+                )
+
+                # Iterate through each set of this exercise
+                for set_num, set_data in enumerate(exc.sets, start=1):
+                    # Map metrics based on exercise type
+                    train_mins = 0
+                    train_reps = 0
+                    train_effort = 0.0
+
+                    if exer_type == "strength":
+                        # Strength: train_reps = reps performed, train_effort = weight in kg
+                        train_reps = set_data.reps or 0
+                        train_effort = float(set_data.kg or 0.0)
+                    elif exer_type == "cardio":
+                        # Cardio: train_mins = time in minutes, train_effort = distance in km
+                        train_mins = int(set_data.time or 0)
+                        train_effort = float(set_data.distance or 0.0)
+                    else:
+                        # Default: treat as strength
+                        train_reps = set_data.reps or 0
+                        train_effort = float(set_data.kg or 0.0)
+
+                    # Insert one training row per set
+                    training = await connection.fetchrow(
+                        """
+                        INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort)
+                        VALUES ($1, NOW(), $2, $3, $4)
+                        RETURNING train_id
+                        """,
+                        user_id,
+                        train_mins,
+                        train_reps,
+                        train_effort,
+                    )
+                    train_id = training["train_id"]
+
+                    # Insert training_exercise link with set number
+                    await connection.execute(
+                        """
+                        INSERT INTO training_exercise (train_id, exer_id, sets, reps, weight, notes)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        """,
+                        train_id,
+                        exc.exer_id,
+                        set_num,  # Set number (1, 2, 3, etc.)
+                        set_data.time if exer_type == "cardio" else set_data.reps,
+                        set_data.distance if exer_type == "cardio" else set_data.kg,
+                        exc.notes,
+                    )
+
+                    if body_id is not None:
+                        await connection.execute(
+                            """
+                            INSERT INTO training_body (train_id, body_id)
+                            VALUES ($1, $2)
+                            """,
+                            train_id,
+                            body_id,
+                        )
+
+                # Also maintain user_workout_exercise for compatibility
                 await connection.execute(
                     """
                     INSERT INTO user_workout_exercise 
@@ -562,9 +1383,9 @@ async def save_workout(
                     """,
                     workout_id,
                     exc.exer_id,
-                    exc.sets,
-                    exc.reps,
-                    exc.weight,
+                    len(exc.sets),  # Total number of sets for this exercise
+                    exc.sets[0].time if exc.sets and exer_type == "cardio" else (exc.sets[0].reps if exc.sets else 0),
+                    exc.sets[0].distance if exc.sets and exer_type == "cardio" else (exc.sets[0].kg if exc.sets else 0.0),
                     exc.notes
                 )
 
@@ -703,8 +1524,9 @@ async def save_workout(
             return {
                 "success": True,
                 "workout_id": workout_id,
+                "total_sets": sum(len(exc.sets) for exc in request.exercises),
                 "exercises_count": len(request.exercises),
-                "message": "Workout saved successfully"
+                "message": "Workout saved successfully - one training row per set"
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save workout: {str(e)}")
@@ -1259,6 +2081,125 @@ async def get_exercise(exercise_id: int):
         raise HTTPException(status_code=404, detail="Exercise not found")
 
     return format_exercise(row)
+
+
+# ==================== CHART DATA ENDPOINTS ====================
+
+@app.get("/chart/weight/{body_id}")
+async def get_chart_weight(body_id: int, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            row = await connection.fetchrow(
+                "SELECT body_weight, body_past_weight FROM body_metrics WHERE body_id = $1",
+                body_id
+            )
+            if not row:
+                return []
+            return [
+                ["current", row["body_weight"]],
+                ["past", row["body_past_weight"] or row["body_weight"]]
+            ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/body-type/{body_id}")
+async def get_chart_body_type(body_id: int, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT e.exer_body_area, COUNT(*) AS area_count
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE tb.body_id = $1
+                  AND t.train_data IS NOT NULL
+                GROUP BY e.exer_body_area
+                ORDER BY area_count DESC
+            """, body_id)
+            return [[row["exer_body_area"], row["area_count"]] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/cardio-speed/{body_id}/{exercise_name}")
+async def get_chart_cardio_speed(body_id: int, exercise_name: str, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT t.train_data, t.train_mins, t.train_effort
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE tb.body_id = $1 AND e.exer_name = $2 AND t.train_mins > 0
+                ORDER BY t.train_data ASC
+                LIMIT 7
+            """, body_id, exercise_name)
+            
+            return [[row["train_data"].strftime("%Y-%m-%d"), (row["train_effort"] * 1000) / row["train_mins"]] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/cardio-endurance/{body_id}/{exercise_name}")
+async def get_chart_cardio_endurance(body_id: int, exercise_name: str, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT t.train_data, t.train_effort
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE tb.body_id = $1 AND e.exer_name = $2
+                ORDER BY t.train_data ASC
+                LIMIT 7
+            """, body_id, exercise_name)
+            return [[row["train_data"].strftime("%Y-%m-%d"), row["train_effort"]] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/strength-total/{body_id}/{exercise_name}")
+async def get_chart_strength_total(body_id: int, exercise_name: str, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT t.train_data, t.train_effort, t.train_reps
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE tb.body_id = $1 AND e.exer_name = $2
+                ORDER BY t.train_data ASC
+                LIMIT 7
+            """, body_id, exercise_name)
+            return [[row["train_data"].strftime("%Y-%m-%d"), row["train_effort"] * (row["train_reps"] or 0)] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/daily-cardio-calories/{body_id}")
+async def get_chart_daily_cardio_calories(body_id: int, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT t.train_data, t.train_mins, bm.body_weight, e.exer_met
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                JOIN body_metrics bm ON bm.body_id = tb.body_id
+                WHERE tb.body_id = $1 AND e.exer_type = 'cardio'
+                ORDER BY t.train_data ASC
+            """, body_id)
+            
+            daily_cals = {}
+            for row in rows:
+                day = row["train_data"].strftime("%Y-%m-%d")
+                cals = row["exer_met"] * row["body_weight"] * ((row["train_mins"] or 0) / 60.0)
+                daily_cals[day] = daily_cals.get(day, 0) + cals
+            
+            return [[day, daily_cals[day]] for day in sorted(daily_cals.keys())][-7:]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

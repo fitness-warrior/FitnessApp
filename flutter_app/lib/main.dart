@@ -53,7 +53,7 @@ class _AuthLauncherState extends State<AuthLauncher> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAuth());
   }
 
-  Future<void> _checkAuth() async {
+  Future<void> _checkAuth() async { 
     if (_started) return;
     _started = true;
 
