@@ -4,6 +4,7 @@ import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
 import 'package:flutter/material.dart';
 import '../services/chart_service.dart';
 import '../services/user_service.dart';
+import '../widgets/questionnaire/questionnaire_widget.dart';
 import '../widgets/common/navbar.dart';
 
 class _ChartCard {
@@ -200,11 +201,40 @@ class _DashboardPage extends State<DashboardPage> {
               final bodyId = await _resolveBodyId();
               if (!mounted) return;
               if (bodyId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Complete your profile first so chart options can load.'),
+                final completed = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const QuestionnairePage(isOnboarding: false),
                   ),
                 );
+                if (!mounted || completed != true) return;
+
+                final refreshedBodyId = await _resolveBodyId();
+                if (!mounted) return;
+                if (refreshedBodyId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Complete your profile first so chart options can load.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                final refreshedResult = await Navigator.push<Map<String, dynamic>>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddChart(bodyId: refreshedBodyId),
+                  ),
+                );
+                if (refreshedResult != null) {
+                  await _addChartFromSelection(
+                    refreshedResult['chartName'] as String,
+                    refreshedResult['option'] as String,
+                    refreshedBodyId,
+                  );
+                }
                 return;
               }
 
