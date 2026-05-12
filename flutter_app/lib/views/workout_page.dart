@@ -16,8 +16,13 @@ import '../widgets/xp_bar.dart';
 
 class WorkoutPage extends StatefulWidget {
   final List<String>? initialRecommendationTags;
+  final int initialTab;
 
-  const WorkoutPage({Key? key, this.initialRecommendationTags})
+  const WorkoutPage({
+    Key? key,
+    this.initialRecommendationTags,
+    this.initialTab = 0,
+  })
       : super(key: key);
 
   @override
@@ -38,6 +43,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   @override
   void initState() {
     super.initState();
+    _selectedTab = widget.initialTab;
     _loadSavedWorkoutSession();
     _loadSavedWorkouts();
     _loadAssignedRoutines();
@@ -60,10 +66,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
           'saturday': 'Sat', 'sunday': 'Sun',
         };
         final Map<String, List<String>> result = {};
-        plan.forEach((day, names) {
-          final label = dayLabels[day] ?? day;
-          for (final name in names) {
-            result.putIfAbsent(name, () => []).add(label);
+        final weekPlan = plan['week_plan'] is Map
+            ? Map<String, dynamic>.from(plan['week_plan'] as Map)
+            : plan;
+
+        weekPlan.forEach((day, names) {
+          final label = dayLabels[day.toString()] ?? day.toString();
+          if (names is List) {
+            for (final name in names) {
+              result.putIfAbsent(name.toString(), () => []).add(label);
+            }
           }
         });
         setState(() => _assignedRoutineDays = result);
@@ -475,9 +487,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
           'thursday': 'Thursday', 'friday': 'Friday',
           'saturday': 'Saturday', 'sunday': 'Sunday',
         };
-        for (final entry in plan.entries) {
-          if (entry.value.contains(routineName)) {
-            assignedDays.add(dayNames[entry.key] ?? entry.key);
+        final weekPlan = plan['week_plan'] is Map
+            ? Map<String, dynamic>.from(plan['week_plan'] as Map)
+            : plan;
+        for (final entry in weekPlan.entries) {
+          final value = entry.value;
+          if (value is List && value.map((e) => e.toString()).contains(routineName)) {
+            assignedDays.add(dayNames[entry.key.toString()] ?? entry.key.toString());
           }
         }
       }
@@ -549,10 +565,28 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 if (assignedDays.isNotEmpty) {
                   final plan = await WeeklyPlanService.getWeeklyPlan();
                   if (plan != null) {
-                    for (final day in plan.keys) {
-                      plan[day]?.remove(routineName);
+                    final structured = plan['week_plan'] is Map
+                        ? Map<String, dynamic>.from(plan)
+                        : <String, dynamic>{'week_plan': plan};
+                    final weekPlan = structured['week_plan'] is Map
+                        ? Map<String, dynamic>.from(structured['week_plan'] as Map)
+                        : <String, dynamic>{};
+                    for (final day in weekPlan.keys) {
+                      final names = weekPlan[day];
+                      if (names is List) {
+                        names.removeWhere((name) => name.toString() == routineName);
+                      }
                     }
-                    await WeeklyPlanService.saveWeeklyPlan(plan);
+                    if (structured['routines'] is List) {
+                      (structured['routines'] as List).removeWhere((routine) {
+                        if (routine is Map) {
+                          return routine['name']?.toString() == routineName;
+                        }
+                        return false;
+                      });
+                    }
+                    structured['week_plan'] = weekPlan;
+                    await WeeklyPlanService.saveWeeklyPlan(structured);
                   }
                 }
 
