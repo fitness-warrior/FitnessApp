@@ -18,6 +18,7 @@ void main() {
   // Mock the flutter_secure_storage platform channel
   const secureStorageChannel =
       MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  // ignore: deprecated_member_use
   secureStorageChannel.setMockMethodCallHandler((call) async {
     return null; // Return null for all calls - simulates no stored user
   });
