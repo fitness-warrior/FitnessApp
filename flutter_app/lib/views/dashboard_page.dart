@@ -132,6 +132,52 @@ class _DashboardPage extends State<DashboardPage> {
           chartData = [80, 85, 82, 90, 88, 95, 92, 100];
         }
       }
+
+      else if (chartName == 'weight') {
+        try {
+          final data = await ChartService.getWeight(bodyId);
+          chartData = ChartService.extractValues(data);
+          dates = data.map((item) => item[0].toString()).toList();
+          yLabel = 'weight (kg)';
+        } catch (e) {
+          debugPrint('Error loading weight: $e');
+          chartData = [0.0, 0.0];
+          dates = ['current', 'past'];
+          yLabel = 'weight (kg)';
+        }
+      } else if (chartName == 'body type') {
+        try {
+          final data = await ChartService.getBodyType(bodyId);
+          chartData = ChartService.extractValues(data);
+          // labels come from data first column
+          final labels = data.map((item) => item[0].toString()).toList();
+
+          final newChart = _ChartCard(
+            id: '${chartId}-pie',
+            builder: (onDismissed) => SizedBox(
+              height: 320,
+              child: Core.pie(
+                key: ValueKey('$chartId-pie'),
+                name: '$chartName',
+                dataValues: chartData,
+                labels: labels,
+                onDismissed: onDismissed,
+              ),
+            ),
+          );
+
+          if (mounted) {
+            setState(() {
+              _charts.add(newChart);
+            });
+          }
+          return;
+        } catch (e) {
+          debugPrint('Error loading body type: $e');
+          chartData = [0, 0, 0, 0];
+          dates = [];
+        }
+      }
       
       if (chartData.isEmpty) {
         chartData = [10, 12, 11, 13, 12, 14, 13, 15];

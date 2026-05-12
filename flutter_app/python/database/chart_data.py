@@ -113,11 +113,15 @@ class CollectedData:
     
     def get_weight(self):
         self.cur.execute("""
-            SELECT b.body_weight, b.body_weight_past
+            SELECT body_weight, body_past_weight
             FROM body_metrics
-            WHERE bm.body_id = %s
-""", (self.body_id,))
-        return self.cur.fetchone()
+            WHERE body_id = %s
+        """, (self.body_id,))
+        row = self.cur.fetchone()
+        if not row:
+            return None
+        # Return as tuple (current, past)
+        return (row[0], row[1])
     
     
     

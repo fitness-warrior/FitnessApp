@@ -51,6 +51,25 @@ async def lifespan(app: FastAPI):
     # Ensure weekly plan table exists on startup
     async with app.state.db_pool.acquire() as _conn:
         await _conn.execute("""
+            ALTER TABLE IF EXISTS training
+            ADD COLUMN IF NOT EXISTS user_id INT
+        """)
+        await _conn.execute("""
+            ALTER TABLE IF EXISTS training_exercise
+            ADD COLUMN IF NOT EXISTS sets INT,
+            ADD COLUMN IF NOT EXISTS reps INT,
+            ADD COLUMN IF NOT EXISTS weight FLOAT,
+            ADD COLUMN IF NOT EXISTS notes TEXT
+        """)
+        await _conn.execute("""
+            UPDATE training t
+            SET user_id = bm.user_id
+            FROM training_body tb
+            JOIN body_metrics bm ON bm.body_id = tb.body_id
+            WHERE t.train_id = tb.train_id
+              AND t.user_id IS NULL
+        """)
+        await _conn.execute("""
             CREATE TABLE IF NOT EXISTS user_weekly_plan (
                 id SERIAL PRIMARY KEY,
                 user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -598,12 +617,17 @@ class WeeklyPlanRequest(BaseModel):
     plan: dict
 
 
+class SetData(BaseModel):
+    reps: int = 0
+    kg: float = 0
+    time: int = 0
+    distance: float = 0
+
+
 class WorkoutExercise(BaseModel):
     exer_id: int
     exer_name: str
-    sets: int = 0
-    reps: int = 0
-    weight: float = 0
+    sets: list[SetData] = []  # Array of individual set data
     notes: str = ""
 
 
@@ -618,10 +642,10 @@ async def save_workout(
     request: WorkoutRequest,
     user_id: int = Depends(get_current_user_id),
 ):
-    """Save a completed workout for the user"""
+    """Save a completed workout for the user - one training row per exercise"""
     try:
         async with app.state.db_pool.acquire() as connection:
-            # Insert the workout record
+            # Keep the existing workout tables in sync for compatibility.
             workout = await connection.fetchrow(
                 """
                 INSERT INTO user_workout (user_id, created_at, duration_minutes, notes)
@@ -633,9 +657,79 @@ async def save_workout(
                 request.notes
             )
             workout_id = workout["workout_id"]
-            
-            # Insert each exercise in the workout
+
+            body_id = await connection.fetchval(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id,
+            )
+
+            # Insert each exercise's individual sets into training table (one row per set)
             for exc in request.exercises:
+                # Get exercise type (strength vs cardio)
+                exer_type = await connection.fetchval(
+                    "SELECT exer_type FROM exercise WHERE exer_id = $1",
+                    exc.exer_id
+                )
+
+                # Iterate through each set of this exercise
+                for set_num, set_data in enumerate(exc.sets, start=1):
+                    # Map metrics based on exercise type
+                    train_mins = 0
+                    train_reps = 0
+                    train_effort = 0.0
+
+                    if exer_type == "strength":
+                        # Strength: train_reps = reps performed, train_effort = weight in kg
+                        train_reps = set_data.reps or 0
+                        train_effort = float(set_data.kg or 0.0)
+                    elif exer_type == "cardio":
+                        # Cardio: train_mins = time in minutes, train_effort = distance in km
+                        train_mins = int(set_data.time or 0)
+                        train_effort = float(set_data.distance or 0.0)
+                    else:
+                        # Default: treat as strength
+                        train_reps = set_data.reps or 0
+                        train_effort = float(set_data.kg or 0.0)
+
+                    # Insert one training row per set
+                    training = await connection.fetchrow(
+                        """
+                        INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort)
+                        VALUES ($1, NOW(), $2, $3, $4)
+                        RETURNING train_id
+                        """,
+                        user_id,
+                        train_mins,
+                        train_reps,
+                        train_effort,
+                    )
+                    train_id = training["train_id"]
+
+                    # Insert training_exercise link with set number
+                    await connection.execute(
+                        """
+                        INSERT INTO training_exercise (train_id, exer_id, sets, reps, weight, notes)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        """,
+                        train_id,
+                        exc.exer_id,
+                        set_num,  # Set number (1, 2, 3, etc.)
+                        set_data.time if exer_type == "cardio" else set_data.reps,
+                        set_data.distance if exer_type == "cardio" else set_data.kg,
+                        exc.notes,
+                    )
+
+                    if body_id is not None:
+                        await connection.execute(
+                            """
+                            INSERT INTO training_body (train_id, body_id)
+                            VALUES ($1, $2)
+                            """,
+                            train_id,
+                            body_id,
+                        )
+
+                # Also maintain user_workout_exercise for compatibility
                 await connection.execute(
                     """
                     INSERT INTO user_workout_exercise 
@@ -644,9 +738,9 @@ async def save_workout(
                     """,
                     workout_id,
                     exc.exer_id,
-                    exc.sets,
-                    exc.reps,
-                    exc.weight,
+                    len(exc.sets),  # Total number of sets for this exercise
+                    exc.sets[0].time if exc.sets and exer_type == "cardio" else (exc.sets[0].reps if exc.sets else 0),
+                    exc.sets[0].distance if exc.sets and exer_type == "cardio" else (exc.sets[0].kg if exc.sets else 0.0),
                     exc.notes
                 )
             
@@ -728,8 +822,9 @@ async def save_workout(
             return {
                 "success": True,
                 "workout_id": workout_id,
+                "total_sets": sum(len(exc.sets) for exc in request.exercises),
                 "exercises_count": len(request.exercises),
-                "message": "Workout saved successfully"
+                "message": "Workout saved successfully - one training row per set"
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save workout: {str(e)}")

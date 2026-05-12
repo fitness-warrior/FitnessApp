@@ -104,6 +104,7 @@ CREATE TABLE exercise (
 
 CREATE TABLE training (
     train_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     train_mins INT,
     train_reps INT,
@@ -411,15 +412,15 @@ VALUES
 ('Power Clean','back','strength','Olympic lifting movement','https://youtube.com/watch?v=pN7MtEuDRfA','Barbells',40,60,80),
 ('Thruster','shoulders','strength','Squat to shoulder press','https://youtube.com/watch?v=b3-u2l_RKm0','Dumbbells',15,20,25);
 
-INSERT INTO training (train_data, train_mins, train_reps, train_effort) VALUES
-('2026-02-01 10:15:00', 45, 120, 7.5),
-('2026-02-02 09:30:00', 50, 140, 8.0),
-('2026-02-03 07:20:00', 35, 90, 6.5),
-('2026-02-04 08:25:00', 55, 160, 8.5),
-('2026-02-05 10:40:00', 40, 110, 7.0),
-('2026-02-06 06:25:00', 30, 100, 9.0),
-('2026-02-07 11:20:00', 60, 180, 9.5),
-('2026-02-08 07:45:00', 25, 70, 5.5);
+INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort) VALUES
+(1, '2026-02-01 10:15:00', 45, 120, 7.5),
+(2, '2026-02-02 09:30:00', 50, 140, 8.0),
+(3, '2026-02-03 07:20:00', 35, 90, 6.5),
+(4, '2026-02-04 08:25:00', 55, 160, 8.5),
+(5, '2026-02-05 10:40:00', 40, 110, 7.0),
+(6, '2026-02-06 06:25:00', 30, 100, 9.0),
+(7, '2026-02-07 11:20:00', 60, 180, 9.5),
+(8, '2026-02-08 07:45:00', 25, 70, 5.5);
 
 INSERT INTO training_exercise (train_id, exer_id) VALUES
 (1, 1),

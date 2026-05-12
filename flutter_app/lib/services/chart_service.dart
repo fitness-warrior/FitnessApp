@@ -118,6 +118,54 @@ class ChartService {
     }
   }
 
+  /// Fetch weight (current and past) for body
+  static Future<List<List<dynamic>>> getWeight(int bodyId) async {
+    try {
+      final uri = Uri.parse('$pythonBaseUrl/chart/weight/$bodyId');
+      debugPrint('GET => $uri');
+
+      final res = await http.get(uri);
+      if (res.statusCode != 200) {
+        throw Exception('Failed to load weight: ${res.statusCode}');
+      }
+
+      final List<dynamic> data = json.decode(res.body);
+      return data.map((item) {
+        if (item is List && item.length == 2) {
+          return [item[0], (item[1] as num).toDouble()];
+        }
+        return [item, 0.0];
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching weight: $e');
+      rethrow;
+    }
+  }
+
+  /// Fetch body type distribution for pie chart
+  static Future<List<List<dynamic>>> getBodyType(int bodyId) async {
+    try {
+      final uri = Uri.parse('$pythonBaseUrl/chart/body-type/$bodyId');
+      debugPrint('GET => $uri');
+
+      final res = await http.get(uri);
+      if (res.statusCode != 200) {
+        throw Exception('Failed to load body type: ${res.statusCode}');
+      }
+
+      final List<dynamic> data = json.decode(res.body);
+      return data.map((item) {
+        if (item is List && item.length == 2) {
+          return [item[0].toString(), (item[1] as num).toDouble()];
+        }
+        return [item.toString(), 0.0];
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching body type: $e');
+      rethrow;
+    }
+  }
+
   /// Fetch chart picker options grouped by cardio and strength exercises.
   static Future<List<Chart>> getChartOptions(int bodyId) async {
     try {

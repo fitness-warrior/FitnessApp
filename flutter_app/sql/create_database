@@ -119,6 +119,7 @@ CREATE TABLE user_workout_exercise (
 
 CREATE TABLE training (
     train_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users (user_id) ON DELETE CASCADE,
     train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     train_mins INT,
     train_reps INT,
