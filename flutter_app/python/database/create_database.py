@@ -169,6 +169,17 @@ CREATE TABLE food_plan (
     meal_id INT REFERENCES meal_plan(meal_id)
 );
 
+CREATE TABLE recipe (
+    recipe_id SERIAL PRIMARY KEY,
+    recipe_meal_name VARCHAR(50) NOT NULL,
+    recipe_ingredients TEXT NOT NULL,
+    recipe_allergy_info TEXT,
+    recipe_calories FLOAT NOT NULL,
+    recipe_diet_type VARCHAR(50) NOT NULL,
+    recipe_instructions TEXT NOT NULL,
+    recipe_image_url TEXT
+);
+
 ---------------- GAME ITEMS ----------------
 
 CREATE TABLE custom_items (
@@ -496,6 +507,8 @@ INSERT INTO food_plan (food_id, meal_id) VALUES
 (6, 3),
 (7, 4),
 (8, 4);
+
+
 
 INSERT INTO custom_items (item_name, item_effect, item_level, item_type) VALUES
 ('Health Potion', 50, 1, 'consumable'),
