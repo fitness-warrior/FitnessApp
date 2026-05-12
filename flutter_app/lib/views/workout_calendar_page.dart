@@ -168,14 +168,8 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   void _openDayView(String day) async {
-    // Check if a workout was already completed today
-    final now = DateTime.now();
-    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-    
-    final alreadyDone = widget.savedWorkouts.any((w) {
-      final date = w['date']?.toString() ?? '';
-      return date.startsWith(todayStr);
-    });
+    final dayIndex = _days.indexOf(day);
+    final alreadyDone = _isDayCompleted(dayIndex);
 
     if (alreadyDone) {
       final bool? proceed = await showDialog<bool>(
