@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/streak_service.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
-import '../services/user_stats_service.dart';
 
 class FinishWorkoutDialog extends StatefulWidget {
   final List<Map<String, dynamic>> exercises;
@@ -352,6 +351,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
       } catch (_) {}
 
       widget.onSuccess({});
+      // ignore: use_build_context_synchronously
       Navigator.pop(context);
 
       if (mounted) {
@@ -474,6 +474,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF1C1C2E),
                             borderRadius: BorderRadius.circular(14),
+                            // ignore: deprecated_member_use
                             border: Border.all(color: Colors.white.withOpacity(0.05)),
                           ),
                           child: Column(
