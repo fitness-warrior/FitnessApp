@@ -111,8 +111,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     await _saveToApi();
   }
 
-
-
   List<Map<String, dynamic>> _resolvedRoutines(String day) {
     final names = _weeklyPlanNames[day] ?? [];
     return names.map((name) {
@@ -131,31 +129,21 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
 
   void _openAssignDialog(String day) {
     List<String> selected = List<String>.from(_weeklyPlanNames[day] ?? []);
-<<<<<<< HEAD
-<<<<<<< HEAD
-    final availableRoutines = _routineCatalog.isNotEmpty
-        ? _routineCatalog.values.toList()
-        : widget.savedWorkouts;
-=======
-    // Deduplicate routines by name to avoid showing the same routine multiple times
+    
+    // Deduplicate routines by name for the assign list
     final Set<String> seenNames = {};
     final List<Map<String, dynamic>> uniqueRoutines = [];
     
     for (var workout in widget.savedWorkouts) {
-      String name = workout['name']?.toString() ?? '';
-      // If nameless, it will be assigned a "Workout N" name in the UI, which we treat as unique-ish 
-      // but let's at least deduplicate the ones that HAVE names.
-      if (name.isEmpty) {
+      final name = workout['name']?.toString();
+      if (name == null || name.isEmpty) {
         uniqueRoutines.add(workout);
-      } else if (!seenNames.contains(name.toLowerCase().trim())) {
-        seenNames.add(name.toLowerCase().trim());
+      } else if (!seenNames.contains(name)) {
+        seenNames.add(name);
         uniqueRoutines.add(workout);
       }
     }
->>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
 
-=======
->>>>>>> 471efa0 (refactor: simplify workout selection logic)
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -168,15 +156,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           ),
           content: SizedBox(
             width: double.maxFinite,
-<<<<<<< HEAD
-<<<<<<< HEAD
-            child: availableRoutines.isEmpty
-=======
             child: uniqueRoutines.isEmpty
->>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
-=======
-            child: widget.savedWorkouts.isEmpty
->>>>>>> 471efa0 (refactor: simplify workout selection logic)
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
@@ -187,35 +167,23 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                   )
                 : ListView.builder(
                     shrinkWrap: true,
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    itemCount: availableRoutines.length,
-                    itemBuilder: (_, i) {
-                      final name = availableRoutines[i]['name']?.toString()
-                          ?? 'Workout ${i + 1}';
-=======
                     itemCount: uniqueRoutines.length,
                     itemBuilder: (_, i) {
-                      final name = uniqueRoutines[i]['name']?.toString();
-                      final displayName = (name == null || name.isEmpty)
-                          ? 'Workout ${widget.savedWorkouts.length - i}'
-                          : name;
->>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
-=======
-                    itemCount: widget.savedWorkouts.length,
-                    itemBuilder: (_, i) {
-                      final name = widget.savedWorkouts[i]['name']?.toString()
-                          ?? 'Workout ${i + 1}';
->>>>>>> 471efa0 (refactor: simplify workout selection logic)
+                      final name = uniqueRoutines[i]['name']?.toString() ??
+                          'Workout ${i + 1}';
                       return CheckboxListTile(
-                        title: Text(name, style: const TextStyle(color: Colors.white)),
+                        title: Text(name,
+                            style: const TextStyle(color: Colors.white)),
                         value: selected.contains(name),
                         activeColor: const Color(0xFF4A9FFF),
                         checkColor: Colors.white,
                         side: const BorderSide(color: Colors.grey),
                         onChanged: (v) => setD(() {
-                          if (v == true) { if (!selected.contains(name)) selected.add(name); }
-                          else { selected.remove(name); }
+                          if (v == true) {
+                            if (!selected.contains(name)) selected.add(name);
+                          } else {
+                            selected.remove(name);
+                          }
                         }),
                       );
                     },
@@ -371,7 +339,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           final isToday = (i + 1) == todayWeekday;
           final isCompleted = _isDayCompleted(i);
           final assignedCount = (_weeklyPlanNames[day] ?? []).length;
-          final resolved = _resolvedRoutines(day);
 
           return GestureDetector(
             onLongPress: () => _openAssignDialog(day),
