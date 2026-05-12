@@ -240,7 +240,6 @@ class QuestionnaireRequest(BaseModel):
     allergies: list
 
 
-<<<<<<< HEAD
 WEEK_DAYS = [
     "monday",
     "tuesday",
@@ -852,7 +851,8 @@ async def _generate_weekly_plan_for_user(connection, user_id: int) -> dict[str, 
     )
 
     return generated_plan
-=======
+
+
 def _map_body_goal(goal: str) -> str:
     normalized = (goal or "").strip().lower()
     if "lose" in normalized:
@@ -864,7 +864,6 @@ def _map_body_goal(goal: str) -> str:
     if "gain" in normalized:
         return "Muscle Gain"
     return "General Fitness"
->>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
 
 
 @app.post("/api/users/questionnaire")
@@ -936,12 +935,8 @@ async def save_questionnaire(
                     request.diet_preference,
                     request.allergies
                 )
-<<<<<<< HEAD
-
             generated_plan = await _generate_weekly_plan_for_user(connection, user_id)
-=======
-                print(f"[QUESTIONNAIRE] Successfully inserted new body_metrics for user {user_id}")
->>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
+            print(f"[QUESTIONNAIRE] Successfully inserted new body_metrics for user {user_id}")
             
             # Save fitness profile with weekly gym days goal
             profile_exists = await connection.fetchval(
