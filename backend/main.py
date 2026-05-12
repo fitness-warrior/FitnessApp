@@ -620,6 +620,8 @@ class WeeklyPlanRequest(BaseModel):
 class SetData(BaseModel):
     reps: int = 0
     kg: float = 0
+    time: int = 0
+    distance: float = 0
 
 
 class WorkoutExercise(BaseModel):
@@ -681,9 +683,9 @@ async def save_workout(
                         train_reps = set_data.reps or 0
                         train_effort = float(set_data.kg or 0.0)
                     elif exer_type == "cardio":
-                        # Cardio: train_mins = distance in km, train_effort = intensity level
-                        train_mins = int(set_data.kg or 0)  # kg field used for distance
-                        train_effort = float(set_data.reps or 0)  # reps field used for intensity
+                        # Cardio: train_mins = time in minutes, train_effort = distance in km
+                        train_mins = int(set_data.time or 0)
+                        train_effort = float(set_data.distance or 0.0)
                     else:
                         # Default: treat as strength
                         train_reps = set_data.reps or 0
@@ -712,8 +714,8 @@ async def save_workout(
                         train_id,
                         exc.exer_id,
                         set_num,  # Set number (1, 2, 3, etc.)
-                        set_data.reps,
-                        set_data.kg,
+                        set_data.time if exer_type == "cardio" else set_data.reps,
+                        set_data.distance if exer_type == "cardio" else set_data.kg,
                         exc.notes,
                     )
 
@@ -737,8 +739,8 @@ async def save_workout(
                     workout_id,
                     exc.exer_id,
                     len(exc.sets),  # Total number of sets for this exercise
-                    exc.sets[0].reps if exc.sets else 0,  # First set reps for legacy
-                    exc.sets[0].kg if exc.sets else 0.0,  # First set weight for legacy
+                    exc.sets[0].time if exc.sets and exer_type == "cardio" else (exc.sets[0].reps if exc.sets else 0),
+                    exc.sets[0].distance if exc.sets and exer_type == "cardio" else (exc.sets[0].kg if exc.sets else 0.0),
                     exc.notes
                 )
             
