@@ -72,6 +72,16 @@ async def lifespan(app: FastAPI):
               AND t.user_id IS NULL
         """)
         await _conn.execute("""
+            ALTER TABLE IF EXISTS body_metrics
+            ADD COLUMN IF NOT EXISTS body_experience VARCHAR(20),
+            ADD COLUMN IF NOT EXISTS body_location VARCHAR(20),
+            ADD COLUMN IF NOT EXISTS body_days_per_week INT,
+            ADD COLUMN IF NOT EXISTS body_session_length INT,
+            ADD COLUMN IF NOT EXISTS body_injuries TEXT,
+            ADD COLUMN IF NOT EXISTS body_diet_preference VARCHAR(50),
+            ADD COLUMN IF NOT EXISTS body_allergies TEXT
+        """)
+        await _conn.execute("""
             CREATE TABLE IF NOT EXISTS user_weekly_plan (
                 id SERIAL PRIMARY KEY,
                 user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
