@@ -509,6 +509,24 @@ INSERT INTO food_plan (food_id, meal_id) VALUES
 (7, 4),
 (8, 4);
 
+INSERT INTO recipe (
+    recipe_meal_name,
+    recipe_ingredients,
+    recipe_allergy_info,
+    recipe_calories,
+    recipe_diet_type,
+    recipe_instructions,
+    recipe_image_url
+)
+VALUES
+('Grilled Chicken Salad',
+ 'chicken breast, lettuce, cucumber, tomato, olive oil, lemon juice',
+ 'none',
+ 320.5,
+ 'High Protein',
+ 'Season chicken. Grill 6 minutes per side. Chop vegetables. Slice chicken and serve with olive oil and lemon.',
+ 'https://assets.epicurious.com/photos/64a845e67799ee8651e4fb8f/1:1/w_4198,h_4198,c_limit/AshaGrilledChickenSalad_RECIPE_070523_56498.jpg');
+
 
 
 INSERT INTO custom_items (item_name, item_effect, item_level, item_type) VALUES
