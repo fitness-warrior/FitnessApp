@@ -131,9 +131,27 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
 
   void _openAssignDialog(String day) {
     List<String> selected = List<String>.from(_weeklyPlanNames[day] ?? []);
+<<<<<<< HEAD
     final availableRoutines = _routineCatalog.isNotEmpty
         ? _routineCatalog.values.toList()
         : widget.savedWorkouts;
+=======
+    // Deduplicate routines by name to avoid showing the same routine multiple times
+    final Set<String> seenNames = {};
+    final List<Map<String, dynamic>> uniqueRoutines = [];
+    
+    for (var workout in widget.savedWorkouts) {
+      String name = workout['name']?.toString() ?? '';
+      // If nameless, it will be assigned a "Workout N" name in the UI, which we treat as unique-ish 
+      // but let's at least deduplicate the ones that HAVE names.
+      if (name.isEmpty) {
+        uniqueRoutines.add(workout);
+      } else if (!seenNames.contains(name.toLowerCase().trim())) {
+        seenNames.add(name.toLowerCase().trim());
+        uniqueRoutines.add(workout);
+      }
+    }
+>>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
 
     showDialog(
       context: context,
@@ -147,7 +165,11 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           ),
           content: SizedBox(
             width: double.maxFinite,
+<<<<<<< HEAD
             child: availableRoutines.isEmpty
+=======
+            child: uniqueRoutines.isEmpty
+>>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
@@ -158,19 +180,28 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                   )
                 : ListView.builder(
                     shrinkWrap: true,
+<<<<<<< HEAD
                     itemCount: availableRoutines.length,
                     itemBuilder: (_, i) {
                       final name = availableRoutines[i]['name']?.toString()
                           ?? 'Workout ${i + 1}';
+=======
+                    itemCount: uniqueRoutines.length,
+                    itemBuilder: (_, i) {
+                      final name = uniqueRoutines[i]['name']?.toString();
+                      final displayName = (name == null || name.isEmpty)
+                          ? 'Workout ${widget.savedWorkouts.length - i}'
+                          : name;
+>>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
                       return CheckboxListTile(
-                        title: Text(name, style: const TextStyle(color: Colors.white)),
-                        value: selected.contains(name),
+                        title: Text(displayName, style: const TextStyle(color: Colors.white)),
+                        value: selected.contains(displayName),
                         activeColor: const Color(0xFF4A9FFF),
                         checkColor: Colors.white,
                         side: const BorderSide(color: Colors.grey),
                         onChanged: (v) => setD(() {
-                          if (v == true) { if (!selected.contains(name)) selected.add(name); }
-                          else { selected.remove(name); }
+                          if (v == true) { if (!selected.contains(displayName)) selected.add(displayName); }
+                          else { selected.remove(displayName); }
                         }),
                       );
                     },
@@ -200,36 +231,44 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   void _openDayView(String day) async {
-    // Check if a workout was already completed today
-    final now = DateTime.now();
-    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-    
-    final alreadyDone = widget.savedWorkouts.any((w) {
-      final date = w['date']?.toString() ?? '';
-      return date.startsWith(todayStr);
-    });
+    final dayIndex = _days.indexOf(day);
+    final alreadyDone = _isDayCompleted(dayIndex);
 
     if (alreadyDone) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
+      final bool? proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1C1C2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
             children: [
-              const Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
-              const SizedBox(width: 12),
-              const Text(
-                'Rest you did your workout',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
+              Icon(Icons.info_outline, color: Color(0xFF4A9FFF)),
+              SizedBox(width: 12),
+              Text('Session Done', style: TextStyle(color: Colors.white)),
             ],
           ),
-          backgroundColor: const Color(0xFF1C1C2E),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
+          content: const Text(
+            'You have already completed a workout today. Would you like to start another session?',
+            style: TextStyle(color: Colors.grey, fontSize: 15),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A9FFF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Start Workout'),
+            ),
+          ],
         ),
       );
-      return;
+      if (proceed != true) return;
     }
 
     final routines = _resolvedRoutines(day);

@@ -1,179 +1,167 @@
-import 'dart:convert';
+// Covers:
+//   UTC-014 - saveWorkout stores workout with correct name and date
+//   UTC-015 - getWorkouts returns workouts newest first
+//   UTC-016 - getWorkouts returns empty list when nothing saved
+//   UTC-017 - deleteWorkout removes the correct workout
+//   UTC-018 - saving a second workout appends to existing history
+//   UTC-019 - clearAllCurrentWorkoutSessions removes session data
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fitness_app_flutter/services/workout_storage.dart';
 
 void main() {
-  group('WorkoutStorage Tests', () {
-    test('Workout data structure contains required fields', () {
-      final workout = {
-        'date': DateTime.now().toIso8601String(),
-        'exercises': [
-          {
-            'exer_id': 1,
-            'exer_name': 'Squats',
-            'sets': [
-              {'kg': 50, 'reps': 10},
-              {'kg': 55, 'reps': 8},
-            ]
-          }
+  // Initialize Flutter bindings
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Mock the flutter_secure_storage platform channel
+  const secureStorageChannel =
+      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  secureStorageChannel.setMockMethodCallHandler((call) async {
+    return null; // Return null for all calls - simulates no stored user
+  });
+
+  setUp(() {
+    // Mock SharedPreferences - start with empty data
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  final sampleExercises = [
+    {
+      'exer_id': 1,
+      'exer_name': 'Bench Press',
+      'exer_type': 'strength',
+      'sets': [
+        {'kg': '80', 'reps': '10'},
+        {'kg': '80', 'reps': '10'},
+      ],
+    },
+    {
+      'exer_id': 2,
+      'exer_name': 'Squat',
+      'exer_type': 'strength',
+      'sets': [
+        {'kg': '100', 'reps': '8'},
+      ],
+    },
+  ];
+
+  group('WorkoutStorage - saveWorkout', () {
+    // UTC-014
+    test('saves workout with correct name and date', () async {
+      await WorkoutStorage.saveWorkout(
+        sampleExercises,
+        workoutName: 'Push Day',
+      );
+
+      final workouts = await WorkoutStorage.getWorkouts();
+
+      expect(workouts.length, equals(1));
+      expect(workouts.first['name'], equals('Push Day'));
+      expect(workouts.first['date'], isNotNull);
+      expect(workouts.first['exercises'], isNotNull);
+    });
+
+    // UTC-018
+    test('saving a second workout appends to existing history', () async {
+      await WorkoutStorage.saveWorkout(
+        sampleExercises,
+        workoutName: 'Push Day',
+      );
+      await WorkoutStorage.saveWorkout(
+        sampleExercises,
+        workoutName: 'Pull Day',
+      );
+
+      final workouts = await WorkoutStorage.getWorkouts();
+      expect(workouts.length, equals(2));
+    });
+  });
+
+  group('WorkoutStorage - getWorkouts', () {
+    // UTC-016
+    test('returns empty list when no workouts saved', () async {
+      final workouts = await WorkoutStorage.getWorkouts();
+      expect(workouts, isEmpty);
+    });
+
+    // UTC-015
+    test('returns workouts newest first', () async {
+      await WorkoutStorage.saveWorkout(
+        sampleExercises,
+        workoutName: 'First Workout',
+      );
+      await Future.delayed(const Duration(milliseconds: 100));
+      await WorkoutStorage.saveWorkout(
+        sampleExercises,
+        workoutName: 'Second Workout',
+      );
+
+      final workouts = await WorkoutStorage.getWorkouts();
+
+      expect(workouts.length, equals(2));
+      // Most recent should be first (reversed list)
+      expect(workouts.first['name'], equals('Second Workout'));
+      expect(workouts.last['name'], equals('First Workout'));
+    });
+  });
+
+  group('WorkoutStorage - deleteWorkout', () {
+    // UTC-017
+    test('deletes the correct workout by index', () async {
+      await WorkoutStorage.saveWorkout(
+        sampleExercises,
+        workoutName: 'Workout A',
+      );
+      await WorkoutStorage.saveWorkout(
+        sampleExercises,
+        workoutName: 'Workout B',
+      );
+      await WorkoutStorage.saveWorkout(
+        sampleExercises,
+        workoutName: 'Workout C',
+      );
+
+      var workouts = await WorkoutStorage.getWorkouts();
+      expect(workouts.length, equals(3));
+      // Newest first: [C, B, A], so index 0 = C
+      expect(workouts.first['name'], equals('Workout C'));
+
+      // Delete index 0 (Workout C)
+      await WorkoutStorage.deleteWorkout(0);
+
+      workouts = await WorkoutStorage.getWorkouts();
+      expect(workouts.length, equals(2));
+      expect(workouts.any((w) => w['name'] == 'Workout C'), isFalse);
+      expect(workouts.any((w) => w['name'] == 'Workout B'), isTrue);
+      expect(workouts.any((w) => w['name'] == 'Workout A'), isTrue);
+    });
+  });
+
+  group('WorkoutStorage - clearAllCurrentWorkoutSessions', () {
+    // UTC-019
+    test('removes all in-progress session data', () async {
+      // Save a session first
+      final mockSets = <int, List<Map<String, dynamic>>>{
+        0: [
+          {'kg': '80', 'reps': '10'}
         ]
       };
 
-      expect(workout.containsKey('date'), isTrue);
-      expect(workout.containsKey('exercises'), isTrue);
-      expect(workout['exercises'], isA<List>());
-    });
+      await WorkoutStorage.saveCurrentWorkoutSessions(
+        [sampleExercises],
+        [mockSets],
+      );
 
-    test('Multiple exercises in one workout stores correctly', () {
-      final now = DateTime.now();
-      final workout = {
-        'date': now.toIso8601String(),
-        'exercises': [
-          {
-            'exer_id': 1,
-            'exer_name': 'Squats',
-            'sets': [
-              {'kg': 50, 'reps': 10},
-            ]
-          },
-          {
-            'exer_id': 2,
-            'exer_name': 'Bench Press',
-            'sets': [
-              {'kg': 60, 'reps': 8},
-            ]
-          }
-        ]
-      };
+      var sessions = await WorkoutStorage.loadCurrentWorkoutSessions();
+      expect(sessions.isNotEmpty, isTrue);
 
-      expect((workout['exercises'] as List).length, equals(2));
-    });
+      // Clear all sessions
+      await WorkoutStorage.clearAllCurrentWorkoutSessions();
 
-    test('Workout with multiple sets per exercise stores correctly', () {
-      final workout = {
-        'date': DateTime.now().toIso8601String(),
-        'exercises': [
-          {
-            'exer_id': 1,
-            'exer_name': 'Deadlifts',
-            'sets': [
-              {'kg': 80, 'reps': 5},
-              {'kg': 85, 'reps': 5},
-              {'kg': 90, 'reps': 3},
-            ]
-          }
-        ]
-      };
-
-      final exercises = workout['exercises'] as List;
-      final sets = exercises[0]['sets'] as List;
-      expect(sets.length, equals(3));
-    });
-
-    test('Workout data JSON serialization roundtrip', () {
-      final now = DateTime.now();
-      final workout = {
-        'date': now.toIso8601String(),
-        'exercises': [
-          {
-            'exer_id': 5,
-            'exer_name': 'Pull-ups',
-            'sets': [
-              {'kg': 0, 'reps': 10},
-            ]
-          }
-        ]
-      };
-
-      // Simulate saveWorkout: JSON encode
-      final jsonString = jsonEncode(workout);
-      expect(jsonString, isNotEmpty);
-
-      // Simulate getWorkouts: JSON decode and parse back
-      final Map<String, dynamic> decoded = jsonDecode(jsonString);
-      expect(decoded['date'], equals(now.toIso8601String()));
-      expect((decoded['exercises'] as List).length, equals(1));
-    });
-
-    test('Workout list maintains order with newest first', () {
-      final date1 = DateTime(2025, 4, 1);
-      final date2 = DateTime(2025, 4, 2);
-      final date3 = DateTime(2025, 4, 3);
-
-      final workouts = [
-        {'date': date1.toIso8601String(), 'exercises': []},
-        {'date': date2.toIso8601String(), 'exercises': []},
-        {'date': date3.toIso8601String(), 'exercises': []}
-      ];
-
-      // Simulate getWorkouts reversal for newest first
-      final reversed =
-          workouts.reversed.map((w) => Map<String, dynamic>.from(w)).toList();
-
-      expect(reversed[0]['date'], equals(date3.toIso8601String()));
-      expect(reversed[1]['date'], equals(date2.toIso8601String()));
-      expect(reversed[2]['date'], equals(date1.toIso8601String()));
-    });
-
-    test('Empty workout list is handled', () {
-      final allWorkouts = <Map<String, dynamic>>[];
-
-      expect(allWorkouts, isEmpty);
-    });
-
-    test('Workout with complex exercise data stores correctly', () {
-      final workout = {
-        'date': DateTime.now().toIso8601String(),
-        'exercises': [
-          {
-            'exer_id': 10,
-            'exer_name': 'Cable Flyes',
-            'exer_descrip': 'Chest exercise',
-            'exer_body_area': 'Chest',
-            'sets': [
-              {'kg': 20, 'reps': 12},
-              {'kg': 20, 'reps': 10},
-              {'kg': 15, 'reps': 15}
-            ]
-          }
-        ]
-      };
-
-      final jsonString = jsonEncode(workout);
-      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-
-      final exercises = decoded['exercises'] as List;
-      final exercise = exercises[0] as Map<String, dynamic>;
-
-      expect(exercise['exer_id'], equals(10));
-      expect(exercise['exer_name'], equals('Cable Flyes'));
-      expect(exercise.containsKey('exer_descrip'), isTrue);
-      expect((exercise['sets'] as List).length, equals(3));
-    });
-
-    test('Workout parsing handles edge cases', () {
-      // Workout with no sets
-      final workout1 = {
-        'date': DateTime.now().toIso8601String(),
-        'exercises': [
-          {'exer_id': 1, 'exer_name': 'Test', 'sets': []}
-        ]
-      };
-
-      expect((workout1['exercises'] as List).isNotEmpty, isTrue);
-      expect(
-          ((workout1['exercises'] as List)[0]['sets'] as List).isEmpty, isTrue);
-    });
-
-    test('Workout ISO8601 date parsing', () {
-      final now = DateTime.now();
-      final isoString = now.toIso8601String();
-
-      // Simulate loading and parsing date
-      final workout = {'date': isoString, 'exercises': []};
-
-      final parsedDate = DateTime.parse(workout['date'] as String);
-      expect(parsedDate, equals(now));
+      sessions = await WorkoutStorage.loadCurrentWorkoutSessions();
+      expect(sessions, isEmpty);
     });
   });
 }

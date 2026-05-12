@@ -341,9 +341,21 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     // Persist profile locally (offline cache) — awaited so it's done before nav
     await RecommendationStorage.saveProfile(profile);
 
-    // Save questionnaire to backend (source of truth) — awaited so Profile
-    // page sees the data as soon as we navigate there
-    await _saveToBackend(_responses);
+    // Save questionnaire to backend (creates/updates body_metrics entry)
+    try {
+      await _saveToBackend(_responses);
+      debugPrint('[Questionnaire] Profile saved successfully to backend');
+    } catch (e) {
+      debugPrint('[Questionnaire] Failed to save profile to backend: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Warning: Could not save to server: $e'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      // Continue anyway - local cache has the data
+    }
 
     if (!mounted) return;
 
@@ -578,10 +590,22 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         'allergies': allergies,
       };
 
+      // Save to local cache first
       await RecommendationStorage.saveQuestionnaireResponse(payload);
-      await UserService.saveQuestionnaireResponse(payload);
+      debugPrint('[Questionnaire] Saved to local storage: $payload');
+
+      // Save to backend (creates or updates body_metrics, user_fitness_profile, user_streak)
+      try {
+        await UserService.saveQuestionnaireResponse(payload);
+        debugPrint('[Questionnaire] Successfully saved to backend');
+      } catch (backendError) {
+        debugPrint('[Questionnaire] Backend save failed: $backendError');
+        // Log but don't block progression if backend is unavailable
+        // User profile will trigger questionnaire again next time
+      }
     } catch (e) {
-      // Silently fail - questionnaire still progresses
+      debugPrint('[Questionnaire] Local save failed: $e');
+      rethrow; // Allow caller to handle if local save fails
     }
   }
 

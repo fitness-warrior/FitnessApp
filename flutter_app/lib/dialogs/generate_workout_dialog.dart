@@ -62,13 +62,20 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
 
     try {
       final allExercises = await ExerciseService.listExercises();
-
-      final targetAreas = _muscleGroupMapping[_selectedMuscleGroup]!;
-      final targetEquipment = _equipmentTypeMapping[_selectedEquipmentType]!;
+      final isCardioTarget = _selectedEquipmentType == 'Cardio';
 
       final filtered = allExercises.where((e) {
         final area = (e['exer_body_area'] ?? '').toString().toLowerCase();
         final equip = (e['exer_equip'] ?? '').toString().toLowerCase();
+        final type = (e['exer_type'] ?? '').toString().toLowerCase();
+
+        if (isCardioTarget) {
+          // If Cardio is selected, we want anything that is type cardio
+          return type == 'cardio';
+        }
+
+        final targetAreas = _muscleGroupMapping[_selectedMuscleGroup]!;
+        final targetEquipment = _equipmentTypeMapping[_selectedEquipmentType]!;
 
         return targetAreas.any((a) => area.contains(a.toLowerCase())) &&
             targetEquipment.any((t) => equip.contains(t.toLowerCase()));

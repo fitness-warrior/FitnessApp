@@ -117,7 +117,7 @@
     },
     {
       "name": "flutter_secure_storage",
-      "version": "10.0.0",
+      "version": "10.1.0",
       "dependencies": [
         "flutter",
         "flutter_secure_storage_darwin",
@@ -144,7 +144,7 @@
     },
     {
       "name": "shared_preferences",
-      "version": "2.5.4",
+      "version": "2.5.5",
       "dependencies": [
         "flutter",
         "shared_preferences_android",
@@ -425,7 +425,7 @@
     },
     {
       "name": "async",
-      "version": "2.13.0",
+      "version": "2.13.1",
       "dependencies": [
         "collection",
         "meta"
@@ -607,7 +607,7 @@
     },
     {
       "name": "flutter_secure_storage_web",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "dependencies": [
         "flutter",
         "flutter_secure_storage_platform_interface",
@@ -633,7 +633,7 @@
     },
     {
       "name": "flutter_secure_storage_darwin",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": [
         "flutter",
         "plugin_platform_interface"
@@ -671,7 +671,7 @@
     },
     {
       "name": "shared_preferences_platform_interface",
-      "version": "2.4.1",
+      "version": "2.4.2",
       "dependencies": [
         "flutter",
         "plugin_platform_interface"
@@ -699,7 +699,7 @@
     },
     {
       "name": "shared_preferences_android",
-      "version": "2.4.21",
+      "version": "2.4.23",
       "dependencies": [
         "flutter",
         "shared_preferences_platform_interface"
@@ -757,7 +757,7 @@
     },
     {
       "name": "url_launcher_android",
-      "version": "6.3.28",
+      "version": "6.3.29",
       "dependencies": [
         "flutter",
         "url_launcher_platform_interface"
@@ -1029,7 +1029,7 @@
     },
     {
       "name": "vm_service",
-      "version": "15.0.2",
+      "version": "15.2.0",
       "dependencies": []
     },
     {

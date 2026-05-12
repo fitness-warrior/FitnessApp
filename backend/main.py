@@ -2,6 +2,8 @@ import os
 import json
 from pathlib import Path
 from contextlib import asynccontextmanager
+import asyncio
+import time
 from datetime import date
 import asyncpg
 from dotenv import load_dotenv
@@ -34,9 +36,41 @@ DATABASE_URL = os.getenv(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+    # Create DB pool with retry/backoff to tolerate transient DB recovery states
+    max_wait = int(os.getenv("DB_CONNECT_TIMEOUT", "60"))
+    backoff = 1
+    start_ts = time.time()
+    while True:
+        try:
+            app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+            break
+        except Exception as e:
+            # If we've waited long enough, re-raise to fail fast
+            if time.time() - start_ts > max_wait:
+                raise
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, 5)
     # Ensure weekly plan table exists on startup
     async with app.state.db_pool.acquire() as _conn:
+        await _conn.execute("""
+            ALTER TABLE IF EXISTS training
+            ADD COLUMN IF NOT EXISTS user_id INT
+        """)
+        await _conn.execute("""
+            ALTER TABLE IF EXISTS training_exercise
+            ADD COLUMN IF NOT EXISTS sets INT,
+            ADD COLUMN IF NOT EXISTS reps INT,
+            ADD COLUMN IF NOT EXISTS weight FLOAT,
+            ADD COLUMN IF NOT EXISTS notes TEXT
+        """)
+        await _conn.execute("""
+            UPDATE training t
+            SET user_id = bm.user_id
+            FROM training_body tb
+            JOIN body_metrics bm ON bm.body_id = tb.body_id
+            WHERE t.train_id = tb.train_id
+              AND t.user_id IS NULL
+        """)
         await _conn.execute("""
             CREATE TABLE IF NOT EXISTS user_weekly_plan (
                 id SERIAL PRIMARY KEY,
@@ -98,24 +132,13 @@ async def signup(request: SignupRequest):
             # Hash password
             hashed_password = hash_password(request.password)
             
-            # Create a default game character for compatibility
-            game_char = await connection.fetchrow(
-                """
-                INSERT INTO game_char (game_char_level, game_char_colour, game_char_type, 
-                                       game_char_hp, game_char_attack, game_char_speed)
-                VALUES (1, 'blue', 'a', 100, 10, 5)
-                RETURNING game_char_id
-                """
-            )
-            
             # Insert new user
             user = await connection.fetchrow(
                 """
-                INSERT INTO users (game_char_id, user_name, user_email, user_password)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO users (user_name, user_email, user_password)
+                VALUES ($1, $2, $3)
                 RETURNING user_id, user_email, user_name
                 """,
-                game_char["game_char_id"],
                 request.username,
                 request.email,
                 hashed_password
@@ -207,6 +230,7 @@ class QuestionnaireRequest(BaseModel):
     allergies: list
 
 
+<<<<<<< HEAD
 WEEK_DAYS = [
     "monday",
     "tuesday",
@@ -818,6 +842,19 @@ async def _generate_weekly_plan_for_user(connection, user_id: int) -> dict[str, 
     )
 
     return generated_plan
+=======
+def _map_body_goal(goal: str) -> str:
+    normalized = (goal or "").strip().lower()
+    if "lose" in normalized:
+        return "Fat Loss"
+    if "build" in normalized:
+        return "Muscle Gain"
+    if "stay" in normalized:
+        return "General Fitness"
+    if "gain" in normalized:
+        return "Muscle Gain"
+    return "General Fitness"
+>>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
 
 
 @app.post("/api/users/questionnaire")
@@ -825,7 +862,8 @@ async def save_questionnaire(
     request: QuestionnaireRequest,
     user_id: int = Depends(get_current_user_id),
 ):
-    """Save user's questionnaire responses"""
+    """Save user's questionnaire responses (idempotent: creates or updates body_metrics)"""
+    print(f"[QUESTIONNAIRE] User {user_id} submitted: age={request.age}, height={request.height}, weight={request.weight}, goal={request.goal}, experience={request.experience}")
     try:
         async with app.state.db_pool.acquire() as connection:
             # Check if questionnaire already exists for this user
@@ -833,9 +871,11 @@ async def save_questionnaire(
                 "SELECT body_id FROM body_metrics WHERE user_id = $1",
                 user_id
             )
+            print(f"[QUESTIONNAIRE] Existing body_id for user {user_id}: {existing}")
             
             if existing:
-                # Update existing questionnaire
+                # Update existing questionnaire (idempotent - just refreshes data)
+                print(f"[QUESTIONNAIRE] Updating existing body_metrics for user {user_id}")
                 await connection.execute(
                     """
                     UPDATE body_metrics
@@ -850,8 +890,8 @@ async def save_questionnaire(
                     request.age,
                     request.height,
                     request.weight,
-                    request.goal,
-                    'male',  # Default, can be extended later
+                    _map_body_goal(request.goal),
+                    'male',
                     request.experience,
                     request.location,
                     request.days_per_week,
@@ -861,6 +901,7 @@ async def save_questionnaire(
                     request.allergies,
                     user_id
                 )
+                print(f"[QUESTIONNAIRE] Successfully updated body_metrics for user {user_id}")
             else:
                 # Create new body metrics entry
                 await connection.execute(
@@ -875,8 +916,8 @@ async def save_questionnaire(
                     request.age,
                     request.height,
                     request.weight,
-                    request.goal,
-                    'male',  # Default
+                    _map_body_goal(request.goal),
+                    'male',
                     request.experience,
                     request.location,
                     request.days_per_week,
@@ -885,8 +926,12 @@ async def save_questionnaire(
                     request.diet_preference,
                     request.allergies
                 )
+<<<<<<< HEAD
 
             generated_plan = await _generate_weekly_plan_for_user(connection, user_id)
+=======
+                print(f"[QUESTIONNAIRE] Successfully inserted new body_metrics for user {user_id}")
+>>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
             
             # Save fitness profile with weekly gym days goal
             profile_exists = await connection.fetchval(
@@ -932,6 +977,7 @@ async def save_questionnaire(
                     today
                 )
             
+            print(f"[QUESTIONNAIRE] All data saved successfully for user {user_id}")
             return {
                 "success": True,
                 "message": "Questionnaire saved successfully",
@@ -940,6 +986,7 @@ async def save_questionnaire(
                 "generated_plan": generated_plan,
             }
     except Exception as e:
+        print(f"[QUESTIONNAIRE] Error saving for user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to save questionnaire: {str(e)}")
 
 
@@ -1012,9 +1059,10 @@ async def get_user_profile(
         async with app.state.db_pool.acquire() as connection:
             user = await connection.fetchrow(
                 """
-                SELECT user_id, user_email, user_name, user_surname
-                FROM users
-                WHERE user_id = $1
+                SELECT u.user_id, u.user_email, u.user_name, u.user_surname, bm.body_id
+                FROM users u
+                LEFT JOIN body_metrics bm ON bm.user_id = u.user_id
+                WHERE u.user_id = $1
                 """,
                 user_id
             )
@@ -1026,12 +1074,69 @@ async def get_user_profile(
                 "user_id": user["user_id"],
                 "email": user["user_email"],
                 "username": user["user_name"],
-                "surname": user["user_surname"]
+                "surname": user["user_surname"],
+                "body_id": user["body_id"]
             }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
+
+
+@app.get("/api/charts/options")
+async def get_chart_options(
+    user_id: int = Depends(get_current_user_id),
+):
+    """Return chart picker options grouped by cardio and strength exercises."""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            body_id = await connection.fetchval(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id,
+            )
+
+            if not body_id:
+                raise HTTPException(status_code=404, detail="Body metrics not found")
+
+            rows = await connection.fetch(
+                """
+                SELECT e.exer_name, e.exer_type, pe.plan_exer_PB
+                FROM exercise e
+                JOIN plan_exercise pe ON pe.exer_id = e.exer_id
+                JOIN training_exercise te ON te.exer_id = e.exer_id
+                JOIN training t ON t.train_id = te.train_id
+                JOIN training_body tb ON tb.train_id = t.train_id
+                WHERE tb.body_id = $1
+                  AND t.train_data IS NOT NULL
+                                ORDER BY
+                                    CASE WHEN e.exer_type = 'cardio' THEN 0 ELSE 1 END,
+                                    pe.plan_exer_PB DESC
+                """,
+                body_id,
+            )
+
+            cardio = []
+            strength = []
+
+            for row in rows:
+                exercise_name = row["exer_name"]
+                exercise_type = row["exer_type"]
+                if exercise_type == "cardio" and exercise_name not in cardio:
+                    cardio.append(exercise_name)
+                elif exercise_type == "strength" and exercise_name not in strength:
+                    strength.append(exercise_name)
+
+            return [
+                {"name": "track callories", "measure": ["total", "just intake", "just cardio"]},
+                {"name": "cardio speed", "measure": cardio},
+                {"name": "cardio enduance", "measure": cardio},
+                {"name": "total weight lifted", "measure": strength},
+                {"name": "weight personal bests", "measure": strength},
+            ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch chart options: {str(e)}")
 
 
 @app.put("/api/users/profile")
@@ -1152,12 +1257,17 @@ class WeeklyPlanRequest(BaseModel):
     plan: dict
 
 
+class SetData(BaseModel):
+    reps: int = 0
+    kg: float = 0
+    time: int = 0
+    distance: float = 0
+
+
 class WorkoutExercise(BaseModel):
     exer_id: int
     exer_name: str
-    sets: int = 0
-    reps: int = 0
-    weight: float = 0
+    sets: list[SetData] = []  # Array of individual set data
     notes: str = ""
 
 
@@ -1172,10 +1282,10 @@ async def save_workout(
     request: WorkoutRequest,
     user_id: int = Depends(get_current_user_id),
 ):
-    """Save a completed workout for the user"""
+    """Save a completed workout for the user - one training row per exercise"""
     try:
         async with app.state.db_pool.acquire() as connection:
-            # Insert the workout record
+            # Keep the existing workout tables in sync for compatibility.
             workout = await connection.fetchrow(
                 """
                 INSERT INTO user_workout (user_id, created_at, duration_minutes, notes)
@@ -1187,9 +1297,79 @@ async def save_workout(
                 request.notes
             )
             workout_id = workout["workout_id"]
-            
-            # Insert each exercise in the workout
+
+            body_id = await connection.fetchval(
+                "SELECT body_id FROM body_metrics WHERE user_id = $1",
+                user_id,
+            )
+
+            # Insert each exercise's individual sets into training table (one row per set)
             for exc in request.exercises:
+                # Get exercise type (strength vs cardio)
+                exer_type = await connection.fetchval(
+                    "SELECT exer_type FROM exercise WHERE exer_id = $1",
+                    exc.exer_id
+                )
+
+                # Iterate through each set of this exercise
+                for set_num, set_data in enumerate(exc.sets, start=1):
+                    # Map metrics based on exercise type
+                    train_mins = 0
+                    train_reps = 0
+                    train_effort = 0.0
+
+                    if exer_type == "strength":
+                        # Strength: train_reps = reps performed, train_effort = weight in kg
+                        train_reps = set_data.reps or 0
+                        train_effort = float(set_data.kg or 0.0)
+                    elif exer_type == "cardio":
+                        # Cardio: train_mins = time in minutes, train_effort = distance in km
+                        train_mins = int(set_data.time or 0)
+                        train_effort = float(set_data.distance or 0.0)
+                    else:
+                        # Default: treat as strength
+                        train_reps = set_data.reps or 0
+                        train_effort = float(set_data.kg or 0.0)
+
+                    # Insert one training row per set
+                    training = await connection.fetchrow(
+                        """
+                        INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort)
+                        VALUES ($1, NOW(), $2, $3, $4)
+                        RETURNING train_id
+                        """,
+                        user_id,
+                        train_mins,
+                        train_reps,
+                        train_effort,
+                    )
+                    train_id = training["train_id"]
+
+                    # Insert training_exercise link with set number
+                    await connection.execute(
+                        """
+                        INSERT INTO training_exercise (train_id, exer_id, sets, reps, weight, notes)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        """,
+                        train_id,
+                        exc.exer_id,
+                        set_num,  # Set number (1, 2, 3, etc.)
+                        set_data.time if exer_type == "cardio" else set_data.reps,
+                        set_data.distance if exer_type == "cardio" else set_data.kg,
+                        exc.notes,
+                    )
+
+                    if body_id is not None:
+                        await connection.execute(
+                            """
+                            INSERT INTO training_body (train_id, body_id)
+                            VALUES ($1, $2)
+                            """,
+                            train_id,
+                            body_id,
+                        )
+
+                # Also maintain user_workout_exercise for compatibility
                 await connection.execute(
                     """
                     INSERT INTO user_workout_exercise 
@@ -1198,9 +1378,9 @@ async def save_workout(
                     """,
                     workout_id,
                     exc.exer_id,
-                    exc.sets,
-                    exc.reps,
-                    exc.weight,
+                    len(exc.sets),  # Total number of sets for this exercise
+                    exc.sets[0].time if exc.sets and exer_type == "cardio" else (exc.sets[0].reps if exc.sets else 0),
+                    exc.sets[0].distance if exc.sets and exer_type == "cardio" else (exc.sets[0].kg if exc.sets else 0.0),
                     exc.notes
                 )
             
@@ -1282,8 +1462,9 @@ async def save_workout(
             return {
                 "success": True,
                 "workout_id": workout_id,
+                "total_sets": sum(len(exc.sets) for exc in request.exercises),
                 "exercises_count": len(request.exercises),
-                "message": "Workout saved successfully"
+                "message": "Workout saved successfully - one training row per set"
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save workout: {str(e)}")
