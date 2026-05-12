@@ -18,33 +18,24 @@ class WorkoutService {
       final payload = {
         'exercises': exercises.map((exercise) {
           final rawSets = exercise['sets'];
-
-          int setsCount = 0;
-          int repsValue = 0;
-          double weightValue = 0;
+          
+          List<Map<String, dynamic>> setsArray = [];
 
           if (rawSets is List && rawSets.isNotEmpty) {
-            setsCount = rawSets.length;
-            final firstSet = rawSets.first;
-            if (firstSet is Map) {
-              repsValue =
-                  int.tryParse(firstSet['reps']?.toString() ?? '0') ?? 0;
-              weightValue =
-                  double.tryParse(firstSet['kg']?.toString() ?? '0') ?? 0;
+            for (var set in rawSets) {
+              if (set is Map) {
+                setsArray.add({
+                  'reps': int.tryParse(set['reps']?.toString() ?? '0') ?? 0,
+                  'kg': double.tryParse(set['kg']?.toString() ?? '0') ?? 0,
+                });
+              }
             }
-          } else {
-            setsCount = int.tryParse(exercise['sets']?.toString() ?? '0') ?? 0;
-            repsValue = int.tryParse(exercise['reps']?.toString() ?? '0') ?? 0;
-            weightValue =
-                double.tryParse(exercise['weight']?.toString() ?? '0') ?? 0;
           }
 
           return {
             'exer_id': exercise['exer_id'],
             'exer_name': exercise['exer_name'],
-            'sets': setsCount,
-            'reps': repsValue,
-            'weight': weightValue,
+            'sets': setsArray,  // Send full array, not just count
             'notes': exercise['notes'] ?? '',
           };
         }).toList(),

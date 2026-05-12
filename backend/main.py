@@ -617,12 +617,15 @@ class WeeklyPlanRequest(BaseModel):
     plan: dict
 
 
+class SetData(BaseModel):
+    reps: int = 0
+    kg: float = 0
+
+
 class WorkoutExercise(BaseModel):
     exer_id: int
     exer_name: str
-    sets: int = 0
-    reps: int = 0
-    weight: float = 0
+    sets: list[SetData] = []  # Array of individual set data
     notes: str = ""
 
 
@@ -658,8 +661,7 @@ async def save_workout(
                 user_id,
             )
 
-            # Insert each exercise in the workout and training tables.
-            # Create one training row per exercise with correct metric mapping
+            # Insert each exercise's individual sets into training table (one row per set)
             for exc in request.exercises:
                 # Get exercise type (strength vs cardio)
                 exer_type = await connection.fetchval(
@@ -667,39 +669,65 @@ async def save_workout(
                     exc.exer_id
                 )
 
-                # Map metrics based on exercise type
-                train_mins = 0
-                train_reps = 0
-                train_effort = 0.0
+                # Iterate through each set of this exercise
+                for set_num, set_data in enumerate(exc.sets, start=1):
+                    # Map metrics based on exercise type
+                    train_mins = 0
+                    train_reps = 0
+                    train_effort = 0.0
 
-                if exer_type == "strength":
-                    # Strength: train_reps = reps performed, train_effort = weight in kg
-                    train_reps = exc.reps or 0
-                    train_effort = float(exc.weight or 0.0)
-                elif exer_type == "cardio":
-                    # Cardio: train_mins = distance in km, train_effort = intensity level
-                    train_mins = int(exc.weight or 0)  # weight field used for distance
-                    train_effort = float(exc.reps or 0)  # reps field used for intensity
-                else:
-                    # Default: treat as strength
-                    train_reps = exc.reps or 0
-                    train_effort = float(exc.weight or 0.0)
+                    if exer_type == "strength":
+                        # Strength: train_reps = reps performed, train_effort = weight in kg
+                        train_reps = set_data.reps or 0
+                        train_effort = float(set_data.kg or 0.0)
+                    elif exer_type == "cardio":
+                        # Cardio: train_mins = distance in km, train_effort = intensity level
+                        train_mins = int(set_data.kg or 0)  # kg field used for distance
+                        train_effort = float(set_data.reps or 0)  # reps field used for intensity
+                    else:
+                        # Default: treat as strength
+                        train_reps = set_data.reps or 0
+                        train_effort = float(set_data.kg or 0.0)
 
-                # Insert training row for this exercise
-                training = await connection.fetchrow(
-                    """
-                    INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort)
-                    VALUES ($1, NOW(), $2, $3, $4)
-                    RETURNING train_id
-                    """,
-                    user_id,
-                    train_mins,
-                    train_reps,
-                    train_effort,
-                )
-                train_id = training["train_id"]
+                    # Insert one training row per set
+                    training = await connection.fetchrow(
+                        """
+                        INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort)
+                        VALUES ($1, NOW(), $2, $3, $4)
+                        RETURNING train_id
+                        """,
+                        user_id,
+                        train_mins,
+                        train_reps,
+                        train_effort,
+                    )
+                    train_id = training["train_id"]
 
-                # Insert user_workout_exercise link
+                    # Insert training_exercise link with set number
+                    await connection.execute(
+                        """
+                        INSERT INTO training_exercise (train_id, exer_id, sets, reps, weight, notes)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        """,
+                        train_id,
+                        exc.exer_id,
+                        set_num,  # Set number (1, 2, 3, etc.)
+                        set_data.reps,
+                        set_data.kg,
+                        exc.notes,
+                    )
+
+                    if body_id is not None:
+                        await connection.execute(
+                            """
+                            INSERT INTO training_body (train_id, body_id)
+                            VALUES ($1, $2)
+                            """,
+                            train_id,
+                            body_id,
+                        )
+
+                # Also maintain user_workout_exercise for compatibility
                 await connection.execute(
                     """
                     INSERT INTO user_workout_exercise 
@@ -708,35 +736,11 @@ async def save_workout(
                     """,
                     workout_id,
                     exc.exer_id,
-                    exc.sets,
-                    exc.reps,
-                    exc.weight,
+                    len(exc.sets),  # Total number of sets for this exercise
+                    exc.sets[0].reps if exc.sets else 0,  # First set reps for legacy
+                    exc.sets[0].kg if exc.sets else 0.0,  # First set weight for legacy
                     exc.notes
                 )
-
-                # Insert training_exercise link
-                await connection.execute(
-                    """
-                    INSERT INTO training_exercise (train_id, exer_id, sets, reps, weight, notes)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    """,
-                    train_id,
-                    exc.exer_id,
-                    exc.sets,
-                    exc.reps,
-                    exc.weight,
-                    exc.notes,
-                )
-
-                if body_id is not None:
-                    await connection.execute(
-                        """
-                        INSERT INTO training_body (train_id, body_id)
-                        VALUES ($1, $2)
-                        """,
-                        train_id,
-                        body_id,
-                    )
             
             # Update streak automatically
             from datetime import date, timedelta
@@ -816,8 +820,9 @@ async def save_workout(
             return {
                 "success": True,
                 "workout_id": workout_id,
+                "total_sets": sum(len(exc.sets) for exc in request.exercises),
                 "exercises_count": len(request.exercises),
-                "message": "Workout saved successfully"
+                "message": "Workout saved successfully - one training row per set"
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save workout: {str(e)}")
