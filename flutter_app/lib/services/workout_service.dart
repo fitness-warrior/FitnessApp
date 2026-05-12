@@ -18,16 +18,25 @@ class WorkoutService {
       final payload = {
         'exercises': exercises.map((exercise) {
           final rawSets = exercise['sets'];
-          
+          final exerType = exercise['exer_type']?.toString().toLowerCase() ?? 'strength';
+
           List<Map<String, dynamic>> setsArray = [];
 
           if (rawSets is List && rawSets.isNotEmpty) {
             for (var set in rawSets) {
               if (set is Map) {
-                setsArray.add({
-                  'reps': int.tryParse(set['reps']?.toString() ?? '0') ?? 0,
-                  'kg': double.tryParse(set['kg']?.toString() ?? '0') ?? 0,
-                });
+                if (exerType == 'cardio') {
+                  setsArray.add({
+                    'time': int.tryParse(set['time']?.toString() ?? '0') ?? 0,
+                    'distance':
+                        double.tryParse(set['distance']?.toString() ?? '0') ?? 0,
+                  });
+                } else {
+                  setsArray.add({
+                    'reps': int.tryParse(set['reps']?.toString() ?? '0') ?? 0,
+                    'kg': double.tryParse(set['kg']?.toString() ?? '0') ?? 0,
+                  });
+                }
               }
             }
           }
