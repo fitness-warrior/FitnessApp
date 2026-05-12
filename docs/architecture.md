@@ -6,7 +6,15 @@ Our app is built using a client-server architecture. The flutter frontend commun
 
 ## Architecture Diagram
 
-
+```mermaid
+graph TD
+    A[Flutter Frontend] -->|HTTP API Calls| B[FastAPI Main Backend]
+    A -->|HTTP API Calls| C[FastAPI Original Backend]
+    B -->|Read/Write| D[(PostgreSQL Database)]
+    C -->|Read/Write| D
+    B -->|Served via| E[Docker Compose]
+    D -->|Served via| E
+```
 
 
 ## Frontend
