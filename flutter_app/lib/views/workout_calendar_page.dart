@@ -32,10 +32,11 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     'saturday': 'Saturday', 'sunday': 'Sunday',
   };
 
-  // Only routine *names* are stored — resolved to full objects at render time.
   final Map<String, List<String>> _weeklyPlanNames = {
     for (final d in ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']) d: [],
   };
+
+  final Map<String, Map<String, dynamic>> _routineCatalog = {};
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -54,8 +55,30 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     if (!mounted) return;
     if (plan != null) {
       setState(() {
+        _routineCatalog.clear();
+
+        final weekPlan = plan['week_plan'] is Map
+            ? Map<String, dynamic>.from(plan['week_plan'] as Map)
+            : plan;
+
         for (final day in _days) {
-          _weeklyPlanNames[day] = List<String>.from(plan[day] ?? []);
+          final names = weekPlan[day];
+          _weeklyPlanNames[day] = names is List
+              ? names.map((n) => n.toString()).toList()
+              : <String>[];
+        }
+
+        final routinesRaw = plan['routines'];
+        if (routinesRaw is List) {
+          for (final routine in routinesRaw) {
+            if (routine is Map) {
+              final data = Map<String, dynamic>.from(routine);
+              final name = data['name']?.toString();
+              if (name != null && name.isNotEmpty) {
+                _routineCatalog[name] = data;
+              }
+            }
+          }
         }
       });
     } else {
@@ -65,9 +88,12 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   Future<void> _saveToApi() async {
-    final snapshot = Map<String, List<String>>.fromEntries(
-      _days.map((d) => MapEntry(d, List<String>.from(_weeklyPlanNames[d] ?? []))),
-    );
+    final snapshot = <String, dynamic>{
+      'week_plan': {
+        for (final day in _days) day: List<String>.from(_weeklyPlanNames[day] ?? []),
+      },
+      'routines': _routineCatalog.values.toList(),
+    };
     final ok = await WeeklyPlanService.saveWeeklyPlan(snapshot);
     if (!mounted) return;
     if (!ok) {
@@ -89,19 +115,25 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
 
   List<Map<String, dynamic>> _resolvedRoutines(String day) {
     final names = _weeklyPlanNames[day] ?? [];
-    return names
-        .map((name) => widget.savedWorkouts.firstWhere(
-              (w) => w['name']?.toString() == name,
-              orElse: () => <String, dynamic>{},
-            ))
-        .where((w) => w.isNotEmpty)
-        .toList();
+    return names.map((name) {
+      final planRoutine = _routineCatalog[name];
+      if (planRoutine != null && planRoutine.isNotEmpty) {
+        return planRoutine;
+      }
+      return widget.savedWorkouts.firstWhere(
+        (w) => w['name']?.toString() == name,
+        orElse: () => <String, dynamic>{},
+      );
+    }).where((w) => w.isNotEmpty).toList();
   }
 
   // ── Dialogs ───────────────────────────────────────────────────────────────
 
   void _openAssignDialog(String day) {
     List<String> selected = List<String>.from(_weeklyPlanNames[day] ?? []);
+    final availableRoutines = _routineCatalog.isNotEmpty
+        ? _routineCatalog.values.toList()
+        : widget.savedWorkouts;
 
     showDialog(
       context: context,
@@ -115,7 +147,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           ),
           content: SizedBox(
             width: double.maxFinite,
-            child: widget.savedWorkouts.isEmpty
+            child: availableRoutines.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
@@ -126,9 +158,9 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                   )
                 : ListView.builder(
                     shrinkWrap: true,
-                    itemCount: widget.savedWorkouts.length,
+                    itemCount: availableRoutines.length,
                     itemBuilder: (_, i) {
-                      final name = widget.savedWorkouts[i]['name']?.toString()
+                      final name = availableRoutines[i]['name']?.toString()
                           ?? 'Workout ${i + 1}';
                       return CheckboxListTile(
                         title: Text(name, style: const TextStyle(color: Colors.white)),
