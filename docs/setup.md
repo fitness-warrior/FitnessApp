@@ -10,9 +10,11 @@ Before running the project, make sure you have the following installed:
 - Git
 
 !!! tip "Recommended: Use Docker"
-    The easiest way to run this project is with Docker Compose, which sets up 
-    the backend and database automatically. Manual setup is only needed if you 
-    are not using Docker.
+    The easiest way to run this project is with Docker Compose, which automatically
+    sets up the backend and database. Manual setup is only required if Docker
+    is not being used.
+
+---
 
 ## Cloning the Repository
 
@@ -23,6 +25,8 @@ git clone https://github.com/fitness-warrior/FitnessApp
 cd FitnessApp
 ```
 
+---
+
 ## Option A: Running with Docker
 
 ```bash
@@ -30,50 +34,76 @@ docker-compose up --build
 ```
 
 !!! note "First Run"
-    The first build may take a few minutes as Docker downloads the required images.
+    The initial Docker build may take several minutes because the required
+    images and dependencies must be downloaded.
 
-Once running, the backend will be available at `http://localhost:5001`.
+Once running, the backend will be available at:
 
-## Setting up the Database
+```text
+http://localhost:5001
+```
+
+---
+
+## Option B: Manual Setup
+
+### Setting up the Database
 
 !!! warning "PostgreSQL Version"
-    Make sure you are running PostgreSQL 16 or above to match the Docker configuration.
+    Make sure PostgreSQL 16 or above is installed to match the project's
+    Docker configuration.
 
-Make sure PostgreSQL is running, then create a database for the project:
+Make sure PostgreSQL is running, then create the database:
 
-```bash
+```sql
 psql -U postgres
 CREATE DATABASE fitnessapp;
 ```
 
+---
+
 ### Running the Backend
+
+Install the required Python dependencies:
 
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
-Then start the backend server:
+
+!!! note "Environment Variable Required"
+    Make sure the `DATABASE_URL` environment variable is configured before
+    starting the backend server.
+
+Example:
+
+```bash
+DATABASE_URL=postgresql://fitness:fitness@localhost:5432/fitnessapp
+```
+
+Start the backend server:
 
 ```bash
 uvicorn main:app --host 0.0.0.0 --port 5001
 ```
 
-!!! note "Environment Variable"
-    Make sure to set the `DATABASE_URL` environment variable before running:
-
-DATABASE_URL=postgresql://fitness:fitness@localhost:5432/fitnessapp
+---
 
 ## Running the Flutter App
+
+Install Flutter dependencies:
 
 ```bash
 cd flutter_app
 flutter pub get
 ```
 
+Launch the application:
+
 ```bash
 flutter run
 ```
 
-!!! warning "Backend Must Be Running First"
-    Make sure the backend is running on port 5001 before launching the Flutter app, 
-    otherwise API calls will fail.
+!!! warning "Backend Must Be Running"
+    Ensure the backend server is running on port `5001` before launching
+    the Flutter application, otherwise API requests will fail.
