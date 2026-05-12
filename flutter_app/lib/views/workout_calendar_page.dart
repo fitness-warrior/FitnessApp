@@ -131,11 +131,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
 
   void _openAssignDialog(String day) {
     List<String> selected = List<String>.from(_weeklyPlanNames[day] ?? []);
-<<<<<<< HEAD
-    final availableRoutines = _routineCatalog.isNotEmpty
-        ? _routineCatalog.values.toList()
-        : widget.savedWorkouts;
-=======
     // Deduplicate routines by name to avoid showing the same routine multiple times
     final Set<String> seenNames = {};
     final List<Map<String, dynamic>> uniqueRoutines = [];
@@ -151,7 +146,6 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
         uniqueRoutines.add(workout);
       }
     }
->>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
 
     showDialog(
       context: context,
@@ -165,11 +159,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           ),
           content: SizedBox(
             width: double.maxFinite,
-<<<<<<< HEAD
-            child: availableRoutines.isEmpty
-=======
             child: uniqueRoutines.isEmpty
->>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
@@ -180,23 +170,14 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                   )
                 : ListView.builder(
                     shrinkWrap: true,
-<<<<<<< HEAD
-                    itemCount: availableRoutines.length,
-                    itemBuilder: (_, i) {
-                      final name = availableRoutines[i]['name']?.toString()
-                          ?? 'Workout ${i + 1}';
-=======
                     itemCount: uniqueRoutines.length,
                     itemBuilder: (_, i) {
-                      final name = uniqueRoutines[i]['name']?.toString();
-                      final displayName = (name == null || name.isEmpty)
-                          ? 'Workout ${widget.savedWorkouts.length - i}'
-                          : name;
->>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
+                      final displayName = (uniqueRoutines[i]['name']?.toString() ?? '').isNotEmpty
+                          ? uniqueRoutines[i]['name']?.toString() ?? 'Workout ${i + 1}'
+                          : 'Workout ${i + 1}';
                       return CheckboxListTile(
                         title: Text(displayName, style: const TextStyle(color: Colors.white)),
                         value: selected.contains(displayName),
-                        activeColor: const Color(0xFF4A9FFF),
                         checkColor: Colors.white,
                         side: const BorderSide(color: Colors.grey),
                         onChanged: (v) => setD(() {
