@@ -132,6 +132,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   void _openAssignDialog(String day) {
     List<String> selected = List<String>.from(_weeklyPlanNames[day] ?? []);
 <<<<<<< HEAD
+<<<<<<< HEAD
     final availableRoutines = _routineCatalog.isNotEmpty
         ? _routineCatalog.values.toList()
         : widget.savedWorkouts;
@@ -153,6 +154,8 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     }
 >>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
 
+=======
+>>>>>>> 471efa0 (refactor: simplify workout selection logic)
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -166,10 +169,14 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           content: SizedBox(
             width: double.maxFinite,
 <<<<<<< HEAD
+<<<<<<< HEAD
             child: availableRoutines.isEmpty
 =======
             child: uniqueRoutines.isEmpty
 >>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
+=======
+            child: widget.savedWorkouts.isEmpty
+>>>>>>> 471efa0 (refactor: simplify workout selection logic)
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
@@ -180,6 +187,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                   )
                 : ListView.builder(
                     shrinkWrap: true,
+<<<<<<< HEAD
 <<<<<<< HEAD
                     itemCount: availableRoutines.length,
                     itemBuilder: (_, i) {
@@ -193,15 +201,21 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                           ? 'Workout ${widget.savedWorkouts.length - i}'
                           : name;
 >>>>>>> 62b2ad7ec2f49f3b3bcc0dfcc3a680036b2a29c3
+=======
+                    itemCount: widget.savedWorkouts.length,
+                    itemBuilder: (_, i) {
+                      final name = widget.savedWorkouts[i]['name']?.toString()
+                          ?? 'Workout ${i + 1}';
+>>>>>>> 471efa0 (refactor: simplify workout selection logic)
                       return CheckboxListTile(
-                        title: Text(displayName, style: const TextStyle(color: Colors.white)),
-                        value: selected.contains(displayName),
+                        title: Text(name, style: const TextStyle(color: Colors.white)),
+                        value: selected.contains(name),
                         activeColor: const Color(0xFF4A9FFF),
                         checkColor: Colors.white,
                         side: const BorderSide(color: Colors.grey),
                         onChanged: (v) => setD(() {
-                          if (v == true) { if (!selected.contains(displayName)) selected.add(displayName); }
-                          else { selected.remove(displayName); }
+                          if (v == true) { if (!selected.contains(name)) selected.add(name); }
+                          else { selected.remove(name); }
                         }),
                       );
                     },
@@ -231,8 +245,14 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   void _openDayView(String day) async {
-    final dayIndex = _days.indexOf(day);
-    final alreadyDone = _isDayCompleted(dayIndex);
+    // Check if a workout was already completed today
+    final now = DateTime.now();
+    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    
+    final alreadyDone = widget.savedWorkouts.any((w) {
+      final date = w['date']?.toString() ?? '';
+      return date.startsWith(todayStr);
+    });
 
     if (alreadyDone) {
       final bool? proceed = await showDialog<bool>(
