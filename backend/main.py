@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 from contextlib import asynccontextmanager
+import asyncio
+import time
 from datetime import date
 import asyncpg
 from dotenv import load_dotenv
@@ -32,7 +34,20 @@ DATABASE_URL = os.getenv(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+    # Create DB pool with retry/backoff to tolerate transient DB recovery states
+    max_wait = int(os.getenv("DB_CONNECT_TIMEOUT", "60"))
+    backoff = 1
+    start_ts = time.time()
+    while True:
+        try:
+            app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+            break
+        except Exception as e:
+            # If we've waited long enough, re-raise to fail fast
+            if time.time() - start_ts > max_wait:
+                raise
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, 5)
     # Ensure weekly plan table exists on startup
     async with app.state.db_pool.acquire() as _conn:
         await _conn.execute("""
@@ -194,12 +209,26 @@ class QuestionnaireRequest(BaseModel):
     allergies: list
 
 
+def _map_body_goal(goal: str) -> str:
+    normalized = (goal or "").strip().lower()
+    if "lose" in normalized:
+        return "Fat Loss"
+    if "build" in normalized:
+        return "Muscle Gain"
+    if "stay" in normalized:
+        return "General Fitness"
+    if "gain" in normalized:
+        return "Muscle Gain"
+    return "General Fitness"
+
+
 @app.post("/api/users/questionnaire")
 async def save_questionnaire(
     request: QuestionnaireRequest,
     user_id: int = Depends(get_current_user_id),
 ):
-    """Save user's questionnaire responses"""
+    """Save user's questionnaire responses (idempotent: creates or updates body_metrics)"""
+    print(f"[QUESTIONNAIRE] User {user_id} submitted: age={request.age}, height={request.height}, weight={request.weight}, goal={request.goal}, experience={request.experience}")
     try:
         async with app.state.db_pool.acquire() as connection:
             # Check if questionnaire already exists for this user
@@ -207,9 +236,11 @@ async def save_questionnaire(
                 "SELECT body_id FROM body_metrics WHERE user_id = $1",
                 user_id
             )
+            print(f"[QUESTIONNAIRE] Existing body_id for user {user_id}: {existing}")
             
             if existing:
-                # Update existing questionnaire
+                # Update existing questionnaire (idempotent - just refreshes data)
+                print(f"[QUESTIONNAIRE] Updating existing body_metrics for user {user_id}")
                 await connection.execute(
                     """
                     UPDATE body_metrics
@@ -224,8 +255,8 @@ async def save_questionnaire(
                     request.age,
                     request.height,
                     request.weight,
-                    request.goal,
-                    'male',  # Default, can be extended later
+                    _map_body_goal(request.goal),
+                    'male',
                     request.experience,
                     request.location,
                     request.days_per_week,
@@ -235,6 +266,7 @@ async def save_questionnaire(
                     request.allergies,
                     user_id
                 )
+                print(f"[QUESTIONNAIRE] Successfully updated body_metrics for user {user_id}")
             else:
                 # Create new body metrics entry
                 await connection.execute(
@@ -249,8 +281,8 @@ async def save_questionnaire(
                     request.age,
                     request.height,
                     request.weight,
-                    request.goal,
-                    'male',  # Default
+                    _map_body_goal(request.goal),
+                    'male',
                     request.experience,
                     request.location,
                     request.days_per_week,
@@ -259,6 +291,7 @@ async def save_questionnaire(
                     request.diet_preference,
                     request.allergies
                 )
+                print(f"[QUESTIONNAIRE] Successfully inserted new body_metrics for user {user_id}")
             
             # Save fitness profile with weekly gym days goal
             profile_exists = await connection.fetchval(
@@ -304,6 +337,7 @@ async def save_questionnaire(
                     today
                 )
             
+            print(f"[QUESTIONNAIRE] All data saved successfully for user {user_id}")
             return {
                 "success": True,
                 "message": "Questionnaire saved successfully",
@@ -311,6 +345,7 @@ async def save_questionnaire(
                 "days_per_week_goal": request.days_per_week
             }
     except Exception as e:
+        print(f"[QUESTIONNAIRE] Error saving for user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to save questionnaire: {str(e)}")
 
 
