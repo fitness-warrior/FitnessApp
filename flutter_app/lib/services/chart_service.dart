@@ -3,19 +3,22 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/chart_model.dart';
 import '../config/api_config.dart';
+import 'auth_service.dart';
 
 class ChartService {
   static String get baseUrl => ApiConfig.baseUrl;
   
   static String get pythonBaseUrl {
-    if (kIsWeb) return 'http://localhost:5000';
-    
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return 'http://10.0.2.2:5000';
-      default:
-        return 'http://localhost:5000';
-    }
+    // Everything is now handled by the main FastAPI backend on port 5001
+    return ApiConfig.baseUrl.replaceFirst('/api', '');
+  }
+
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = await AuthService.getToken();
+    return {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
   }
 
   /// Fetch cardio speed data for an exercise
@@ -25,7 +28,7 @@ class ChartService {
       final uri = Uri.parse('$pythonBaseUrl/chart/cardio-speed/$bodyId/$exerciseName');
       debugPrint('GET => $uri');
       
-      final res = await http.get(uri);
+      final res = await http.get(uri, headers: await _getHeaders());
       if (res.statusCode != 200) {
         throw Exception('Failed to load cardio speed: ${res.statusCode}');
       }
@@ -50,7 +53,7 @@ class ChartService {
       final uri = Uri.parse('$pythonBaseUrl/chart/cardio-endurance/$bodyId/$exerciseName');
       debugPrint('GET => $uri');
       
-      final res = await http.get(uri);
+      final res = await http.get(uri, headers: await _getHeaders());
       if (res.statusCode != 200) {
         throw Exception('Failed to load cardio endurance: ${res.statusCode}');
       }
@@ -75,7 +78,7 @@ class ChartService {
       final uri = Uri.parse('$pythonBaseUrl/chart/strength-total/$bodyId/$exerciseName');
       debugPrint('GET => $uri');
       
-      final res = await http.get(uri);
+      final res = await http.get(uri, headers: await _getHeaders());
       if (res.statusCode != 200) {
         throw Exception('Failed to load strength total: ${res.statusCode}');
       }
@@ -100,7 +103,7 @@ class ChartService {
       final uri = Uri.parse('$pythonBaseUrl/chart/daily-cardio-calories/$bodyId');
       debugPrint('GET => $uri');
       
-      final res = await http.get(uri);
+      final res = await http.get(uri, headers: await _getHeaders());
       if (res.statusCode != 200) {
         throw Exception('Failed to load daily cardio calories: ${res.statusCode}');
       }
@@ -124,7 +127,7 @@ class ChartService {
       final uri = Uri.parse('$pythonBaseUrl/chart/weight/$bodyId');
       debugPrint('GET => $uri');
 
-      final res = await http.get(uri);
+      final res = await http.get(uri, headers: await _getHeaders());
       if (res.statusCode != 200) {
         throw Exception('Failed to load weight: ${res.statusCode}');
       }
@@ -148,7 +151,7 @@ class ChartService {
       final uri = Uri.parse('$pythonBaseUrl/chart/body-type/$bodyId');
       debugPrint('GET => $uri');
 
-      final res = await http.get(uri);
+      final res = await http.get(uri, headers: await _getHeaders());
       if (res.statusCode != 200) {
         throw Exception('Failed to load body type: ${res.statusCode}');
       }
@@ -172,7 +175,7 @@ class ChartService {
       final uri = Uri.parse('$pythonBaseUrl/api/charts/options?body_id=$bodyId');
       debugPrint('GET => $uri');
 
-      final res = await http.get(uri);
+      final res = await http.get(uri, headers: await _getHeaders());
       if (res.statusCode != 200) {
         throw Exception('Failed to load chart options: ${res.statusCode}');
       }

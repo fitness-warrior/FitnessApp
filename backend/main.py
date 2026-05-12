@@ -2030,6 +2030,125 @@ async def get_exercise(exercise_id: int):
 
     return format_exercise(row)
 
+
+# ==================== CHART DATA ENDPOINTS ====================
+
+@app.get("/chart/weight/{body_id}")
+async def get_chart_weight(body_id: int, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            row = await connection.fetchrow(
+                "SELECT body_weight, body_past_weight FROM body_metrics WHERE body_id = $1",
+                body_id
+            )
+            if not row:
+                return []
+            return [
+                ["current", row["body_weight"]],
+                ["past", row["body_past_weight"] or row["body_weight"]]
+            ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/body-type/{body_id}")
+async def get_chart_body_type(body_id: int, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT e.exer_body_area, COUNT(*) AS area_count
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE tb.body_id = $1
+                  AND t.train_data IS NOT NULL
+                GROUP BY e.exer_body_area
+                ORDER BY area_count DESC
+            """, body_id)
+            return [[row["exer_body_area"], row["area_count"]] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/cardio-speed/{body_id}/{exercise_name}")
+async def get_chart_cardio_speed(body_id: int, exercise_name: str, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT t.train_data, t.train_mins, t.train_effort
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE tb.body_id = $1 AND e.exer_name = $2 AND t.train_mins > 0
+                ORDER BY t.train_data ASC
+                LIMIT 7
+            """, body_id, exercise_name)
+            
+            return [[row["train_data"].strftime("%Y-%m-%d"), (row["train_effort"] * 1000) / row["train_mins"]] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/cardio-endurance/{body_id}/{exercise_name}")
+async def get_chart_cardio_endurance(body_id: int, exercise_name: str, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT t.train_data, t.train_effort
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE tb.body_id = $1 AND e.exer_name = $2
+                ORDER BY t.train_data ASC
+                LIMIT 7
+            """, body_id, exercise_name)
+            return [[row["train_data"].strftime("%Y-%m-%d"), row["train_effort"]] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/strength-total/{body_id}/{exercise_name}")
+async def get_chart_strength_total(body_id: int, exercise_name: str, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT t.train_data, t.train_effort, t.train_reps
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE tb.body_id = $1 AND e.exer_name = $2
+                ORDER BY t.train_data ASC
+                LIMIT 7
+            """, body_id, exercise_name)
+            return [[row["train_data"].strftime("%Y-%m-%d"), row["train_effort"] * (row["train_reps"] or 0)] for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chart/daily-cardio-calories/{body_id}")
+async def get_chart_daily_cardio_calories(body_id: int, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch("""
+                SELECT t.train_data, t.train_mins, bm.body_weight, e.exer_met
+                FROM training t
+                JOIN training_body tb ON tb.train_id = t.train_id
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                JOIN body_metrics bm ON bm.body_id = tb.body_id
+                WHERE tb.body_id = $1 AND e.exer_type = 'cardio'
+                ORDER BY t.train_data ASC
+            """, body_id)
+            
+            daily_cals = {}
+            for row in rows:
+                day = row["train_data"].strftime("%Y-%m-%d")
+                cals = row["exer_met"] * row["body_weight"] * ((row["train_mins"] or 0) / 60.0)
+                daily_cals[day] = daily_cals.get(day, 0) + cals
+            
+            return [[day, daily_cals[day]] for day in sorted(daily_cals.keys())][-7:]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5001)
