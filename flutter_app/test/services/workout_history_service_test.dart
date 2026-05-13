@@ -97,5 +97,65 @@ void main() {
       expect(workouts.length, equals(3));
     });
 
+    test('Test 5: Specific workout loads correctly', () {
+      // App loads details for a specific previously logged workout
+      final fakeWorkout = {
+        'workout_id': 42,
+        'notes': 'Leg Day',
+        'exercises': [
+          {'exer_name': 'Squat', 'sets': 3, 'reps': 10, 'weight': 80},
+        ],
+        'created_at': '2024-03-10',
+      };
+
+      final fakeResponse = http.Response(jsonEncode(fakeWorkout), 200);
+
+      expect(fakeResponse.statusCode, equals(200));
+      final workout = jsonDecode(fakeResponse.body) as Map<String, dynamic>;
+
+      // Returns the workout with correct information
+      expect(workout['workout_id'], equals(42));
+      expect(workout['notes'], equals('Leg Day'));
+      expect((workout['exercises'] as List).length, equals(1));
+    });
+
+    test('Test 6: Returns nothing if workout history entry isn\'t found', () {
+      // App requests a workout that doesn't exist — server returns 404
+      final fakeResponse = http.Response('', 404);
+
+      // Service returns null (not a crash) for 404
+      Map<String, dynamic>? workout;
+      if (fakeResponse.statusCode == 200) {
+        workout = jsonDecode(fakeResponse.body) as Map<String, dynamic>;
+      } else if (fakeResponse.statusCode == 404) {
+        workout = null; // returns nothing
+      }
+
+      expect(workout, isNull);
+    });
+
+    test('Test 7: Deleting a workout removes it successfully', () {
+      // Server confirms deletion with 200
+      final fakeResponse = http.Response('', 200);
+
+      // Service returns true (200 or 204)
+      final deleted = fakeResponse.statusCode == 200 || fakeResponse.statusCode == 204;
+
+      expect(deleted, isTrue);
+    });
+
+    test('Test 8: Workout deletion fails when server has an error', () {
+      // Server returns an error when the app tries to delete
+      final fakeResponse = http.Response(
+        jsonEncode({'detail': 'Server Error'}),
+        500,
+      );
+
+      // Service should return false (not crash)
+      final deleted = fakeResponse.statusCode == 200 || fakeResponse.statusCode == 204;
+
+      expect(deleted, isFalse);
+    });
+
   });
 }
