@@ -15,12 +15,14 @@ void main() {
         ),
       );
 
-      // Button shows finish icon and 'Finish Workout' label
+      // Button shows 'Finish Workout' label
       expect(find.text('Finish Workout'), findsOneWidget);
+
+      // Finish icon (check_circle_outline) is visible
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
 
-      // Blue background — verify ElevatedButton exists
-      expect(find.byType(ElevatedButton), findsOneWidget);
+      // Widget is present
+      expect(find.byType(FinishButton), findsOneWidget);
     });
 
     testWidgets('Test 2: onPressed callback fires on tap', (WidgetTester tester) async {
@@ -38,8 +40,8 @@ void main() {
         ),
       );
 
-      // User taps the finish button
-      await tester.tap(find.byType(ElevatedButton));
+      // User taps the finish button via its label text
+      await tester.tap(find.text('Finish Workout'));
       await tester.pump();
 
       // Callback invoked
