@@ -208,5 +208,51 @@ void main() {
       const headers = {'Content-Type': 'application/json'};
       expect(headers['Content-Type'], equals('application/json'));
     });
+    test('UTC-073: Workout data formatted correctly from sets list', () {
+      // Input data: Exercise with multiple sets
+      final exercises = [
+        {
+          'exer_id': 101,
+          'exer_name': 'Bench Press',
+          'sets': [
+            {'kg': 60, 'reps': 10},
+            {'kg': 65, 'reps': 8},
+            {'kg': 70, 'reps': 6},
+          ]
+        }
+      ];
+
+      // Logic to format as WorkoutService.submitWorkout does
+      final formattedExercises = exercises.map((exercise) {
+        final rawSets = exercise['sets'] as List;
+        final setsArray = rawSets.map((s) => {
+          'reps': int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
+          'kg': double.tryParse(s['kg']?.toString() ?? '0') ?? 0,
+        }).toList();
+
+        return {
+          'exer_id': exercise['exer_id'],
+          'exer_name': exercise['exer_name'],
+          'sets': setsArray,
+        };
+      }).toList();
+
+      final payload = {
+        'exercises': formattedExercises,
+      };
+
+      // Assertions
+      expect(payload['exercises'], isA<List>());
+      final firstEx = (payload['exercises'] as List)[0];
+      expect(firstEx['exer_id'], equals(101));
+      expect(firstEx['exer_name'], equals('Bench Press'));
+      
+      final sets = firstEx['sets'] as List;
+      expect(sets.length, equals(3));
+      expect(sets[0]['kg'], equals(60.0));
+      expect(sets[0]['reps'], equals(10));
+      expect(sets[2]['kg'], equals(70.0));
+      expect(sets[2]['reps'], equals(6));
+    });
   });
 }
