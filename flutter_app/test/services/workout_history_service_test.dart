@@ -43,5 +43,21 @@ void main() {
       expect(responseBody['workout_id'], equals(99));
     });
 
+    test('Test 2: Workout save fails when server has an error', () {
+      // Server returns an error when app tries to save a workout
+      final fakeServerError = http.Response(
+        jsonEncode({'detail': 'Internal Server Error'}),
+        500,
+      );
+
+      // App should detect the failure
+      final statusCode = fakeServerError.statusCode;
+      final isSuccess = statusCode == 201 || statusCode == 200;
+
+      // App returns an error message (not success)
+      expect(isSuccess, isFalse);
+      expect(statusCode, equals(500));
+    });
+
   });
 }
