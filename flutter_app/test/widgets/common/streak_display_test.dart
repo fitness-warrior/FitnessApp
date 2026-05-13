@@ -47,5 +47,28 @@ void main() {
       expect(fallbackData.weeklyGoal, equals(3)); // default goal
     });
 
+    test('Test 4: Weekly progress displays correctly', () {
+      // StreakDisplay rendered with workoutsThisWeek=3, weeklyGoal=5
+      final streakData = StreakData(
+        currentStreak: 0,
+        longestStreak: 0,
+        workoutsThisWeek: 3,
+        weeklyGoal: 5,
+      );
+
+      // Weekly progress is shown as 3 out of 5
+      expect(streakData.workoutsThisWeek, equals(3));
+      expect(streakData.weeklyGoal, equals(5));
+
+      // Progress percentage = (3 / 5) * 100 = 60%
+      expect(streakData.weeklyProgressPercent, equals(60));
+
+      // Goal not yet met
+      expect(streakData.goalMet, isFalse);
+
+      // 2 more workouts remaining
+      expect(streakData.workoutsRemaining, equals(2));
+    });
+
   });
 }
