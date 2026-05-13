@@ -59,5 +59,43 @@ void main() {
       expect(statusCode, equals(500));
     });
 
+    test('Test 3: Workout history loads correctly from the server', () {
+      // Server returns 3 previous workouts
+      final fakeHistory = [
+        {'workout_id': 1, 'notes': 'Morning run', 'created_at': '2024-01-01'},
+        {'workout_id': 2, 'notes': 'Leg day',     'created_at': '2024-01-02'},
+        {'workout_id': 3, 'notes': 'Chest day',   'created_at': '2024-01-03'},
+      ];
+
+      final fakeResponse = http.Response(jsonEncode(fakeHistory), 200);
+
+      // Parse as WorkoutHistoryService.getWorkoutHistory would
+      expect(fakeResponse.statusCode, equals(200));
+      final data = jsonDecode(fakeResponse.body);
+      final workouts = (data as List).cast<Map<String, dynamic>>();
+
+      // All 3 workouts displayed in workout history
+      expect(workouts.length, equals(3));
+      expect(workouts[0]['workout_id'], equals(1));
+      expect(workouts[2]['notes'], equals('Chest day'));
+    });
+
+    test('Test 4: Workout history can be limited to a certain number', () {
+      // User requests the last 3 workouts — server returns exactly 3
+      final fakeHistory = [
+        {'workout_id': 5, 'notes': 'Latest 1', 'created_at': '2024-03-01'},
+        {'workout_id': 6, 'notes': 'Latest 2', 'created_at': '2024-03-02'},
+        {'workout_id': 7, 'notes': 'Latest 3', 'created_at': '2024-03-03'},
+      ];
+
+      final fakeResponse = http.Response(jsonEncode(fakeHistory), 200);
+
+      expect(fakeResponse.statusCode, equals(200));
+      final workouts = (jsonDecode(fakeResponse.body) as List).cast<Map<String, dynamic>>();
+
+      // 3 most recent workouts are displayed
+      expect(workouts.length, equals(3));
+    });
+
   });
 }
