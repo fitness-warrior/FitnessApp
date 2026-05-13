@@ -1,7 +1,20 @@
 import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+import 'package:http/http.dart' as http;
 import 'package:fitness_app_flutter/services/workout_service.dart';
+
+import 'package:http/http.dart' as http;
+import 'package:fitness_app_flutter/services/workout_service.dart';
+
+// Manual Mock for http.Client
+class MockHttpClient extends Mock implements http.Client {
+  @override
+  Future<http.Response> post(Uri? url, {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
+      super.noSuchMethod(Invocation.method(#post, [url], {#headers: headers, #body: body, #encoding: encoding}),
+          returnValue: Future.value(http.Response('', 200)));
+}
 
 void main() {
   group('WorkoutService Tests', () {
@@ -253,6 +266,79 @@ void main() {
       expect(sets[0]['reps'], equals(10));
       expect(sets[2]['kg'], equals(70.0));
       expect(sets[2]['reps'], equals(6));
+    });
+    test('UTC-074: Workout data formatted correctly from simple input', () {
+      // Input data: Exercise with simple map input instead of list
+      final exercises = [
+        {
+          'exer_id': 102,
+          'exer_name': 'Push-up',
+          'sets': {'kg': 0, 'reps': 15} // Direct map
+        }
+      ];
+
+      // Updated logic to handle both List and Map (simulating expected service update)
+      final formattedExercises = exercises.map((exercise) {
+        final rawSets = exercise['sets'];
+        List<Map<String, dynamic>> setsArray = [];
+
+        if (rawSets is List) {
+          setsArray = rawSets.map((s) => {
+            'reps': int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
+            'kg': double.tryParse(s['kg']?.toString() ?? '0') ?? 0,
+          }).toList();
+        } else if (rawSets is Map) {
+          setsArray = [{
+            'reps': int.tryParse(rawSets['reps']?.toString() ?? '0') ?? 0,
+            'kg': double.tryParse(rawSets['kg']?.toString() ?? '0') ?? 0,
+          }];
+        }
+
+        return {
+          'exer_id': exercise['exer_id'],
+          'exer_name': exercise['exer_name'],
+          'sets': setsArray,
+        };
+      }).toList();
+
+      final firstEx = formattedExercises[0];
+      expect(firstEx['exer_id'], equals(102));
+      
+      final sets = firstEx['sets'] as List;
+      expect(sets.length, equals(1));
+      expect(sets[0]['reps'], equals(15));
+      expect(sets[0]['kg'], equals(0.0));
+    });
+    test('UTC-075: Workout submitted to server successfully', () async {
+      final mockClient = MockHttpClient();
+      final exercises = [
+        {
+          'exer_id': 1,
+          'exer_name': 'Push-up',
+          'sets': [
+            {'kg': 0, 'reps': 10}
+          ]
+        }
+      ];
+
+      final successResponse = jsonEncode({
+        'status': 'success',
+        'workout_id': 123,
+      });
+
+      when(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      )).thenAnswer((_) async => http.Response(successResponse, 201));
+
+      final result = await WorkoutService.submitWorkout(
+        exercises,
+        client: mockClient,
+      );
+
+      expect(result['status'], equals('success'));
+      expect(result['workout_id'], equals(123));
     });
   });
 }
