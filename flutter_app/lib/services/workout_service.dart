@@ -11,7 +11,9 @@ class WorkoutService {
     List<Map<String, dynamic>> exercises, {
     int? durationMinutes,
     String? notes,
+    http.Client? client,
   }) async {
+    final httpClient = client ?? http.Client();
     try {
       final headers = await AuthService.getAuthHeaders();
 
@@ -52,7 +54,7 @@ class WorkoutService {
         'notes': notes ?? '',
       };
 
-      final response = await http.post(
+      final response = await httpClient.post(
         Uri.parse('$baseUrl/workouts'),
         headers: headers,
         body: jsonEncode(payload),
