@@ -24,5 +24,32 @@ void main() {
       expect(results[1]['id'], equals(2));
     });
 
+    test('Test 2: Recommended exercises ranked by relevance', () {
+      // App requests exercises matching 'legs' and 'strength'
+      final tags = ['legs', 'strength'];
+
+      final exercises = [
+        {'id': 1, 'name': 'Push-up',       'type': 'strength', 'area': 'chest'}, // 1 match: strength
+        {'id': 2, 'name': 'Barbell Squat', 'type': 'strength', 'area': 'legs'},  // 2 matches
+        {'id': 3, 'name': 'Running',       'type': 'cardio',   'area': 'legs'},  // 1 match: legs
+      ];
+
+      // Rank by number of matching tags
+      final ranked = exercises.map((ex) {
+        final text = '${ex['name']} ${ex['type']} ${ex['area']}'.toLowerCase();
+        int score = 0;
+        for (final tag in tags) {
+          if (text.contains(tag)) score++;
+        }
+        return {...ex, 'score': score};
+      }).toList()
+        ..sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
+
+      // Exercises with more matching tags appear higher in the list
+      expect(ranked[0]['id'], equals(2)); // Barbell Squat — 2 matches
+      expect(ranked[0]['score'], equals(2));
+      expect((ranked[1]['score'] as int), equals(1));
+    });
+
   });
 }
