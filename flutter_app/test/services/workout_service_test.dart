@@ -335,10 +335,46 @@ void main() {
       final result = await WorkoutService.submitWorkout(
         exercises,
         client: mockClient,
+        customHeaders: {'Authorization': 'Bearer test-token'},
       );
 
       expect(result['status'], equals('success'));
       expect(result['workout_id'], equals(123));
+    });
+    test('UTC-076: Workout submission fails with invalid data', () async {
+      final mockClient = MockHttpClient();
+      final exercises = [
+        {'exer_id': 1, 'exer_name': 'Push-up', 'sets': []}
+      ];
+
+      when(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      )).thenAnswer((_) async => http.Response('Invalid data', 400));
+
+      expect(
+        () => WorkoutService.submitWorkout(exercises, client: mockClient, customHeaders: {}),
+        throwsA(predicate((e) => e is Exception && e.toString().contains('Invalid workout data'))),
+      );
+    });
+
+    test('UTC-077: Workout submission fails on server error', () async {
+      final mockClient = MockHttpClient();
+      final exercises = [
+        {'exer_id': 1, 'exer_name': 'Push-up', 'sets': []}
+      ];
+
+      when(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      )).thenAnswer((_) async => http.Response('Internal Server Error', 500));
+
+      expect(
+        () => WorkoutService.submitWorkout(exercises, client: mockClient, customHeaders: {}),
+        throwsA(predicate((e) => e is Exception && e.toString().contains('Failed to submit workout: 500'))),
+      );
     });
   });
 }
