@@ -35,5 +35,17 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
+    test('Test 3: Shows fallback on error - parseStreakData returns defaults on bad data', () {
+      // Simulated API error: empty map (what the catchError in widget returns)
+      final fallbackData = StreakService.parseStreakData({});
+
+      // Widget should display fallback values instead of crashing
+      // catchError in _loadStreak returns currentStreak: 0
+      expect(fallbackData.currentStreak, equals(0));
+      expect(fallbackData.longestStreak, equals(0));
+      expect(fallbackData.workoutsThisWeek, equals(0));
+      expect(fallbackData.weeklyGoal, equals(3)); // default goal
+    });
+
   });
 }
