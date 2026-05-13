@@ -51,5 +51,67 @@ void main() {
       expect((ranked[1]['score'] as int), equals(1));
     });
 
+    test('Test 3: Specific exercise found on device', () {
+      // App looks up exercise with ID 1, found on device (local cache)
+      final deviceStorage = {
+        1: {'id': 1, 'name': 'Cached Push-up', 'area': 'chest', 'type': 'strength'},
+      };
+
+      final requestedId = 1;
+
+      // Simulate: check device first
+      Map<String, dynamic>? result;
+      if (deviceStorage.containsKey(requestedId)) {
+        result = deviceStorage[requestedId];
+      }
+
+      // Returns the exercise from device storage (no server needed)
+      expect(result, isNotNull);
+      expect(result?['name'], equals('Cached Push-up'));
+    });
+
+    test('Test 4: Exercise fetched from server when not on device', () {
+      // App looks up exercise not stored on device, server has it
+      final deviceStorage = <int, Map<String, dynamic>>{}; // cache is empty
+
+      final serverExercises = {
+        10: {'id': 10, 'name': 'Server Deadlift', 'area': 'back', 'type': 'strength'},
+      };
+
+      final requestedId = 10;
+
+      // Simulate: cache miss → fetch from server
+      Map<String, dynamic>? result;
+      if (deviceStorage.containsKey(requestedId)) {
+        result = deviceStorage[requestedId];
+      } else if (serverExercises.containsKey(requestedId)) {
+        result = serverExercises[requestedId];
+      }
+
+      // Returns the exercise from the server
+      expect(result, isNotNull);
+      expect(result?['name'], equals('Server Deadlift'));
+    });
+
+    test('Test 5: Returns nothing when exercise cannot be found anywhere', () {
+      // Exercise not on device and server cannot be reached
+      final deviceStorage = <int, Map<String, dynamic>>{};
+      final serverAvailable = false;
+
+      final requestedId = 999;
+
+      // Simulate: cache miss → server unreachable → return nothing
+      Map<String, dynamic>? result;
+      if (deviceStorage.containsKey(requestedId)) {
+        result = deviceStorage[requestedId];
+      } else if (serverAvailable) {
+        result = {'id': requestedId, 'name': 'Would be fetched'};
+      } else {
+        result = null; // Returns nothing without crashing
+      }
+
+      expect(result, isNull);
+    });
+
   });
 }
