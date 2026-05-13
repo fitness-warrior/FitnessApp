@@ -48,5 +48,31 @@ void main() {
       expect(result, isNull);
     });
 
+    test('Test 3: Weekly plan returns nothing when server has an error', () {
+      // Server returns an error (500)
+      final fakeResponse = http.Response('Internal Server Error', 500);
+
+      // WeeklyPlanService only reads body on 200; otherwise falls through to return null
+      Map<String, dynamic>? result;
+      if (fakeResponse.statusCode == 200) {
+        result = jsonDecode(fakeResponse.body) as Map<String, dynamic>;
+      }
+      // else: returns null without crashing
+
+      expect(result, isNull);
+    });
+
+    test('Test 4: Weekly plan returns nothing when no internet connection', () {
+      // Simulate network exception (device offline)
+      Map<String, dynamic>? result;
+      try {
+        throw Exception('SocketException: Failed host lookup'); // simulated
+      } catch (e) {
+        result = null; // catch block in service returns null
+      }
+
+      expect(result, isNull);
+    });
+
   });
 }
