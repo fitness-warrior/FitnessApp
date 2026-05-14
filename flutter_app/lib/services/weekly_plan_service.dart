@@ -22,8 +22,8 @@ class WeeklyPlanService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-          final plan = data['plan'] as Map<String, dynamic>?;
-          return plan ?? <String, dynamic>{};
+        final plan = data['plan'] as Map<String, dynamic>?;
+        return plan ?? <String, dynamic>{};
       }
       debugPrint('[WeeklyPlan] GET ${response.statusCode}: ${response.body}');
     } catch (e) {

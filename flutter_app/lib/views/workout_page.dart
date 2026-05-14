@@ -22,8 +22,7 @@ class WorkoutPage extends StatefulWidget {
     Key? key,
     this.initialRecommendationTags,
     this.initialTab = 0,
-  })
-      : super(key: key);
+  }) : super(key: key);
 
   @override
   State<WorkoutPage> createState() => _WorkoutPageState();
@@ -36,6 +35,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   List<Map<String, dynamic>> _savedWorkouts = [];
   bool _loadingSavedWorkouts = true;
   int _streakRefreshToken = 0;
+
   /// Maps routine name -> list of day names it is assigned to.
   Map<String, List<String>> _assignedRoutineDays = {};
   int _currentXP = 0;
@@ -59,14 +59,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
   Future<void> _loadAssignedRoutines() async {
     // Clear old state first to prevent leakage from previous user session
     setState(() => _assignedRoutineDays = {});
-    
+
     try {
       final plan = await WeeklyPlanService.getWeeklyPlan();
       if (plan != null && mounted) {
         const dayLabels = {
-          'monday': 'Mon', 'tuesday': 'Tue', 'wednesday': 'Wed',
-          'thursday': 'Thu', 'friday': 'Fri',
-          'saturday': 'Sat', 'sunday': 'Sun',
+          'monday': 'Mon',
+          'tuesday': 'Tue',
+          'wednesday': 'Wed',
+          'thursday': 'Thu',
+          'friday': 'Fri',
+          'saturday': 'Sat',
+          'sunday': 'Sun',
         };
         final Map<String, List<String>> result = {};
         final weekPlan = plan['week_plan'] is Map
@@ -108,38 +112,49 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
       // 3. Combine and deduplicate using robust UTC + Content matching
       final List<Map<String, dynamic>> combinedList = [];
-      
+
       // API workouts are the source of truth
       for (var apiW in apiWorkouts) {
         combinedList.add(Map<String, dynamic>.from(apiW));
       }
-      
+
       // Merge local workouts only if they don't match an API entry
       for (var localW in localWorkouts) {
         bool isDuplicate = false;
-        final localDate = DateTime.tryParse(localW['date']?.toString() ?? '')?.toUtc() ?? DateTime.now().toUtc();
-        final localName = (localW['name']?.toString() ?? '').trim().toLowerCase();
+        final localDate =
+            DateTime.tryParse(localW['date']?.toString() ?? '')?.toUtc() ??
+                DateTime.now().toUtc();
+        final localName =
+            (localW['name']?.toString() ?? '').trim().toLowerCase();
 
         for (var apiW in apiWorkouts) {
-          final apiDate = DateTime.tryParse(apiW['date']?.toString() ?? '')?.toUtc() ?? DateTime.now().toUtc();
+          final apiDate =
+              DateTime.tryParse(apiW['date']?.toString() ?? '')?.toUtc() ??
+                  DateTime.now().toUtc();
           final apiName = (apiW['name']?.toString() ?? '').trim().toLowerCase();
-          
+
           // 1. Check if names are identical and timestamps are within 60 minutes (UTC)
-          final timeMatch = localName == apiName && (localDate.difference(apiDate).abs().inMinutes < 60);
-          
+          final timeMatch = localName == apiName &&
+              (localDate.difference(apiDate).abs().inMinutes < 60);
+
           if (timeMatch) {
             isDuplicate = true;
             break;
           }
 
           // 2. Content-based fallback: same day, same name, same exercises
-          final sameDay = localDate.year == apiDate.year && localDate.month == apiDate.month && localDate.day == apiDate.day;
+          final sameDay = localDate.year == apiDate.year &&
+              localDate.month == apiDate.month &&
+              localDate.day == apiDate.day;
           if (sameDay && localName == apiName) {
             final localExs = localW['exercises'] as List? ?? [];
             final apiExs = apiW['exercises'] as List? ?? [];
             if (localExs.length == apiExs.length && localExs.isNotEmpty) {
-              final localExNames = localExs.map((e) => e['exer_name']?.toString() ?? '').join(',');
-              final apiExNames = apiExs.map((e) => e['exer_name']?.toString() ?? '').join(',');
+              final localExNames = localExs
+                  .map((e) => e['exer_name']?.toString() ?? '')
+                  .join(',');
+              final apiExNames =
+                  apiExs.map((e) => e['exer_name']?.toString() ?? '').join(',');
               if (localExNames == apiExNames) {
                 isDuplicate = true;
                 break;
@@ -147,7 +162,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
             }
           }
         }
-        
+
         if (!isDuplicate) {
           combinedList.add(Map<String, dynamic>.from(localW));
         }
@@ -156,8 +171,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
       // 4. Sort Oldest to Newest to assign sequential "Workout N" names
       final allWorkouts = combinedList;
       allWorkouts.sort((a, b) {
-        final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
-        final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        final dateA =
+            DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
         return dateA.compareTo(dateB);
       });
 
@@ -172,8 +189,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
       // 5. Sort Newest to Oldest for display
       allWorkouts.sort((a, b) {
-        final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
-        final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        final dateA =
+            DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
         return dateB.compareTo(dateA);
       });
 
@@ -229,8 +248,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
       return {
         'id': workout['workout_id'],
-        'date': workout['created_at']?.toString() ??
-            '1970-01-01T00:00:00Z',
+        'date': workout['created_at']?.toString() ?? '1970-01-01T00:00:00Z',
         'name': workout['notes']?.toString() ?? '',
         'exercises': mappedExercises,
         'source': 'api',
@@ -378,11 +396,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
     normalized['exer_id'] = normalized['exer_id'] ?? 0;
     normalized['exer_name'] =
         (normalized['exer_name']?.toString().isNotEmpty == true
-            ? normalized['exer_name']
-            : normalized['name']?.toString().isNotEmpty == true
-                ? normalized['name']
-                : null) ??
-        'Unknown Exercise';
+                ? normalized['exer_name']
+                : normalized['name']?.toString().isNotEmpty == true
+                    ? normalized['name']
+                    : null) ??
+            'Unknown Exercise';
     normalized['exer_descrip'] = normalized['exer_descrip']?.toString() ?? '';
     normalized['exer_body_area'] =
         normalized['exer_body_area']?.toString() ?? 'Unknown';
@@ -530,17 +548,23 @@ class _WorkoutPageState extends State<WorkoutPage> {
       final plan = await WeeklyPlanService.getWeeklyPlan();
       if (plan != null) {
         const dayNames = {
-          'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday',
-          'thursday': 'Thursday', 'friday': 'Friday',
-          'saturday': 'Saturday', 'sunday': 'Sunday',
+          'monday': 'Monday',
+          'tuesday': 'Tuesday',
+          'wednesday': 'Wednesday',
+          'thursday': 'Thursday',
+          'friday': 'Friday',
+          'saturday': 'Saturday',
+          'sunday': 'Sunday',
         };
         final weekPlan = plan['week_plan'] is Map
             ? Map<String, dynamic>.from(plan['week_plan'] as Map)
             : plan;
         for (final entry in weekPlan.entries) {
           final value = entry.value;
-          if (value is List && value.map((e) => e.toString()).contains(routineName)) {
-            assignedDays.add(dayNames[entry.key.toString()] ?? entry.key.toString());
+          if (value is List &&
+              value.map((e) => e.toString()).contains(routineName)) {
+            assignedDays
+                .add(dayNames[entry.key.toString()] ?? entry.key.toString());
           }
         }
       }
@@ -585,8 +609,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         'This routine is assigned to: '
                         '${assignedDays.join(', ')}.\n'
                         'It will be removed from those days.',
-                        style: const TextStyle(
-                            color: Colors.orange, fontSize: 13),
+                        style:
+                            const TextStyle(color: Colors.orange, fontSize: 13),
                       ),
                     ),
                   ],
@@ -616,12 +640,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         ? Map<String, dynamic>.from(plan)
                         : <String, dynamic>{'week_plan': plan};
                     final weekPlan = structured['week_plan'] is Map
-                        ? Map<String, dynamic>.from(structured['week_plan'] as Map)
+                        ? Map<String, dynamic>.from(
+                            structured['week_plan'] as Map)
                         : <String, dynamic>{};
                     for (final day in weekPlan.keys) {
                       final names = weekPlan[day];
                       if (names is List) {
-                        names.removeWhere((name) => name.toString() == routineName);
+                        names.removeWhere(
+                            (name) => name.toString() == routineName);
                       }
                     }
                     if (structured['routines'] is List) {
@@ -683,7 +709,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
       ),
     );
   }
-
 
   void _openRoutineDetailsDialog(
       Map<String, dynamic> workout, String routineName) {
@@ -775,7 +800,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1C1C2E),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.05)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -800,10 +826,15 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                         child: Row(
                                           children: [
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.05),
-                                                borderRadius: BorderRadius.circular(4),
+                                                color: Colors.white
+                                                    .withOpacity(0.05),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
                                               child: Text(
                                                 'Set ${setIdx + 1}',
@@ -843,7 +874,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                            side: BorderSide(
+                                color: Colors.white.withOpacity(0.1)),
                           ),
                         ),
                         child: const Text('Close'),
@@ -1454,9 +1486,17 @@ class _WorkoutPageState extends State<WorkoutPage> {
               int uniqueCount = 0;
               for (var w in _savedWorkouts) {
                 String name = (w['name']?.toString() ?? '').trim();
-                const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                const dayNames = [
+                  'monday',
+                  'tuesday',
+                  'wednesday',
+                  'thursday',
+                  'friday',
+                  'saturday',
+                  'sunday'
+                ];
                 if (dayNames.contains(name.toLowerCase())) name = '';
-                
+
                 if (name.isEmpty) {
                   uniqueCount++; // Nameless ones are always unique in our current logic
                 } else if (!uniqueNames.contains(name.toLowerCase())) {
@@ -1494,23 +1534,34 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ]
                 : (() {
                     // Get unique routines by name, keeping only the newest one (since list is already sorted newest first)
-                    final Map<String, Map<String, dynamic>> uniqueRoutinesMap = {};
+                    final Map<String, Map<String, dynamic>> uniqueRoutinesMap =
+                        {};
                     final List<Map<String, dynamic>> displayList = [];
-                    
+
                     for (var workout in _savedWorkouts) {
-                      String rawName = (workout['name']?.toString() ?? '').trim();
-                      
+                      String rawName =
+                          (workout['name']?.toString() ?? '').trim();
+
                       // Filter out day names to treat them as nameless
-                      const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                      const dayNames = [
+                        'monday',
+                        'tuesday',
+                        'wednesday',
+                        'thursday',
+                        'friday',
+                        'saturday',
+                        'sunday'
+                      ];
                       if (dayNames.contains(rawName.toLowerCase())) {
                         rawName = '';
                       }
-                      
+
                       if (rawName.isEmpty) {
                         // Nameless workouts are always shown uniquely
                         displayList.add(workout);
                       } else {
-                        if (!uniqueRoutinesMap.containsKey(rawName.toLowerCase())) {
+                        if (!uniqueRoutinesMap
+                            .containsKey(rawName.toLowerCase())) {
                           uniqueRoutinesMap[rawName.toLowerCase()] = workout;
                           displayList.add(workout);
                         }
@@ -1521,29 +1572,47 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       final exercises = workout['exercises'];
                       final exerciseList = exercises is List ? exercises : [];
                       final dateText = workout['date']?.toString() ?? '';
-                      
+
                       // Numbering based on original list position for consistency
                       final originalIdx = _savedWorkouts.indexOf(workout);
                       final workoutNumber = _savedWorkouts.length - originalIdx;
-                      
-                      String routineName = (workout['name']?.toString() ?? '').trim();
-                      const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                      if (dayNames.contains(routineName.toLowerCase()) || routineName.isEmpty) {
+
+                      String routineName =
+                          (workout['name']?.toString() ?? '').trim();
+                      const dayNames = [
+                        'monday',
+                        'tuesday',
+                        'wednesday',
+                        'thursday',
+                        'friday',
+                        'saturday',
+                        'sunday'
+                      ];
+                      if (dayNames.contains(routineName.toLowerCase()) ||
+                          routineName.isEmpty) {
                         routineName = 'Workout $workoutNumber';
                       }
 
-                      final assignedDays = _assignedRoutineDays[routineName] ?? [];
+                      final assignedDays =
+                          _assignedRoutineDays[routineName] ?? [];
                       final isAssigned = assignedDays.isNotEmpty;
 
                       return GestureDetector(
-                        onTap: () => _openRoutineDetailsDialog(workout, routineName),
+                        onTap: () =>
+                            _openRoutineDetailsDialog(workout, routineName),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
-                            color: isAssigned ? const Color(0xFF1E1A3A) : const Color(0xFF252538),
+                            color: isAssigned
+                                ? const Color(0xFF1E1A3A)
+                                : const Color(0xFF252538),
                             borderRadius: BorderRadius.circular(12),
-                            border: isAssigned ? Border.all(color: const Color(0xFF7C5CBF), width: 1.2) : null,
+                            border: isAssigned
+                                ? Border.all(
+                                    color: const Color(0xFF7C5CBF), width: 1.2)
+                                : null,
                           ),
                           child: Row(
                             children: [
@@ -1565,20 +1634,34 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                         ),
                                         if (isAssigned)
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF7C5CBF).withOpacity(0.25),
-                                              borderRadius: BorderRadius.circular(20),
-                                              border: Border.all(color: const Color(0xFF7C5CBF), width: 1),
+                                              color: const Color(0xFF7C5CBF)
+                                                  .withOpacity(0.25),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                  color:
+                                                      const Color(0xFF7C5CBF),
+                                                  width: 1),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                const Icon(Icons.calendar_today_rounded, size: 11, color: Color(0xFFB39DDB)),
+                                                const Icon(
+                                                    Icons
+                                                        .calendar_today_rounded,
+                                                    size: 11,
+                                                    color: Color(0xFFB39DDB)),
                                                 const SizedBox(width: 4),
                                                 Text(
                                                   assignedDays.join(', '),
-                                                  style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 11, fontWeight: FontWeight.w600),
+                                                  style: const TextStyle(
+                                                      color: Color(0xFFB39DDB),
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w600),
                                                 ),
                                               ],
                                             ),
@@ -1588,13 +1671,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                     const SizedBox(height: 3),
                                     Text(
                                       '${exerciseList.length} exercises  •  $dateText',
-                                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                                      style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 12),
                                     ),
                                   ],
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.redAccent, size: 20),
                                 onPressed: () => _deleteRoutine(originalIdx),
                                 constraints: const BoxConstraints(),
                                 padding: EdgeInsets.zero,
