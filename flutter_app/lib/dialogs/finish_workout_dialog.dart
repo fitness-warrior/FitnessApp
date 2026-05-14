@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../services/streak_service.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
+import '../services/user_stats_service.dart';
 
 class FinishWorkoutDialog extends StatefulWidget {
   final List<Map<String, dynamic>> exercises;
@@ -350,6 +351,12 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
       try {
         await StreakService.updateStreak()
             .timeout(const Duration(seconds: 5));
+      } catch (_) {}
+
+      // Grant XP: 10 XP per exercise (Matches WorkoutDayView logic)
+      try {
+        final xpEarned = widget.exercises.length * 10;
+        await UserStatsService.addXP(xpEarned);
       } catch (_) {}
 
       // Unhide relevant charts and notify services
