@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/chart_service.dart';
+import '../services/auth_service.dart';
 import '../services/streak_service.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
@@ -349,6 +351,17 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
         await StreakService.updateStreak()
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
+
+      // Unhide relevant charts and notify services
+      final user = await AuthService.getCurrentUser();
+      final userEmail = user?['email'] ?? 'unknown';
+
+      for (final exercise in widget.exercises) {
+        final type = exercise['exer_type']?.toString().toLowerCase() ?? 'strength';
+        final chartName = type == 'cardio' ? 'cardio speed' : 'total weight lifted';
+        await ChartService.unhideChart(userEmail, chartName, exercise['exer_name']);
+      }
+      ChartService.notifyChartsChanged();
 
       widget.onSuccess({});
       // ignore: use_build_context_synchronously

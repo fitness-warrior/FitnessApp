@@ -4,9 +4,9 @@ import '../services/chart_service.dart';
 
 
 class AddChart extends StatefulWidget {
-  final int bodyId;
+  final int? bodyId;
 
-  const AddChart({Key? key, required this.bodyId}) : super(key: key);
+  const AddChart({Key? key, this.bodyId}) : super(key: key);
 
   @override
   State<AddChart> createState() => _AddChartState();
@@ -26,7 +26,7 @@ class _AddChartState extends State<AddChart> {
 
   Future<void> _loadChartOptions() async {
     try {
-      final options = await ChartService.getChartOptions(widget.bodyId);
+      final options = await ChartService.getChartOptions(widget.bodyId ?? 0);
       if (mounted) {
         setState(() {
           _charts = options;
