@@ -128,6 +128,43 @@ class ChartService {
     return 0;
   }
 
+  static Future<Map<String, List<List<dynamic>>>> getAllExercisesProgress() async {
+    try {
+      final uri = Uri.parse('$pythonBaseUrl/api/user/exercises-progress');
+      final res = await http.get(uri, headers: await AuthService.getAuthHeaders());
+      if (res.statusCode != 200) throw Exception('Failed to load exercise progress');
+      final Map<String, dynamic> data = json.decode(res.body);
+      
+      return data.map((key, value) {
+        final List<dynamic> history = value;
+        return MapEntry(key, history.map((h) => [h[0].toString(), double.tryParse(h[1]?.toString() ?? '0') ?? 0.0]).toList());
+      });
+    } catch (e) {
+      debugPrint('Error fetching all exercises progress: $e');
+      return {};
+    }
+  }
+
+  static Future<List<List<dynamic>>> getWorkoutVolume() async {
+    try {
+      final uri = Uri.parse('$pythonBaseUrl/api/user/workout-volume');
+      final res = await http.get(uri, headers: await AuthService.getAuthHeaders());
+      if (res.statusCode != 200) throw Exception('Failed to load volume');
+      final List<dynamic> data = json.decode(res.body);
+      return data.map((item) {
+        if (item is Map) {
+          final date = item['date']?.toString() ?? '';
+          final volume = double.tryParse(item['total_kg']?.toString() ?? '0') ?? 0.0;
+          return [date, volume, item['id']];
+        }
+        return [item.toString(), 0.0, 0];
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching workout volume: $e');
+      return [];
+    }
+  }
+
   /// Convert chart data list to double values for graphing
   static List<double> extractValues(List<dynamic> data) {
     return data.map((item) => (item[1] as num).toDouble()).toList();
