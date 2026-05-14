@@ -372,6 +372,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
         elevation: 0,
         title: HeaderWithDropdown(
           title: 'My Meal',
+          showMenu: false,
           onMenuSelected: (value) {
             final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
             const routes = {'/my_workout', '/my_meal', '/shop'};
