@@ -90,6 +90,16 @@ async def lifespan(app: FastAPI):
                 UNIQUE (user_id)
             )
         """)
+        await _conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_hidden_charts (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                chart_name TEXT NOT NULL,
+                option TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (user_id, chart_name, option)
+            )
+        """)
     try:
         yield
     finally:
@@ -905,6 +915,30 @@ async def get_workouts(
         raise HTTPException(status_code=500, detail=f"Failed to fetch workouts: {str(e)}")
 
 
+@app.get("/api/user/workout-volume")
+async def get_workout_volume(user_id: int = Depends(get_current_user_id)):
+    """Get total volume per workout session"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT 
+                    t.train_id as id,
+                    t.train_data::date::text as date,
+                    SUM(te.weight * te.reps * te.sets) as total_kg
+                FROM training t
+                JOIN training_exercise te ON te.train_id = t.train_id
+                WHERE t.user_id = $1
+                GROUP BY t.train_id, t.train_data::date
+                ORDER BY t.train_data::date ASC
+                """,
+                user_id
+            )
+            return [{"id": r["id"], "date": r["date"], "total_kg": float(r["total_kg"] or 0)} for r in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch workout volume: {str(e)}")
+
+
 @app.get("/api/user/exercises-progress")
 async def get_all_exercises_progress(user_id: int = Depends(get_current_user_id)):
     """Get history for ALL exercises the user has performed"""
@@ -937,6 +971,60 @@ async def get_all_exercises_progress(user_id: int = Depends(get_current_user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch exercise progress: {str(e)}")
 
+
+@app.get("/api/user/hidden-charts")
+async def get_hidden_charts(user_id: int = Depends(get_current_user_id)):
+    """Fetch all charts the user has hidden"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                "SELECT chart_name, option FROM user_hidden_charts WHERE user_id = $1",
+                user_id
+            )
+            return [{"chart_name": r["chart_name"], "option": r["option"]} for r in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch hidden charts: {str(e)}")
+
+
+class HiddenChartRequest(BaseModel):
+    chart_name: str
+    option: str
+
+
+@app.post("/api/user/hidden-charts")
+async def hide_chart(request: HiddenChartRequest, user_id: int = Depends(get_current_user_id)):
+    """Mark a chart as hidden"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            await connection.execute(
+                """
+                INSERT INTO user_hidden_charts (user_id, chart_name, option)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (user_id, chart_name, option) DO NOTHING
+                """,
+                user_id,
+                request.chart_name,
+                request.option
+            )
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to hide chart: {str(e)}")
+
+
+@app.delete("/api/user/hidden-charts")
+async def unhide_chart(chart_name: str, option: str, user_id: int = Depends(get_current_user_id)):
+    """Remove a chart from the hidden list"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            await connection.execute(
+                "DELETE FROM user_hidden_charts WHERE user_id = $1 AND chart_name = $2 AND option = $3",
+                user_id,
+                chart_name,
+                option
+            )
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to unhide chart: {str(e)}")
 
 @app.get("/api/workouts/{workout_id}")
 async def get_workout(
