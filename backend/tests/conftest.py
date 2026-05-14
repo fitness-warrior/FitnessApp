@@ -19,7 +19,7 @@ def mock_db_pool(mock_conn):
     pool = MagicMock()
     # Mock the async context manager returned by pool.acquire()
     pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
-    pool.acquire.return_value.__aexit__ = AsyncMock()
+    pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
     return pool
 
 @pytest.fixture
