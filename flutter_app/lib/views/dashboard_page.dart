@@ -39,55 +39,13 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPage extends State<DashboardPage> {
-  final double start = 92.1;
-  final double range = 10;
-  List<double> weight = [
-    92.8,
-    92.3,
-    93.4,
-    91.9,
-    91.7,
-    92.3,
-    94.2,
-    93.4,
-  ];
-
-  final double calStart = 0;
-  List<double> cal = [
-    240.1,
-    110.54,
-    -170.3,
-    -220.5,
-    91.7,
-    -70.8,
-    -330.2,
-    -230.1,
-  ];
-  late double maxCalDeviation;
-
-  List<double> target = [20.5, 28.9, 17.4, 24.1];
-
-  List<String> order = [
-    "legs",
-    "back",
-    "core",
-    "arms",
-  ];
-
   late List<_ChartCard> _charts;
-  List<_ChartCard> _todayCharts = [];
-  final List<_ChartConfig> _manualConfigs = [];
+  List<_ChartCard> _allExerciseCharts = [];
   StreamSubscription? _chartSubscription;
-
-  Future<int?> _resolveBodyId() async {
-    final bodyId = await ChartService.getBodyId();
-    return bodyId > 0 ? bodyId : 0;
-  }
 
   @override
   void initState() {
     super.initState();
-    maxCalDeviation = cal.reduce((a, b) => a.abs() > b.abs() ? a : b).abs();
     _charts = [];
     _refreshAllCharts();
 
@@ -96,31 +54,38 @@ class _DashboardPage extends State<DashboardPage> {
     });
   }
 
+  @override
+  void dispose() {
+    _chartSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _refreshAllCharts() async {
-    await _loadTodayCharts();
+    await _loadAllExerciseCharts();
     await _loadManualCharts();
+  }
+
+  Future<int?> _resolveBodyId() async {
+    try {
+      final profile = await UserService.getUserProfile();
+      return profile?['body_id'] as int?;
+    } catch (e) {
+      return 0;
+    }
   }
 
   Future<void> _loadManualCharts() async {
     final bodyId = await _resolveBodyId() ?? 0;
-    
-    // 1. Fetch saved configurations from persistent storage
     final currentUser = await AuthService.getCurrentUser();
     final userEmail = currentUser?['email'] ?? 'unknown';
     final saved = await ChartService.getSavedCharts(userEmail);
     
-    // 2. Sync _manualConfigs state
-    _manualConfigs.clear();
+    final List<_ChartCard> updatedManual = [];
     for (final s in saved) {
       final name = s['name'] ?? '';
       final option = s['measure'] ?? '';
       final id = '${name}_${option}'.replaceAll(' ', '_').toLowerCase();
-      _manualConfigs.add(_ChartConfig(id: id, name: name, option: option));
-    }
-
-    final List<_ChartCard> updatedManual = [];
-    for (final config in _manualConfigs) {
-      final card = await _createChartCard(config.name, config.option, bodyId, config.id);
+      final card = await _createChartCard(name, option, bodyId, id);
       if (card != null) updatedManual.add(card);
     }
 
@@ -131,131 +96,137 @@ class _DashboardPage extends State<DashboardPage> {
     }
   }
 
-  Future<void> _loadTodayCharts() async {
+  Future<void> _loadAllExerciseCharts() async {
     try {
       final bodyId = await _resolveBodyId() ?? 0;
-      
-      final currentUser = await AuthService.getCurrentUser();
-      final userEmail = currentUser?['email'] ?? 'unknown';
-      
-      final todayExers = await ChartService.getTodayExercises();
+      final allProgress = await ChartService.getAllExercisesProgress();
       final List<_ChartCard> cards = [];
       
-      for (final exer in todayExers) {
-        final name = exer['exer_name'] as String;
-        final type = exer['exer_type'] as String;
-        final chartName = type == 'cardio' ? 'cardio speed' : 'total weight lifted';
-        
-        // Check if user has hidden this specific today chart
-        if (await ChartService.isChartHidden(userEmail, chartName, name)) {
-          continue;
+      allProgress.forEach((exName, history) {
+        final chartId = 'auto_${exName}'.replaceAll(' ', '_').toLowerCase();
+        final values = history.map((e) => (e[1] as num).toDouble()).toList();
+        final dates = history.map((e) => e[0].toString()).toList();
+
+        if (values.isEmpty) return;
+
+        double minVal = values.reduce((a, b) => a < b ? a : b);
+        double maxVal = values.reduce((a, b) => a > b ? a : b);
+        if (minVal == maxVal) {
+          minVal *= 0.9;
+          maxVal *= 1.1;
         }
 
-        final chartId = 'today_${name}'.replaceAll(' ', '_').toLowerCase();
-        
-        final card = await _createChartCard(chartName, name, bodyId, chartId);
-        if (card != null) cards.add(card);
-      }
+        cards.add(_ChartCard(
+          id: chartId,
+          name: 'Progress',
+          option: exName,
+          builder: (onDismissed) => Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C2E),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              height: 250,
+              child: Core.bar(
+                key: ValueKey(chartId),
+                name: exName,
+                dataValues: values,
+                start: (minVal + maxVal) / 2,
+                range: (maxVal - minVal) / 2 + (maxVal * 0.1 + 1),
+                y: 'kg',
+                x: 'date',
+                dates: dates,
+                onDismissed: onDismissed,
+              ),
+            ),
+          ),
+        ));
+      });
       
       if (mounted) {
         setState(() {
-          _todayCharts = cards;
+          _allExerciseCharts = cards;
         });
       }
     } catch (e) {
-      debugPrint('Error loading today charts: $e');
+      debugPrint('Error loading auto charts: $e');
     }
   }
 
   Future<_ChartCard?> _createChartCard(String chartName, String option, int bodyId, String chartId) async {
-    List<double> chartData = [];
-    List<String> dates = [];
-    String yLabel = '';
-    
     try {
-      if (chartName == 'cardio speed') {
-        final data = await ChartService.getCardioSpeed(option, bodyId);
-        chartData = ChartService.extractValues(data);
-        dates = data.map((item) => item[0].toString()).toList();
-        yLabel = 'speed (m/min)';
-      } else if (chartName == 'total weight lifted' || chartName == 'weight personal bests') {
+      List<double> chartData = [];
+      List<String> dates = [];
+      String yLabel = 'kg';
+
+      if (chartName == 'total weight lifted' || chartName == 'weight personal bests') {
         final data = await ChartService.getStrengthTotal(option, bodyId);
-        chartData = ChartService.extractValues(data);
+        chartData = data.map((e) => (e[1] as num).toDouble()).toList();
         dates = data.map((item) => item[0].toString()).toList();
-        yLabel = 'weight (kg)';
-      } else if (chartName == 'track calories') {
-        final data = await ChartService.getDailyCardioCalories(bodyId);
-        chartData = ChartService.extractValues(data);
-        dates = data.map((item) => item[0].toString()).toList();
-        yLabel = 'calories';
-      } else if (chartName == 'overall effort') {
-        final data = await ChartService.getTotalVolume(bodyId);
-        chartData = ChartService.extractValues(data);
-        dates = data.map((item) => item[0].toString()).toList();
-        yLabel = 'volume (kg*reps)';
       }
 
-        if (chartData.isEmpty) return null;
+      if (chartData.isEmpty) return null;
 
-        return _ChartCard(
-          id: chartId,
-          name: chartName,
-          option: option,
-          builder: (onDismissed) => Core.line(
-            key: ValueKey(chartId),
-            name: '$chartName - $option',
-            dataValues: chartData,
-            y: yLabel,
-            x: 'days',
-            dates: dates,
-            onDismissed: onDismissed,
+      final minVal = chartData.reduce((a, b) => a < b ? a : b);
+      final maxVal = chartData.reduce((a, b) => a > b ? a : b);
+
+      return _ChartCard(
+        id: chartId,
+        name: chartName,
+        option: option,
+        builder: (onDismissed) => Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C2E),
+            borderRadius: BorderRadius.circular(20),
           ),
-        );
-      } catch (e) {
-        return null;
-      }
-  }
-
-  Future<void> _addChartFromSelection(
-      String chartName, String option, int bodyId) async {
-    try {
-      final currentUser = await AuthService.getCurrentUser();
-      final userEmail = currentUser?['email'] ?? 'unknown';
-      
-      await ChartService.saveChart(userEmail, bodyId, chartName, option);
-      await _loadManualCharts();
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            height: 250,
+            child: Core.bar(
+              key: ValueKey(chartId),
+              name: '$chartName - $option',
+              dataValues: chartData,
+              start: (minVal + maxVal) / 2,
+              range: (maxVal - minVal) / 2 + (maxVal * 0.1 + 1),
+              y: yLabel,
+              x: 'date',
+              dates: dates,
+              onDismissed: onDismissed,
+            ),
+          ),
+        ),
+      );
     } catch (e) {
-      debugPrint('Error adding chart: $e');
+      return null;
     }
   }
 
-  Future<void> _removeChart(String chartName, String option) async {
-    final currentUser = await AuthService.getCurrentUser();
-    final userEmail = currentUser?['email'] ?? 'unknown';
-    await ChartService.deleteChart(userEmail, chartName, option);
-    await _loadManualCharts();
-  }
-
-  Future<void> _dismissTodayChart(String chartName, String option) async {
-    final currentUser = await AuthService.getCurrentUser();
-    final userEmail = currentUser?['email'] ?? 'unknown';
-    await ChartService.hideChart(userEmail, chartName, option);
-    await _loadTodayCharts();
+  void _removeChart(String id) {
+    setState(() {
+      _charts.removeWhere((c) => c.id == id);
+      _allExerciseCharts.removeWhere((c) => c.id == id);
+    });
   }
 
   Future<void> _triggerAddChart() async {
+    final bodyId = await _resolveBodyId() ?? 0;
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (context) => const AddChart(bodyId: 0),
+        builder: (context) => AddChart(bodyId: bodyId),
       ),
     );
     if (result != null) {
-      await _addChartFromSelection(
-        result['chartName'] as String,
-        result['option'] as String,
-        0,
-      );
+      final currentUser = await AuthService.getCurrentUser();
+      final userEmail = currentUser?['email'] ?? 'unknown';
+      await ChartService.saveChart(userEmail, bodyId, result['chartName'], result['option']);
+      _refreshAllCharts();
     }
   }
 
@@ -268,69 +239,68 @@ class _DashboardPage extends State<DashboardPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('My Chart'),
-            SizedBox(height: 2),
-            Text(
-              '<---- Swipe left to delete chart',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
+        title: const Text('Exercise Progress', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           const StreakDisplay(compact: true),
           IconButton(
             icon: const Icon(Icons.add_box),
-            tooltip: 'Add Chart',
             onPressed: _triggerAddChart,
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await _refreshAllCharts();
-        },
+        onRefresh: _refreshAllCharts,
+        backgroundColor: const Color(0xFF1C1C2E),
+        color: Colors.greenAccent,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              if (_todayCharts.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Today's Progress",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                for (final chart in _todayCharts) ...[
-                  chart.builder(() => _dismissTodayChart(chart.name, chart.option)),
-                  const SizedBox(height: 12),
-                ],
-                const Divider(color: Colors.white10, height: 32),
-              ],
-              if (_charts.isEmpty && _todayCharts.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+              if (_allExerciseCharts.isNotEmpty) ...[
+                const Align(
+                  alignment: Alignment.centerLeft,
                   child: Text(
-                    'No charts yet. Use the Add Chart button to create a new chart or finish a workout to see today\'s progress.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
+                    "Automatic Exercise Charts",
+                    style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (final chart in _allExerciseCharts) ...[
+                  chart.builder(() => _removeChart(chart.id)),
+                  const SizedBox(height: 16),
+                ],
+              ],
+              if (_charts.isNotEmpty) ...[
+                const Divider(color: Colors.white10, height: 32),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Manual Charts",
+                    style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (final chart in _charts) ...[
+                  chart.builder(() => _removeChart(chart.id)),
+                  const SizedBox(height: 16),
+                ],
+              ],
+              if (_charts.isEmpty && _allExerciseCharts.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 100),
+                    child: Column(
+                      children: [
+                        Icon(Icons.fitness_center, size: 80, color: Colors.white.withOpacity(0.1)),
+                        const SizedBox(height: 16),
+                        const Text('No charts found', style: TextStyle(color: Colors.white54, fontSize: 18)),
+                        const Text('Finish an exercise to see your progress here!', style: TextStyle(color: Colors.white24)),
+                      ],
                     ),
                   ),
                 ),
+              const SizedBox(height: 80),
             ],
           ),
         ),
