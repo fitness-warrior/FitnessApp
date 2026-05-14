@@ -53,7 +53,7 @@ class _AddChartState extends State<AddChart> {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: _isLoading ? 1 : _charts.length,
+        itemCount: (_isLoading || _loadError != null) ? 1 : _charts.length,
         itemBuilder: (context, index) {
           if (_isLoading) {
             return const Padding(
