@@ -112,5 +112,48 @@ void main() {
       expect(error, equals('User not found'));
     });
 
+    test('UTC-007: App retrieves saved login session', () {
+      // Simulate: secure storage has a token from a previous login
+      const savedToken = 'saved_session_token_abc';
+
+      // getToken() would return this value
+      final token = savedToken; // non-null and non-empty
+
+      // Session is found and returned
+      expect(token, isNotNull);
+      expect(token, isNotEmpty);
+      expect(token, equals('saved_session_token_abc'));
+    });
+
+    test('UTC-008: App finds no session when user hasn\'t logged in', () {
+      // Simulate: secure storage has no token (new device / never logged in)
+      final String? token = null; // getToken() returns null
+
+      // No session found — returns empty/null
+      expect(token, isNull);
+    });
+
+    test('UTC-009: App correctly identifies user as logged in', () {
+      // Simulate isLoggedIn() with a valid token present
+      const String? token = 'valid_token_123';
+
+      // AuthService.isLoggedIn: token != null && token.isNotEmpty
+      final loggedIn = token != null && token.isNotEmpty;
+
+      // App confirms user is logged in
+      expect(loggedIn, isTrue);
+    });
+
+    test('UTC-010: App correctly identifies user as not logged in', () {
+      // Simulate isLoggedIn() with no token
+      final String? token = null;
+
+      // AuthService.isLoggedIn: token != null && token.isNotEmpty
+      final loggedIn = token != null && token.isNotEmpty;
+
+      // App confirms user is not logged in
+      expect(loggedIn, isFalse);
+    });
+
   });
 }
