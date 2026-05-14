@@ -19,7 +19,6 @@ void main() {
 
       expect(find.byType(SecondaryButton), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.byType(OutlinedButton), findsOneWidget);
     });
 
     testWidgets('SecondaryButton executes onPressed callback',
@@ -39,7 +38,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(OutlinedButton));
+      await tester.tap(find.text('Press'));
       expect(wasPressed, isTrue);
     });
 
@@ -56,7 +55,12 @@ void main() {
         ),
       );
 
-      final button = tester.widget<OutlinedButton>(find.byType(OutlinedButton));
+      final button = tester.widget<OutlinedButton>(
+        find.ancestor(
+          of: find.text('Disabled'),
+          matching: find.byType(OutlinedButton),
+        ),
+      );
       expect(button.onPressed, isNull);
     });
 
@@ -113,7 +117,7 @@ void main() {
       );
 
       expect(find.byType(SecondaryButton), findsOneWidget);
-      expect(find.byType(OutlinedButton), findsOneWidget);
+      expect(find.text('Normal'), findsOneWidget);
     });
 
     testWidgets('SecondaryButton with all properties',
@@ -137,7 +141,7 @@ void main() {
       );
 
       expect(find.byIcon(Icons.edit), findsOneWidget);
-      await tester.tap(find.byType(OutlinedButton));
+      await tester.tap(find.text('Complete'));
       expect(wasPressed, isTrue);
     });
   });

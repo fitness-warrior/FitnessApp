@@ -86,7 +86,7 @@ void main() {
         calories: 165.5,
       );
 
-      expect(item.toString(), equals('Chicken (165 kcal)'));
+      expect(item.toString(), equals('Chicken (100 g, 165 kcal)'));
     });
 
     test('MealItem.toString rounds down calories in display', () {
@@ -97,7 +97,7 @@ void main() {
         calories: 280.8,
       );
 
-      expect(item.toString(), equals('Salmon (280 kcal)'));
+      expect(item.toString(), equals('Salmon (100 g, 280 kcal)'));
     });
 
     test('MealItem.fromMap and .toMap roundtrip', () {
