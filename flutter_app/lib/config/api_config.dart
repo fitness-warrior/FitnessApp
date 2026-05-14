@@ -12,5 +12,5 @@ class ApiConfig {
     }
   }
 
-  static String get baseUrl => 'http://$host:5001/api';
+  static String get baseUrl => 'http://$host:8000/api';
 }

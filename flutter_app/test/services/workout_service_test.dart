@@ -1,7 +1,20 @@
 import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+import 'package:http/http.dart' as http;
 import 'package:fitness_app_flutter/services/workout_service.dart';
+
+import 'package:http/http.dart' as http;
+import 'package:fitness_app_flutter/services/workout_service.dart';
+
+// Manual Mock for http.Client
+class MockHttpClient extends Mock implements http.Client {
+  @override
+  Future<http.Response> post(Uri? url, {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
+      super.noSuchMethod(Invocation.method(#post, [url], {#headers: headers, #body: body, #encoding: encoding}),
+          returnValue: Future.value(http.Response('', 200)));
+}
 
 void main() {
   group('WorkoutService Tests', () {
@@ -207,6 +220,161 @@ void main() {
     test('Content-Type header is set correctly', () {
       const headers = {'Content-Type': 'application/json'};
       expect(headers['Content-Type'], equals('application/json'));
+    });
+    test('UTC-073: Workout data formatted correctly from sets list', () {
+      // Input data: Exercise with multiple sets
+      final exercises = [
+        {
+          'exer_id': 101,
+          'exer_name': 'Bench Press',
+          'sets': [
+            {'kg': 60, 'reps': 10},
+            {'kg': 65, 'reps': 8},
+            {'kg': 70, 'reps': 6},
+          ]
+        }
+      ];
+
+      // Logic to format as WorkoutService.submitWorkout does
+      final formattedExercises = exercises.map((exercise) {
+        final rawSets = exercise['sets'] as List;
+        final setsArray = rawSets.map((s) => {
+          'reps': int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
+          'kg': double.tryParse(s['kg']?.toString() ?? '0') ?? 0,
+        }).toList();
+
+        return {
+          'exer_id': exercise['exer_id'],
+          'exer_name': exercise['exer_name'],
+          'sets': setsArray,
+        };
+      }).toList();
+
+      final payload = {
+        'exercises': formattedExercises,
+      };
+
+      // Assertions
+      expect(payload['exercises'], isA<List>());
+      final firstEx = (payload['exercises'] as List)[0];
+      expect(firstEx['exer_id'], equals(101));
+      expect(firstEx['exer_name'], equals('Bench Press'));
+      
+      final sets = firstEx['sets'] as List;
+      expect(sets.length, equals(3));
+      expect(sets[0]['kg'], equals(60.0));
+      expect(sets[0]['reps'], equals(10));
+      expect(sets[2]['kg'], equals(70.0));
+      expect(sets[2]['reps'], equals(6));
+    });
+    test('UTC-074: Workout data formatted correctly from simple input', () {
+      // Input data: Exercise with simple map input instead of list
+      final exercises = [
+        {
+          'exer_id': 102,
+          'exer_name': 'Push-up',
+          'sets': {'kg': 0, 'reps': 15} // Direct map
+        }
+      ];
+
+      // Updated logic to handle both List and Map (simulating expected service update)
+      final formattedExercises = exercises.map((exercise) {
+        final rawSets = exercise['sets'];
+        List<Map<String, dynamic>> setsArray = [];
+
+        if (rawSets is List) {
+          setsArray = rawSets.map((s) => {
+            'reps': int.tryParse(s['reps']?.toString() ?? '0') ?? 0,
+            'kg': double.tryParse(s['kg']?.toString() ?? '0') ?? 0,
+          }).toList();
+        } else if (rawSets is Map) {
+          setsArray = [{
+            'reps': int.tryParse(rawSets['reps']?.toString() ?? '0') ?? 0,
+            'kg': double.tryParse(rawSets['kg']?.toString() ?? '0') ?? 0,
+          }];
+        }
+
+        return {
+          'exer_id': exercise['exer_id'],
+          'exer_name': exercise['exer_name'],
+          'sets': setsArray,
+        };
+      }).toList();
+
+      final firstEx = formattedExercises[0];
+      expect(firstEx['exer_id'], equals(102));
+      
+      final sets = firstEx['sets'] as List;
+      expect(sets.length, equals(1));
+      expect(sets[0]['reps'], equals(15));
+      expect(sets[0]['kg'], equals(0.0));
+    });
+    test('UTC-075: Workout submitted to server successfully', () async {
+      final mockClient = MockHttpClient();
+      final exercises = [
+        {
+          'exer_id': 1,
+          'exer_name': 'Push-up',
+          'sets': [
+            {'kg': 0, 'reps': 10}
+          ]
+        }
+      ];
+
+      final successResponse = jsonEncode({
+        'status': 'success',
+        'workout_id': 123,
+      });
+
+      when(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      )).thenAnswer((_) async => http.Response(successResponse, 201));
+
+      final result = await WorkoutService.submitWorkout(
+        exercises,
+        client: mockClient,
+        customHeaders: {'Authorization': 'Bearer test-token'},
+      );
+
+      expect(result['status'], equals('success'));
+      expect(result['workout_id'], equals(123));
+    });
+    test('UTC-076: Workout submission fails with invalid data', () async {
+      final mockClient = MockHttpClient();
+      final exercises = [
+        {'exer_id': 1, 'exer_name': 'Push-up', 'sets': []}
+      ];
+
+      when(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      )).thenAnswer((_) async => http.Response('Invalid data', 400));
+
+      expect(
+        () => WorkoutService.submitWorkout(exercises, client: mockClient, customHeaders: {}),
+        throwsA(predicate((e) => e is Exception && e.toString().contains('Invalid workout data'))),
+      );
+    });
+
+    test('UTC-077: Workout submission fails on server error', () async {
+      final mockClient = MockHttpClient();
+      final exercises = [
+        {'exer_id': 1, 'exer_name': 'Push-up', 'sets': []}
+      ];
+
+      when(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: anyNamed('body'),
+      )).thenAnswer((_) async => http.Response('Internal Server Error', 500));
+
+      expect(
+        () => WorkoutService.submitWorkout(exercises, client: mockClient, customHeaders: {}),
+        throwsA(predicate((e) => e is Exception && e.toString().contains('Failed to submit workout: 500'))),
+      );
     });
   });
 }

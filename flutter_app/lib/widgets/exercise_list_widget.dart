@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:fitness_app_flutter/repositories/exercise_repository.dart';
 import 'package:fitness_app_flutter/models/recommendation_profile.dart';
 
+typedef ExerciseListLoader = Future<List<Map<String, dynamic>>> Function({
+  String? name,
+  String? area,
+  String? type,
+  List<String>? equipment,
+  List<String>? recommendationTags,
+  bool forceRefresh,
+});
+
+typedef ExerciseCacheInvalidator = void Function({
+  String? name,
+  String? area,
+  String? type,
+  List<String>? equipment,
+  List<String>? recommendationTags,
+});
+
 /// Widget for browsing exercises
 class ExerciseListWidget extends StatefulWidget {
   /// Optional recommendation tags (from RecommendationService) to surface
@@ -12,11 +29,15 @@ class ExerciseListWidget extends StatefulWidget {
   /// [recommendationTags] is null, tags are derived from the profile's
   /// goal, experience and equipment fields.
   final RecommendationProfile? recommendationProfile;
+  final ExerciseListLoader? listLoader;
+  final ExerciseCacheInvalidator? cacheInvalidator;
 
   const ExerciseListWidget({
     Key? key,
     this.recommendationTags,
     this.recommendationProfile,
+    this.listLoader,
+    this.cacheInvalidator,
   }) : super(key: key);
 
   @override
@@ -88,7 +109,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     });
 
     try {
-      final exercises = await ExerciseRepository.listExercises(
+      final exercises =
+          await (widget.listLoader ?? ExerciseRepository.listExercises)(
         name: _searchController.text.trim().isEmpty
             ? null
             : _searchController.text.trim(),
@@ -136,9 +158,11 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
       _loadingRecommendations = true;
     });
     try {
-      final recs = await ExerciseRepository.listExercises(
+      final recs =
+          await (widget.listLoader ?? ExerciseRepository.listExercises)(
         recommendationTags: _effectiveTags,
         // limit could be added to repo later
+        forceRefresh: false,
       );
       setState(() {
         _recommendedExercises = recs;
@@ -224,7 +248,8 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
                     TextButton.icon(
                       onPressed: () async {
                         // Invalidate cache for current query and force refresh from server
-                        ExerciseRepository.invalidateCache(
+                        (widget.cacheInvalidator ??
+                            ExerciseRepository.invalidateCache)(
                           name: _searchController.text.trim().isEmpty
                               ? null
                               : _searchController.text.trim(),
