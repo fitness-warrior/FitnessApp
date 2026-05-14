@@ -6,9 +6,8 @@ FitnessWarrior is a cross-platform fitness application built with Python (Django
 
 - Generates personalised workout plans based on your fitness data and goals
 - Tracks your progress over time with visual graphs
-- Includes a minigame you can play during rest periods using your avatar
 - Provides a meal collection with nutritional information
-- Rewards you with avatar items and currency for completing tasks
+- Rewards you with XP for completing tasks
 - Sends fitness notifications you can control
 
 ## Quick Links

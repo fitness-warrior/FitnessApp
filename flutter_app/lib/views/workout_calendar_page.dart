@@ -111,6 +111,8 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
     await _saveToApi();
   }
 
+
+
   List<Map<String, dynamic>> _resolvedRoutines(String day) {
     final names = _weeklyPlanNames[day] ?? [];
     return names.map((name) {
@@ -129,17 +131,18 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
 
   void _openAssignDialog(String day) {
     List<String> selected = List<String>.from(_weeklyPlanNames[day] ?? []);
-    
-    // Deduplicate routines by name for the assign list
+    // Deduplicate routines by name to avoid showing the same routine multiple times
     final Set<String> seenNames = {};
     final List<Map<String, dynamic>> uniqueRoutines = [];
     
     for (var workout in widget.savedWorkouts) {
-      final name = workout['name']?.toString();
-      if (name == null || name.isEmpty) {
+      String name = workout['name']?.toString() ?? '';
+      // If nameless, it will be assigned a "Workout N" name in the UI, which we treat as unique-ish 
+      // but let's at least deduplicate the ones that HAVE names.
+      if (name.isEmpty) {
         uniqueRoutines.add(workout);
-      } else if (!seenNames.contains(name)) {
-        seenNames.add(name);
+      } else if (!seenNames.contains(name.toLowerCase().trim())) {
+        seenNames.add(name.toLowerCase().trim());
         uniqueRoutines.add(workout);
       }
     }
@@ -169,21 +172,17 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                     shrinkWrap: true,
                     itemCount: uniqueRoutines.length,
                     itemBuilder: (_, i) {
-                      final name = uniqueRoutines[i]['name']?.toString() ??
-                          'Workout ${i + 1}';
+                      final displayName = (uniqueRoutines[i]['name']?.toString() ?? '').isNotEmpty
+                          ? uniqueRoutines[i]['name']?.toString() ?? 'Workout ${i + 1}'
+                          : 'Workout ${i + 1}';
                       return CheckboxListTile(
-                        title: Text(name,
-                            style: const TextStyle(color: Colors.white)),
-                        value: selected.contains(name),
-                        activeColor: const Color(0xFF4A9FFF),
+                        title: Text(displayName, style: const TextStyle(color: Colors.white)),
+                        value: selected.contains(displayName),
                         checkColor: Colors.white,
                         side: const BorderSide(color: Colors.grey),
                         onChanged: (v) => setD(() {
-                          if (v == true) {
-                            if (!selected.contains(name)) selected.add(name);
-                          } else {
-                            selected.remove(name);
-                          }
+                          if (v == true) { if (!selected.contains(displayName)) selected.add(displayName); }
+                          else { selected.remove(displayName); }
                         }),
                       );
                     },
@@ -213,14 +212,8 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
   }
 
   void _openDayView(String day) async {
-    // Check if a workout was already completed today
-    final now = DateTime.now();
-    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-    
-    final alreadyDone = widget.savedWorkouts.any((w) {
-      final date = w['date']?.toString() ?? '';
-      return date.startsWith(todayStr);
-    });
+    final dayIndex = _days.indexOf(day);
+    final alreadyDone = _isDayCompleted(dayIndex);
 
     if (alreadyDone) {
       final bool? proceed = await showDialog<bool>(
@@ -339,6 +332,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           final isToday = (i + 1) == todayWeekday;
           final isCompleted = _isDayCompleted(i);
           final assignedCount = (_weeklyPlanNames[day] ?? []).length;
+          final resolved = _resolvedRoutines(day);
 
           return GestureDetector(
             onLongPress: () => _openAssignDialog(day),

@@ -20,15 +20,6 @@ including losing weight, gaining muscle or maintaining a healthy lifestyle
 - FR 7 - Generate Customised Fitness Plan: The system should generate a clear customized 
 fitness plan based on user input and selected goal
 
-### Notifications
-- FR 8 - Receive Fitness Related Notifications: The system must allow users to receive 
-notifications related to their fitness activities, workout reminders, streak updates and 
-meal suggestions
-- FR 9 - Control Notification Settings: The system must provide settings that allow users 
-to fully control which notifications they receive
-- FR 10 - Enable/Disable Notifications and Specific Types: The system shall allow users to 
-enable or disable notifications at any time
-
 ### Navigation
 - FR 11 - Navigation Access: The system shall provide a navigation system that allows users 
 to access all main features of the app
@@ -47,20 +38,8 @@ data to support progress tracking, streak calculation and reward allocation
 ### Rewards
 - FR 17 - Automatic Rewards On Task Completion: The system must automatically reward users 
 when they complete a task
-- FR 18 - Reward Types: The system shall provide rewards in the form of avatar items, 
+- FR 18 - Reward Types: The system shall provide rewards in the form of XP and level progression
 accessories, cosmetic upgrades and in-game currency
-- FR 19 - Reward Type and Rarity Based On Task Difficulty: The system shall determine the 
-type and rarity of the reward based on difficulty of the completed task
-- FR 20 - Rewards Added To Inventory Immediately: The system shall add earned rewards to 
-the user's inventory and make them available for immediate use
-- FR 21 - Prevent Duplicate Rewards Per Task: The system shall ensure that rewards are only 
-given once per completed task
-
-### Avatar
-- FR 22 - Avatar Creation and Customisation: The system must provide an avatar customisation 
-feature that allows users to create and modify a visual character representing themselves
-- FR 23 - Equip Cosmetic and Stat-Boosting Items: The system must allow users to equip 
-cosmetic and stat-boosting items earned through tasks or minigames
 
 ### Progress Tracking
 - FR 24 - Store User Fitness Data: The system must store user fitness data including body 
@@ -78,14 +57,6 @@ tutorials directly from stored video sources
 - FR 29 - Display Workout Guidance When an Exercise is Selected: The system must display the 
 workout guidance video when a user searches and selects an exercise
 
-### Minigame
-- FR 30 - Provide a Minigame During Rest Time: The system must provide a minigame for the 
-user to play during rest time
-- FR 31 - Use The User's Customised Avatar in the Minigame: The system shall use the user's 
-created and customised avatar within the minigame
-- FR 32 - Reward Users After Minigame Completion: The system should reward users with rewards 
-from the minigame which should update the user's inventory immediately after completion
-
 ### Meal Collection
 - FR 33 - Browse and Choose Meals: The system must provide the user with a variety of meals 
 to browse and choose from
@@ -101,8 +72,6 @@ required and the steps to prepare each recipe
 for the user to choose from
 - FR 38 - Provide Multiple Difficulty Levels per Plan: The system must make sure that workout 
 plans contain multiple difficulties for the user to choose from
-- FR 39 - Allow Users to Choose Whether Difficulty Increases Over Time: The system shall 
-allow users to choose whether the workout plan increases in difficulty over time
 
 ## Non-Functional Requirements
 

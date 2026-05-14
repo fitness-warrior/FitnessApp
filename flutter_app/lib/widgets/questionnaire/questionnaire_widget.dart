@@ -145,8 +145,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
   final Map<String, Set<String>> _multiSelections = {};
   bool _useMetricBmi = true;
 
-  bool _isLoadingData = false;
-
   @override
   void initState() {
     super.initState();
@@ -165,11 +163,10 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
   }
 
   Future<void> _loadExistingData() async {
-    setState(() => _isLoadingData = true);
     try {
       // 1. Try local cache
       final local = await RecommendationStorage.loadQuestionnaireResponse();
-      
+
       // 2. Try backend
       Map<String, dynamic>? backend;
       try {
@@ -177,9 +174,9 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       } catch (e) {
         debugPrint('[Questionnaire] Backend fetch failed: $e');
       }
-      
+
       final data = backend ?? local;
-      
+
       if (data != null && mounted) {
         setState(() {
           // Q001: Age
@@ -188,7 +185,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
             _responses['Q001'] = age;
             _textControllers['Q001']?.text = age;
           }
-          
+
           // Q002: BMI (Height/Weight)
           if (data.containsKey('height') && data.containsKey('weight')) {
             _textControllers['Q002_height']?.text = data['height'].toString();
@@ -205,57 +202,64 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
               'bmiClass': _bmiClassification(bmi),
             };
           }
-          
+
           // Q003: Goal (with mapping back to UI options)
           if (data.containsKey('goal')) {
             final backendGoal = data['goal'].toString();
             String uiGoal = backendGoal;
-            if (backendGoal == 'Fat Loss') uiGoal = 'Lose weight';
-            else if (backendGoal == 'Muscle Gain') uiGoal = 'Build muscle';
-            else if (backendGoal == 'General Fitness') uiGoal = 'Stay fit';
-            else if (backendGoal == 'Endurance Improvement') uiGoal = 'Improve endurance';
-            else if (backendGoal == 'Injury Rehabilitation') uiGoal = 'Recover from injury';
-            
+            if (backendGoal == 'Fat Loss') {
+              uiGoal = 'Lose weight';
+            } else if (backendGoal == 'Muscle Gain') {
+              uiGoal = 'Build muscle';
+            } else if (backendGoal == 'General Fitness') {
+              uiGoal = 'Stay fit';
+            } else if (backendGoal == 'Endurance Improvement') {
+              uiGoal = 'Improve endurance';
+            } else if (backendGoal == 'Injury Rehabilitation') {
+              uiGoal = 'Recover from injury';
+            }
+
             // Special case for 'Gain weight' which maps to 'Muscle Gain' in backend
-            if (backendGoal == 'Muscle Gain' && local?['goal'] == 'Gain weight') {
+            if (backendGoal == 'Muscle Gain' &&
+                local?['goal'] == 'Gain weight') {
               uiGoal = 'Gain weight';
             }
 
             _responses['Q003'] = uiGoal;
           }
-          
+
           // Q004: Experience
           if (data.containsKey('experience')) {
             _responses['Q004'] = data['experience'];
           }
-          
+
           // Q005: Location
           if (data.containsKey('location')) {
             _responses['Q005'] = data['location'];
           }
-          
+
           // Q006: Days per week
           if (data.containsKey('days_per_week')) {
             _responses['Q006'] = data['days_per_week'].toString();
           }
-          
+
           // Q007: Session length
           if (data.containsKey('session_length')) {
             _responses['Q007'] = '${data['session_length']} mins';
           }
-          
+
           // Q008: Injuries
           if (data.containsKey('injuries')) {
             final injs = (data['injuries'] as List?)?.cast<String>() ?? [];
             _multiSelections['Q008']?.addAll(injs);
             _responses['Q008'] = injs;
           }
-          
+
           // Q010: Diet preference
           if (data.containsKey('diet_preference')) {
             _responses['Q010'] = data['diet_preference'];
           }
-          
+
           // Q011: Allergies
           if (data.containsKey('allergies')) {
             final alls = (data['allergies'] as List?)?.cast<String>() ?? [];
@@ -266,8 +270,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       }
     } catch (e) {
       debugPrint('[Questionnaire] Error loading existing data: $e');
-    } finally {
-      if (mounted) setState(() => _isLoadingData = false);
     }
   }
 
@@ -724,13 +726,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     final q = _questions[_index];
     final progress = (_index + 1) / _questions.length;
     final isLast = _index == _questions.length - 1;
-
-    if (_isLoadingData) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0D0D14),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Onboarding Questionnaire')),

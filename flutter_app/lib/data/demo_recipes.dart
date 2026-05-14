@@ -2,6 +2,7 @@ import '../models/recipe.dart';
 
 final demoRecipes = [
   Recipe(
+    id: 1,
     name: 'Grilled Chicken with Rice',
     ingredients: [
       'Chicken Breast - 150g',
@@ -16,8 +17,13 @@ final demoRecipes = [
       'Steam broccoli for 5 minutes',
       'Serve chicken over rice with broccoli',
     ],
+    allergyInfo: 'none',
+    calories: 520,
+    dietType: 'High Protein',
+    imageUrl: '',
   ),
   Recipe(
+    id: 2,
     name: 'Protein Oatmeal Bowl',
     ingredients: [
       'Oats - 50g',
@@ -31,5 +37,9 @@ final demoRecipes = [
       'Transfer oatmeal to bowl',
       'Top with banana, blueberries, and almonds',
     ],
+    allergyInfo: 'contains nuts',
+    calories: 350,
+    dietType: 'Vegetarian',
+    imageUrl: '',
   ),
 ];

@@ -2,10 +2,11 @@
 
 ## Overview
 
-Our Fitness Warrior repository has 2 main directories, those being Flutter frontend and Python backend, alond with all the configuration files at root directory.
+Our Fitness Warrior repository has 2 main directories, those being Flutter frontend and Python backend, along with all the configuration files at root directory.
 
 ## Root Directory
 
+```text
 FitnessApp/
 ├── backend/                  # Python/FastAPI backend
 ├── flutter_app/              # Flutter/Dart frontend
@@ -20,18 +21,22 @@ FitnessApp/
 ├── package.json              # Project package configuration
 ├── README.md                 # Project readme
 └── requirements.txt          # Python dependencies for documentation
+```
 
 ## Backend
 
 The backend contains the main API logic. The backend folder is the primary version of our backend. The flutter_app/python folder is an earlier version of the backend that only contains a few specific features.
 
+```text
 backend/
 ├── main.py          # Main FastAPI application — handles auth, workouts,
 │                    # meals, streaks, XP and all core API endpoints
 ├── auth.py          # JWT authentication, password hashing and verification
 ├── Dockerfile       # Docker configuration for the backend container
 └── requirements.txt # Python dependencies for the backend
+```
 
+```text
 flutter_app/python/
 ├── database/        # Database helper modules
 │   ├── exercise.py      # Exercise filtering and selection
@@ -41,11 +46,13 @@ flutter_app/python/
 │   ├── workout_plan.py  # Workout plan database queries
 │   └── chart_data.py    # Progress chart data queries
 └── app.py           # Original FastAPI backend (exercise and workout endpoints)
+```
 
 ## Flutter App
 
-The lib folder contains all main application code, the views folder is used for the different screens in the app. The services folder holds the buisness logic. 
+The lib folder contains all main application code, the views folder is used for the different screens in the app. The services folder holds the business logic.
 
+```text
 flutter_app/
 ├── lib/                      # Main application source code
 │   ├── config/               # App configuration and constants
@@ -73,17 +80,21 @@ flutter_app/
 ├── web/                      # Web platform files
 ├── pubspec.yaml              # Flutter dependencies and configuration
 └── pubspec.lock              # Locked dependency versions
+```
 
 ## GitHub Actions
 
 We have used GitHub Actions during this project to automatically run Python tests when code is pushed to the repository.
 
+```text
 .github/
 └── workflows/
-└── python-tests.yml      # Automated Python test workflow
+    └── python-tests.yml      # Automated Python test workflow
+```
 
 ## Documentation
 
+```text
 docs/
 ├── index.md                  # Home page
 ├── introduction.md           # Project introduction
@@ -96,3 +107,4 @@ docs/
 ├── authors.md                # Team members
 ├── futureimprovements.md     # Planned future features
 └── usageguide.md             # How to use the app
+```

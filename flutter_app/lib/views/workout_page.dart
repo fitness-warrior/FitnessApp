@@ -230,7 +230,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       return {
         'id': workout['workout_id'],
         'date': workout['created_at']?.toString() ??
-            DateTime.now().toIso8601String(),
+            '1970-01-01T00:00:00Z',
         'name': workout['notes']?.toString() ?? '',
         'exercises': mappedExercises,
         'source': 'api',
