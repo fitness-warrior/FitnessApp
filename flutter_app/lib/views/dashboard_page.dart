@@ -73,9 +73,7 @@ class _DashboardPage extends State<DashboardPage> {
   void initState() {
     super.initState();
     maxCalDeviation = cal.reduce((a, b) => a.abs() > b.abs() ? a : b).abs();
-    _charts = [
-      
-    ];
+    _charts = [];
   }
 
   void _removeChart(String id) {
@@ -84,14 +82,16 @@ class _DashboardPage extends State<DashboardPage> {
     });
   }
 
-  Future<void> _addChartFromSelection(String chartName, String option, int bodyId) async {
+  Future<void> _addChartFromSelection(
+      String chartName, String option, int bodyId) async {
     try {
-      final chartId = '${chartName}_${option}'.replaceAll(' ', '_').toLowerCase();
+      final chartId =
+          '${chartName}_${option}'.replaceAll(' ', '_').toLowerCase();
       List<double> chartData = [];
       List<String> dates = [];
       String yLabel = '';
-      
-      if (chartName == 'track callories') {
+
+      if (chartName == 'track calories') {
         try {
           final data = await ChartService.getDailyCardioCalories(bodyId);
           chartData = ChartService.extractValues(data);
@@ -121,7 +121,8 @@ class _DashboardPage extends State<DashboardPage> {
           debugPrint('Error loading cardio endurance: $e');
           chartData = [5.2, 5.5, 5.1, 6.0, 5.8, 6.2, 5.9, 6.5];
         }
-      } else if (chartName == 'total weight lifted' || chartName == 'weight personal bests') {
+      } else if (chartName == 'total weight lifted' ||
+          chartName == 'weight personal bests') {
         try {
           final data = await ChartService.getStrengthTotal(option, bodyId);
           chartData = ChartService.extractValues(data);
@@ -131,9 +132,7 @@ class _DashboardPage extends State<DashboardPage> {
           debugPrint('Error loading strength total: $e');
           chartData = [80, 85, 82, 90, 88, 95, 92, 100];
         }
-      }
-
-      else if (chartName == 'weight') {
+      } else if (chartName == 'weight') {
         try {
           final data = await ChartService.getWeight(bodyId);
           chartData = ChartService.extractValues(data);
@@ -178,14 +177,14 @@ class _DashboardPage extends State<DashboardPage> {
           dates = [];
         }
       }
-      
+
       if (chartData.isEmpty) {
         chartData = [10, 12, 11, 13, 12, 14, 13, 15];
       }
-      
+
       final minVal = chartData.reduce((a, b) => a < b ? a : b);
       final maxVal = chartData.reduce((a, b) => a > b ? a : b);
-      
+
       final newChart = _ChartCard(
         id: chartId,
         builder: (onDismissed) => SizedBox(
@@ -203,7 +202,7 @@ class _DashboardPage extends State<DashboardPage> {
           ),
         ),
       );
-      
+
       if (mounted) {
         setState(() {
           _charts.add(newChart);
@@ -250,7 +249,8 @@ class _DashboardPage extends State<DashboardPage> {
                 final completed = await Navigator.push<bool>(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const QuestionnairePage(isOnboarding: false),
+                    builder: (_) =>
+                        const QuestionnairePage(isOnboarding: false),
                   ),
                 );
                 if (!mounted || completed != true) return;
@@ -268,7 +268,8 @@ class _DashboardPage extends State<DashboardPage> {
                   return;
                 }
 
-                final refreshedResult = await Navigator.push<Map<String, dynamic>>(
+                final refreshedResult =
+                    await Navigator.push<Map<String, dynamic>>(
                   context,
                   MaterialPageRoute(
                     builder: (context) => AddChart(bodyId: refreshedBodyId),

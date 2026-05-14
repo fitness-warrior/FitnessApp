@@ -508,7 +508,7 @@ async def get_chart_options(
                     strength.append(exercise_name)
 
             return [
-                {"name": "track callories", "measure": ["total", "just intake", "just cardio"]},
+                {"name": "track calories", "measure": ["total", "just intake", "just cardio"]},
                 {"name": "cardio speed", "measure": cardio},
                 {"name": "cardio enduance", "measure": cardio},
                 {"name": "total weight lifted", "measure": strength},
