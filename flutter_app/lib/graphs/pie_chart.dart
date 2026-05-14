@@ -31,10 +31,10 @@ class MyPieChart extends StatelessWidget {
             swapAnimationDuration: const Duration(milliseconds: 500),
             PieChartData(
               sections: [
-                PieChartSectionData(value: num[0], color: sectionColors[0]),
-                PieChartSectionData(value: num[1], color: sectionColors[1]),
-                PieChartSectionData(value: num[2], color: sectionColors[2]),
-                PieChartSectionData(value: num[3], color: sectionColors[3]),
+                if (num[0] > 0) PieChartSectionData(value: num[0], color: sectionColors[0]),
+                if (num[1] > 0) PieChartSectionData(value: num[1], color: sectionColors[1]),
+                if (num[2] > 0) PieChartSectionData(value: num[2], color: sectionColors[2]),
+                if (num[3] > 0) PieChartSectionData(value: num[3], color: sectionColors[3]),
               ],
             ),
           ),
@@ -45,6 +45,10 @@ class MyPieChart extends StatelessWidget {
           spacing: 14,
           runSpacing: 8,
           children: List.generate(4, (index) {
+            final label = order[index];
+            if (label.isEmpty) {
+              return const SizedBox.shrink();
+            }
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -57,7 +61,7 @@ class MyPieChart extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text(order[index]),
+                Text(label),
               ],
             );
           }),

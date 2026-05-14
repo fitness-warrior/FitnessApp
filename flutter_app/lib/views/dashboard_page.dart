@@ -100,6 +100,8 @@ class _DashboardPage extends State<DashboardPage> {
         } catch (e) {
           debugPrint('Error loading cardio calories: $e');
           chartData = [100, 150, 200, 175, 225, 250, 180, 200];
+          dates = List.generate(chartData.length, (i) => 'Day ${i + 1}');
+          yLabel = 'calories';
         }
       } else if (chartName == 'cardio speed') {
         try {
@@ -110,6 +112,8 @@ class _DashboardPage extends State<DashboardPage> {
         } catch (e) {
           debugPrint('Error loading cardio speed: $e');
           chartData = [100, 120, 110, 130, 125, 140, 135, 150];
+          dates = List.generate(chartData.length, (i) => 'Day ${i + 1}');
+          yLabel = 'speed (m/min)';
         }
       } else if (chartName == 'cardio enduance') {
         try {
@@ -120,6 +124,8 @@ class _DashboardPage extends State<DashboardPage> {
         } catch (e) {
           debugPrint('Error loading cardio endurance: $e');
           chartData = [5.2, 5.5, 5.1, 6.0, 5.8, 6.2, 5.9, 6.5];
+          dates = List.generate(chartData.length, (i) => 'Day ${i + 1}');
+          yLabel = 'distance (km)';
         }
       } else if (chartName == 'total weight lifted' || chartName == 'weight personal bests') {
         try {
@@ -130,6 +136,8 @@ class _DashboardPage extends State<DashboardPage> {
         } catch (e) {
           debugPrint('Error loading strength total: $e');
           chartData = [80, 85, 82, 90, 88, 95, 92, 100];
+          dates = List.generate(chartData.length, (i) => 'Day ${i + 1}');
+          yLabel = 'weight (kg)';
         }
       }
 
@@ -181,6 +189,8 @@ class _DashboardPage extends State<DashboardPage> {
       
       if (chartData.isEmpty) {
         chartData = [10, 12, 11, 13, 12, 14, 13, 15];
+        dates = List.generate(chartData.length, (i) => 'Day ${i + 1}');
+        yLabel = 'value';
       }
       
       final minVal = chartData.reduce((a, b) => a < b ? a : b);
