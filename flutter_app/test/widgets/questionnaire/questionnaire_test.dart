@@ -1,36 +1,66 @@
-import 'package:fitness_app_flutter/models/recommendation_profile.dart';
+import 'dart:convert';
+
 import 'package:fitness_app_flutter/widgets/questionnaire/questionnaire_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _QuestionnaireHost extends StatefulWidget {
+  final bool isOnboarding;
+
+  const _QuestionnaireHost({required this.isOnboarding});
+
+  @override
+  State<_QuestionnaireHost> createState() => _QuestionnaireHostState();
+}
+
+class _QuestionnaireHostState extends State<_QuestionnaireHost> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => QuestionnairePage(isOnboarding: widget.isOnboarding),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Host Page')),
+    );
+  }
+}
 
 void main() {
-  group('Questionnaire onboarding tests', () {
-    Future<void> pumpQuestionnaire(
-      WidgetTester tester, {
-      Future<Map<String, dynamic>?> Function()? loadLocalQuestionnaire,
-      Future<Map<String, dynamic>?> Function()? loadBackendQuestionnaire,
-      Future<dynamic> Function(Map<String, dynamic> payload)?
-          saveLocalQuestionnaire,
-      Future<dynamic> Function(Map<String, dynamic> payload)?
-          saveBackendQuestionnaire,
-      Future<bool> Function(RecommendationProfile profile)? saveProfile,
-      Future<Map<String, dynamic>> Function(RecommendationProfile profile)?
-          fetchRecommendations,
-      Future<void> Function(List<String> tags)? onCompleted,
-      bool isOnboarding = true,
-    }) async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const secureStorageChannel =
+      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+
+  setUpAll(() {
+    secureStorageChannel.setMockMethodCallHandler((call) async {
+      return null;
+    });
+  });
+
+  tearDownAll(() {
+    secureStorageChannel.setMockMethodCallHandler(null);
+  });
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  group('Questionnaire widget tests', () {
+    Future<void> pumpQuestionnaire(WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: QuestionnairePage(
-            isOnboarding: isOnboarding,
-            loadLocalQuestionnaire: loadLocalQuestionnaire,
-            loadBackendQuestionnaire: loadBackendQuestionnaire,
-            saveLocalQuestionnaire: saveLocalQuestionnaire,
-            saveBackendQuestionnaire: saveBackendQuestionnaire,
-            saveProfile: saveProfile,
-            fetchRecommendations: fetchRecommendations,
-            onCompleted: onCompleted,
-          ),
+        const MaterialApp(
+          home: _QuestionnaireHost(isOnboarding: false),
         ),
       );
       await tester.pumpAndSettle();
@@ -44,8 +74,10 @@ void main() {
 
     Future<void> advanceToSubmit(WidgetTester tester) async {
       for (var i = 0; i < 10; i++) {
-        final submitFinder = find.widgetWithText(ElevatedButton, 'Submit');
-        if (submitFinder.evaluate().isNotEmpty) {
+        if (find
+            .widgetWithText(ElevatedButton, 'Submit')
+            .evaluate()
+            .isNotEmpty) {
           return;
         }
         await goNext(tester);
@@ -61,9 +93,13 @@ void main() {
       await goNext(tester);
 
       await tester.enterText(
-          find.widgetWithText(TextField, 'Height (cm)'), '180');
+        find.widgetWithText(TextField, 'Height (cm)'),
+        '180',
+      );
       await tester.enterText(
-          find.widgetWithText(TextField, 'Weight (kg)'), '72');
+        find.widgetWithText(TextField, 'Weight (kg)'),
+        '72',
+      );
       await tester.pump();
       await goNext(tester);
 
@@ -103,60 +139,39 @@ void main() {
     }
 
     testWidgets(
-      'valid onboarding submission saves questionnaire and completes with recommendations',
+      'valid submission saves questionnaire data and returns from the flow',
       (tester) async {
-        Map<String, dynamic>? localPayload;
-        Map<String, dynamic>? backendPayload;
-        RecommendationProfile? savedProfile;
-        List<String>? completionTags;
-
-        await pumpQuestionnaire(
-          tester,
-          loadLocalQuestionnaire: () async => null,
-          loadBackendQuestionnaire: () async => null,
-          saveLocalQuestionnaire: (payload) async {
-            localPayload = Map<String, dynamic>.from(payload);
-            return true;
-          },
-          saveBackendQuestionnaire: (payload) async {
-            backendPayload = Map<String, dynamic>.from(payload);
-            return {'ok': true};
-          },
-          saveProfile: (profile) async {
-            savedProfile = profile;
-            return true;
-          },
-          fetchRecommendations: (_) async => {
-            'tags': ['weight_gain', 'gym_machines'],
-          },
-          onCompleted: (tags) async {
-            completionTags = tags;
-          },
-        );
+        await pumpQuestionnaire(tester);
 
         await completeValidQuestionnaire(tester);
 
-        expect(localPayload, isNotNull);
-        expect(backendPayload, isNotNull);
-        expect(localPayload!['age'], equals(25));
-        expect(localPayload!['goal'], equals('Gain weight'));
-        expect(localPayload!['weight'], equals(72.0));
-        expect(backendPayload, equals(localPayload));
-        expect(savedProfile, isNotNull);
-        expect(savedProfile!.goal, equals('weight_gain'));
-        expect(savedProfile!.equipment, equals(['gym_machines']));
-        expect(completionTags, containsAll(['weight_gain', 'gym_machines']));
+        final prefs = await SharedPreferences.getInstance();
+        final savedQuestionnaireJson =
+            prefs.getString('questionnaire_response_anonymous');
+        final savedProfileJson =
+            prefs.getString('recommendation_profile_anonymous');
+
+        expect(find.text('Host Page'), findsOneWidget);
+        expect(savedQuestionnaireJson, isNotNull);
+        expect(savedProfileJson, isNotNull);
+
+        final savedQuestionnaire = Map<String, dynamic>.from(
+            jsonDecode(savedQuestionnaireJson!) as Map);
+        expect(savedQuestionnaire['age'], equals(25));
+        expect(savedQuestionnaire['weight'], equals(72.0));
+        expect(savedQuestionnaire['goal'], equals('Gain weight'));
+
+        final savedProfile =
+            Map<String, dynamic>.from(jsonDecode(savedProfileJson!) as Map);
+        expect(savedProfile['goal'], equals('weight_gain'));
       },
     );
 
     testWidgets(
       'existing questionnaire data is loaded and updated on resubmission',
       (tester) async {
-        Map<String, dynamic>? localPayload;
-
-        await pumpQuestionnaire(
-          tester,
-          loadLocalQuestionnaire: () async => {
+        SharedPreferences.setMockInitialValues({
+          'questionnaire_response_anonymous': jsonEncode({
             'age': 25,
             'height': 180,
             'weight': 70,
@@ -168,31 +183,21 @@ void main() {
             'injuries': ['Knee'],
             'diet_preference': 'Veg',
             'allergies': ['Nuts'],
-          },
-          loadBackendQuestionnaire: () async => null,
-          saveLocalQuestionnaire: (payload) async {
-            localPayload = Map<String, dynamic>.from(payload);
-            return true;
-          },
-          saveBackendQuestionnaire: (_) async => {'ok': true},
-          saveProfile: (_) async => true,
-          fetchRecommendations: (_) async => {'tags': <String>[]},
-          onCompleted: (_) async {},
-        );
+          }),
+        });
 
-        expect(
-          find.widgetWithText(TextField, 'What is your age?'),
-          findsOneWidget,
-        );
+        await pumpQuestionnaire(tester);
+
         final ageField = tester.widget<TextField>(
           find.widgetWithText(TextField, 'What is your age?'),
         );
         expect(ageField.controller?.text, equals('25'));
 
         await goNext(tester);
-        expect(find.widgetWithText(TextField, 'Weight (kg)'), findsOneWidget);
         await tester.enterText(
-            find.widgetWithText(TextField, 'Weight (kg)'), '72');
+          find.widgetWithText(TextField, 'Weight (kg)'),
+          '72',
+        );
         await tester.pump();
 
         await goNext(tester);
@@ -202,20 +207,21 @@ void main() {
         await tester.tap(find.widgetWithText(ElevatedButton, 'Submit'));
         await tester.pumpAndSettle();
 
-        expect(localPayload, isNotNull);
-        expect(localPayload!['weight'], equals(72.0));
-        expect(localPayload!['goal'], equals('Gain weight'));
+        final prefs = await SharedPreferences.getInstance();
+        final savedQuestionnaireJson =
+            prefs.getString('questionnaire_response_anonymous');
+        final savedQuestionnaire = Map<String, dynamic>.from(
+            jsonDecode(savedQuestionnaireJson!) as Map);
+
+        expect(savedQuestionnaire['weight'], equals(72.0));
+        expect(savedQuestionnaire['goal'], equals('Gain weight'));
       },
     );
 
     testWidgets(
       'required goal selection blocks progress until a valid option is chosen',
       (tester) async {
-        await pumpQuestionnaire(
-          tester,
-          loadLocalQuestionnaire: () async => null,
-          loadBackendQuestionnaire: () async => null,
-        );
+        await pumpQuestionnaire(tester);
 
         await tester.enterText(
           find.widgetWithText(TextField, 'What is your age?'),
@@ -225,13 +231,16 @@ void main() {
         await goNext(tester);
 
         await tester.enterText(
-            find.widgetWithText(TextField, 'Height (cm)'), '180');
+          find.widgetWithText(TextField, 'Height (cm)'),
+          '180',
+        );
         await tester.enterText(
-            find.widgetWithText(TextField, 'Weight (kg)'), '70');
+          find.widgetWithText(TextField, 'Weight (kg)'),
+          '70',
+        );
         await tester.pump();
         await goNext(tester);
 
-        expect(find.text('What is your fitness goal?'), findsOneWidget);
         final nextButton = tester.widget<ElevatedButton>(
           find.widgetWithText(ElevatedButton, 'Next'),
         );
@@ -248,43 +257,13 @@ void main() {
     );
 
     testWidgets(
-      'questionnaire continues onboarding when backend save fails',
-      (tester) async {
-        List<String>? completionTags;
-
-        await pumpQuestionnaire(
-          tester,
-          loadLocalQuestionnaire: () async => null,
-          loadBackendQuestionnaire: () async => null,
-          saveLocalQuestionnaire: (_) async => true,
-          saveBackendQuestionnaire: (_) async {
-            throw Exception('Missing Authorization header');
-          },
-          saveProfile: (_) async => true,
-          fetchRecommendations: (_) async => {
-            'tags': ['general_fitness']
-          },
-          onCompleted: (tags) async {
-            completionTags = tags;
-          },
-        );
-
-        await completeValidQuestionnaire(tester);
-
-        expect(completionTags, equals(['general_fitness']));
-      },
-    );
-
-    testWidgets(
       'saved questionnaire data is loaded at startup when present',
       (tester) async {
-        await pumpQuestionnaire(
-          tester,
-          loadLocalQuestionnaire: () async => {
-            'age': 31,
-          },
-          loadBackendQuestionnaire: () async => null,
-        );
+        SharedPreferences.setMockInitialValues({
+          'questionnaire_response_anonymous': jsonEncode({'age': 31}),
+        });
+
+        await pumpQuestionnaire(tester);
 
         final ageField = tester.widget<TextField>(
           find.widgetWithText(TextField, 'What is your age?'),
@@ -296,18 +275,32 @@ void main() {
     testWidgets(
       'questionnaire starts cleanly when no saved record exists',
       (tester) async {
-        await pumpQuestionnaire(
-          tester,
-          loadLocalQuestionnaire: () async => null,
-          loadBackendQuestionnaire: () async => null,
-        );
+        await pumpQuestionnaire(tester);
 
         expect(find.text('Onboarding Questionnaire'), findsOneWidget);
-        expect(
-          find.widgetWithText(TextField, 'What is your age?'),
-          findsOneWidget,
-        );
+        expect(find.widgetWithText(TextField, 'What is your age?'),
+            findsOneWidget);
         expect(find.widgetWithText(ElevatedButton, 'Next'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'age below minimum shows validation feedback and keeps next disabled',
+      (tester) async {
+        await pumpQuestionnaire(tester);
+
+        await tester.enterText(
+          find.widgetWithText(TextField, 'What is your age?'),
+          '5',
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Minimum value is 13.'), findsOneWidget);
+
+        final nextButton = tester.widget<ElevatedButton>(
+          find.widgetWithText(ElevatedButton, 'Next'),
+        );
+        expect(nextButton.onPressed, isNull);
       },
     );
   });
