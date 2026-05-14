@@ -71,47 +71,64 @@ class ChartService {
   }
 
   static Future<void> hideChart(String userEmail, String chartName, String option) async {
-    final prefs = await SharedPreferences.getInstance();
-    final dateKey = DateTime.now().toString().split(' ')[0];
-    final key = 'hidden_charts_${dateKey}_$userEmail';
-    final List<String> current = prefs.getStringList(key) ?? [];
-    
-    final entry = '$chartName|$option';
-    if (!current.contains(entry)) {
-      current.add(entry);
-      await prefs.setStringList(key, current);
-      debugPrint('CHART_STORAGE: Hidden in $key => $current');
+    try {
+      final response = await http.post(
+        Uri.parse('$pythonBaseUrl/api/user/hidden-charts'),
+        headers: await AuthService.getAuthHeaders(),
+        body: jsonEncode({
+          'chart_name': chartName.trim(),
+          'option': option.trim(),
+        }),
+      );
+      if (response.statusCode == 200) {
+        debugPrint('CHART_STORAGE: Successfully hid $chartName|$option on server');
+      } else {
+        debugPrint('CHART_STORAGE: Failed to hide $chartName|$option. Status: ${response.statusCode}, Body: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('CHART_STORAGE: Error hiding chart: $e');
     }
   }
 
   static Future<void> unhideChart(String userEmail, String chartName, String option) async {
-    final prefs = await SharedPreferences.getInstance();
-    final dateKey = DateTime.now().toString().split(' ')[0];
-    final key = 'hidden_charts_${dateKey}_$userEmail';
-    final List<String> current = prefs.getStringList(key) ?? [];
-    
-    final entry = '$chartName|$option';
-    if (current.contains(entry)) {
-      current.remove(entry);
-      await prefs.setStringList(key, current);
-      debugPrint('CHART_STORAGE: Unhidden from $key => $current');
+    try {
+      final response = await http.delete(
+        Uri.parse('$pythonBaseUrl/api/user/hidden-charts?chart_name=${Uri.encodeComponent(chartName.trim())}&option=${Uri.encodeComponent(option.trim())}'),
+        headers: await AuthService.getAuthHeaders(),
+      );
+      if (response.statusCode == 200) {
+        debugPrint('CHART_STORAGE: Successfully unhid $chartName|$option on server');
+      } else {
+        debugPrint('CHART_STORAGE: Failed to unhide $chartName|$option. Status: ${response.statusCode}, Body: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('CHART_STORAGE: Error unhiding chart: $e');
     }
   }
 
-  static Future<bool> isChartHidden(String userEmail, String chartName, String option) async {
-    final prefs = await SharedPreferences.getInstance();
-    final dateKey = DateTime.now().toString().split(' ')[0];
-    final key = 'hidden_charts_${dateKey}_$userEmail';
-    final List<String> hidden = prefs.getStringList(key) ?? [];
-    
-    // Log the full list once per check to see what's in there
-    debugPrint('CHART_STORAGE: Checking $key => $hidden');
-    
-    final isHidden = hidden.contains('$chartName|$option');
-    if (isHidden) {
-      debugPrint('CHART_STORAGE: Chart $chartName|$option IS HIDDEN for $userEmail');
+  static Future<Set<String>> getHiddenCharts() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$pythonBaseUrl/api/user/hidden-charts'),
+        headers: await AuthService.getAuthHeaders(),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final set = data.map((item) => '${item['chart_name'].toString().trim()}|${item['option'].toString().trim()}').toSet();
+        debugPrint('CHART_STORAGE: Fetched hidden charts from server: $set');
+        return set;
+      }
+    } catch (e) {
+      debugPrint('CHART_STORAGE: Error fetching hidden charts: $e');
     }
-    return isHidden;
+    return {};
+  }
+
+  static Future<bool> isChartHidden(String userEmail, String chartName, String option) async {
+    // This is now less efficient if called in a loop, 
+    // views should call getHiddenCharts() instead and check locally.
+    final hidden = await getHiddenCharts();
+    return hidden.contains('${chartName.trim()}|${option.trim()}');
   }
 
   static Future<int> getBodyId() async {
