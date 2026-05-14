@@ -159,12 +159,11 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         _textControllers[q.id] = TextEditingController();
       }
     }
-<<<<<<< HEAD
-=======
     _loadExistingData();
   }
 
   Future<void> _loadExistingData() async {
+    bool _isLoadingData;
     setState(() => _isLoadingData = true);
     try {
       // 1. Try local cache
@@ -269,7 +268,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
     } finally {
       if (mounted) setState(() => _isLoadingData = false);
     }
->>>>>>> d47d59e03b2a6de3f802e932b759d74ed166d03b
   }
 
   @override
