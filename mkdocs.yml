@@ -5,6 +5,14 @@ theme:
   palette:
     primary: green
 
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+
 nav:
   - Home: index.md
   - Introduction: introduction.md
