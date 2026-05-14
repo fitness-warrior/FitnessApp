@@ -42,5 +42,64 @@ void main() {
       expect(find.textContaining('3 exercises completed'), findsOneWidget);
     });
 
+    testWidgets('Test 2: Exercise summary list renders correctly', (WidgetTester tester) async {
+      // FinishWorkoutDialog with 2 exercises, each with 3 sets
+      final exercises = [
+        {'exer_id': 1, 'exer_name': 'Bench Press', 'exer_type': 'strength'},
+        {'exer_id': 2, 'exer_name': 'Deadlift',    'exer_type': 'strength'},
+      ];
+
+      // Build controllers for 3 sets per exercise with valid values
+      Map<String, TextEditingController> makeSet(String kg, String reps) => {
+        'kg':   TextEditingController(text: kg),
+        'reps': TextEditingController(text: reps),
+      };
+
+      final controllers = <int, List<Map<String, TextEditingController>>>{
+        0: [makeSet('60', '10'), makeSet('65', '8'), makeSet('70', '6')],
+        1: [makeSet('100', '5'), makeSet('105', '4'), makeSet('110', '3')],
+      };
+
+      await tester.pumpWidget(buildDialog(
+        exercises: exercises,
+        setControllers: controllers,
+      ));
+
+      // Both exercise names visible in summary list
+      expect(find.text('Bench Press'), findsOneWidget);
+      expect(find.text('Deadlift'),    findsOneWidget);
+    });
+
+    testWidgets('Test 3: Invalid data shows error message', (WidgetTester tester) async {
+      // Exercise with an empty reps field
+      final exercises = [
+        {'exer_id': 1, 'exer_name': 'Squat', 'exer_type': 'strength'},
+      ];
+
+      final controllers = <int, List<Map<String, TextEditingController>>>{
+        0: [
+          {
+            'kg':   TextEditingController(text: '80'),
+            'reps': TextEditingController(text: ''), // empty — invalid
+          }
+        ],
+      };
+
+      await tester.pumpWidget(buildDialog(
+        exercises: exercises,
+        setControllers: controllers,
+      ));
+
+      // Tap 'Finish & Save'
+      await tester.tap(find.text('Finish & Save'));
+      await tester.pump();
+
+      // Error message shown
+      expect(
+        find.textContaining('Invalid values'),
+        findsOneWidget,
+      );
+    });
+
   });
 }
