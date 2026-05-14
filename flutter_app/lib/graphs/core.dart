@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fitness_app_flutter/graphs/bar_graph.dart';
 import 'package:fitness_app_flutter/graphs/pie_chart.dart';
+import 'package:fitness_app_flutter/graphs/line_chart.dart';
 
 class Core extends StatefulWidget {
   final String name;
@@ -51,6 +52,21 @@ class Core extends StatefulWidget {
     this.dates,
   })  : labels = null,
         tableType = 'bar';
+
+  /// Create a line chart core card.
+  const Core.line({
+    super.key,
+    required this.name,
+    required this.dataValues,
+    required this.y,
+    required this.x,
+    this.height,
+    this.onDismissed,
+    this.dates,
+  })  : labels = null,
+        start = null,
+        range = null,
+        tableType = 'line';
   
   @override
   State<Core> createState() => _CoreState();
@@ -107,6 +123,15 @@ class _CoreState extends State<Core> {
                     y: widget.y,
                     x: widget.x,
                     dates: widget.dates,
+                  );
+                }
+
+                if (widget.tableType == 'line') {
+                  return MyLineChart(
+                    dataPoints: widget.dataValues ?? <double>[],
+                    dates: widget.dates,
+                    yLabel: widget.y,
+                    xLabel: widget.x,
                   );
                 }
 
