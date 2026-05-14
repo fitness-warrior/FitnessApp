@@ -61,8 +61,9 @@ class _DashboardPage extends State<DashboardPage> {
   }
 
   Future<void> _refreshAllCharts() async {
-    await _loadAllExerciseCharts();
-    await _loadManualCharts();
+    final hidden = await ChartService.getHiddenCharts();
+    await _loadAllExerciseCharts(hidden);
+    await _loadManualCharts(hidden);
   }
 
   Future<int?> _resolveBodyId() async {
@@ -74,7 +75,7 @@ class _DashboardPage extends State<DashboardPage> {
     }
   }
 
-  Future<void> _loadManualCharts() async {
+  Future<void> _loadManualCharts(Set<String> hidden) async {
     final bodyId = await _resolveBodyId() ?? 0;
     final currentUser = await AuthService.getCurrentUser();
     final userEmail = currentUser?['email'] ?? 'unknown';
@@ -82,8 +83,15 @@ class _DashboardPage extends State<DashboardPage> {
     
     final List<_ChartCard> updatedManual = [];
     for (final s in saved) {
-      final name = s['name'] ?? '';
-      final option = s['measure'] ?? '';
+      final name = (s['name'] ?? '').trim();
+      final option = (s['measure'] ?? '').trim();
+      
+      // Check if hidden in the pre-fetched set
+      if (hidden.contains('$name|$option')) {
+        debugPrint('DASHBOARD: Skipping manual chart $name|$option (HIDDEN)');
+        continue;
+      }
+
       final id = '${name}_${option}'.replaceAll(' ', '_').toLowerCase();
       final card = await _createChartCard(name, option, bodyId, id);
       if (card != null) updatedManual.add(card);
@@ -96,18 +104,32 @@ class _DashboardPage extends State<DashboardPage> {
     }
   }
 
-  Future<void> _loadAllExerciseCharts() async {
+  Future<void> _loadAllExerciseCharts(Set<String> hidden) async {
     try {
       final bodyId = await _resolveBodyId() ?? 0;
+      final currentUser = await AuthService.getCurrentUser();
+      final userEmail = currentUser?['email'] ?? 'unknown';
+      
       final allProgress = await ChartService.getAllExercisesProgress();
       final List<_ChartCard> cards = [];
       
-      allProgress.forEach((exName, history) {
+      final entries = allProgress.entries.toList();
+      for (final entry in entries) {
+        final exName = entry.key.trim();
+        final history = entry.value;
+        debugPrint('DASHBOARD: Processing auto chart for "$exName"');
+
+        // Check if hidden persistently in the pre-fetched set
+        if (hidden.contains('Progress|$exName')) {
+          debugPrint('DASHBOARD: Skipping auto chart Progress|$exName (HIDDEN)');
+          continue;
+        }
+
         final chartId = 'auto_${exName}'.replaceAll(' ', '_').toLowerCase();
         final values = history.map((e) => (e[1] as num).toDouble()).toList();
         final dates = history.map((e) => e[0].toString()).toList();
 
-        if (values.isEmpty) return;
+        if (values.isEmpty) continue;
 
         double minVal = values.reduce((a, b) => a < b ? a : b);
         double maxVal = values.reduce((a, b) => a > b ? a : b);
@@ -146,7 +168,7 @@ class _DashboardPage extends State<DashboardPage> {
             ),
           ),
         ));
-      });
+      }
       
       if (mounted) {
         setState(() {
@@ -207,11 +229,28 @@ class _DashboardPage extends State<DashboardPage> {
     }
   }
 
-  void _removeChart(String id) {
-    setState(() {
-      _charts.removeWhere((c) => c.id == id);
-      _allExerciseCharts.removeWhere((c) => c.id == id);
-    });
+  Future<void> _removeChart(String id) async {
+    final currentUser = await AuthService.getCurrentUser();
+    final userEmail = currentUser?['email'] ?? 'unknown';
+
+    // Find chart in both lists to get name and option
+    final chart = [..._charts, ..._allExerciseCharts].firstWhere(
+      (c) => c.id == id,
+      orElse: () => _ChartCard(id: '', name: '', option: '', builder: (_) => Container()),
+    );
+
+    if (chart.id.isNotEmpty) {
+      // Persistently hide
+      debugPrint('DASHBOARD: Removing chart ${chart.name}|${chart.option}');
+      await ChartService.hideChart(userEmail, chart.name, chart.option);
+    }
+
+    if (mounted) {
+      setState(() {
+        _charts.removeWhere((c) => c.id == id);
+        _allExerciseCharts.removeWhere((c) => c.id == id);
+      });
+    }
   }
 
   Future<void> _triggerAddChart() async {
