@@ -464,60 +464,7 @@ async def get_user_profile(
         raise HTTPException(status_code=500, detail=f"Failed to fetch profile: {str(e)}")
 
 
-@app.get("/api/charts/options")
-async def get_chart_options(
-    user_id: int = Depends(get_current_user_id),
-):
-    """Return chart picker options grouped by cardio and strength exercises."""
-    try:
-        async with app.state.db_pool.acquire() as connection:
-            body_id = await connection.fetchval(
-                "SELECT body_id FROM body_metrics WHERE user_id = $1",
-                user_id,
-            )
 
-            if not body_id:
-                raise HTTPException(status_code=404, detail="Body metrics not found")
-
-            rows = await connection.fetch(
-                """
-                SELECT e.exer_name, e.exer_type, pe.plan_exer_PB
-                FROM exercise e
-                JOIN plan_exercise pe ON pe.exer_id = e.exer_id
-                JOIN training_exercise te ON te.exer_id = e.exer_id
-                JOIN training t ON t.train_id = te.train_id
-                JOIN training_body tb ON tb.train_id = t.train_id
-                WHERE tb.body_id = $1
-                  AND t.train_data IS NOT NULL
-                                ORDER BY
-                                    CASE WHEN e.exer_type = 'cardio' THEN 0 ELSE 1 END,
-                                    pe.plan_exer_PB DESC
-                """,
-                body_id,
-            )
-
-            cardio = []
-            strength = []
-
-            for row in rows:
-                exercise_name = row["exer_name"]
-                exercise_type = row["exer_type"]
-                if exercise_type == "cardio" and exercise_name not in cardio:
-                    cardio.append(exercise_name)
-                elif exercise_type == "strength" and exercise_name not in strength:
-                    strength.append(exercise_name)
-
-            return [
-                {"name": "track calories", "measure": ["total", "just intake", "just cardio"]},
-                {"name": "cardio speed", "measure": cardio},
-                {"name": "cardio enduance", "measure": cardio},
-                {"name": "total weight lifted", "measure": strength},
-                {"name": "weight personal bests", "measure": strength},
-            ]
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch chart options: {str(e)}")
 
 
 @app.put("/api/users/profile")
@@ -581,6 +528,111 @@ async def get_user_stats(user_id: int = Depends(get_current_user_id)):
             return {"xp": stats["xp"], "level": stats["level"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch stats: {str(e)}")
+
+
+@app.get("/api/workouts/today/exercises")
+async def get_today_exercises(user_id: int = Depends(get_current_user_id)):
+    """Get list of unique exercises performed by user today"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT DISTINCT e.exer_id, e.exer_name, e.exer_type
+                FROM training t
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE t.user_id = $1 AND t.train_data::date = CURRENT_DATE
+                """,
+                user_id
+            )
+            return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"Error fetching today's exercises: {e}")
+        return []
+
+
+@app.get("/api/charts/options")
+async def get_chart_options(user_id: int = Depends(get_current_user_id)):
+    """Get available chart categories and exercise options based on user history"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Get unique exercise names the user has actually performed
+            rows = await connection.fetch("""
+                SELECT DISTINCT e.exer_name, e.exer_type
+                FROM training_exercise te
+                JOIN exercise e ON e.exer_id = te.exer_id
+                JOIN training t ON t.train_id = te.train_id
+                WHERE t.user_id = $1
+            """, user_id)
+            
+            cardio_exers = [r["exer_name"] for r in rows if r["exer_type"] == "cardio"]
+            strength_exers = [r["exer_name"] for r in rows if r["exer_type"] in ["strength", "isolation", "bodyweight"]]
+            
+            return [
+                {"name": "track calories", "measure": ["daily"]},
+                {"name": "cardio speed", "measure": cardio_exers if cardio_exers else ["Running", "Cycling"]},
+                {"name": "cardio endurance", "measure": cardio_exers if cardio_exers else ["Running", "Cycling"]},
+                {"name": "total weight lifted", "measure": strength_exers if strength_exers else ["Squat", "Bench Press"]},
+                {"name": "overall effort", "measure": ["total volume"]},
+                {"name": "weight", "measure": ["progress"]},
+                {"name": "body type", "measure": ["distribution"]}
+            ]
+    except Exception as e:
+        print(f"Error in get_chart_options: {e}")
+        return []
+
+
+@app.get("/chart/strength-total/{exercise_name}")
+async def get_strength_total(exercise_name: str, user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT t.train_data::date as date, MAX(t.train_effort) as max_weight
+                FROM training t
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                WHERE t.user_id = $1 AND e.exer_name ILIKE $2
+                GROUP BY t.train_data::date ORDER BY t.train_data::date ASC
+                """,
+                user_id, exercise_name
+            )
+            return [[str(r["date"]), float(r["max_weight"] or 0)] for r in rows]
+    except Exception: return []
+
+
+@app.get("/chart/total-volume")
+async def get_total_volume(user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT t.train_data::date as date, SUM(t.train_reps * t.train_effort) as volume
+                FROM training t 
+                WHERE t.user_id = $1
+                GROUP BY t.train_data::date 
+                ORDER BY t.train_data::date ASC
+                """,
+                user_id
+            )
+            return [[str(r["date"]), float(r["volume"] or 0)] for r in rows]
+    except Exception: return []
+
+
+@app.get("/chart/daily-cardio-calories")
+async def get_daily_calories(user_id: int = Depends(get_current_user_id)):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT t.train_data::date as date, SUM(t.train_mins * 10) as calories
+                FROM training t 
+                WHERE t.user_id = $1 GROUP BY t.train_data::date ORDER BY t.train_data::date ASC
+                """,
+                user_id
+            )
+            return [[str(r["date"]), float(r["calories"] or 0)] for r in rows]
+    except Exception: return []
 
 
 class XPRequest(BaseModel):
@@ -699,8 +751,8 @@ async def save_workout(
                     train_reps = 0
                     train_effort = 0.0
 
-                    if exer_type == "strength":
-                        # Strength: train_reps = reps performed, train_effort = weight in kg
+                    if exer_type == "strength" or exer_type == "isolation" or exer_type == "bodyweight":
+                        # Strength/Isolation/Bodyweight: train_reps = reps performed, train_effort = weight in kg
                         train_reps = set_data.reps or 0
                         train_effort = float(set_data.kg or 0.0)
                     elif exer_type == "cardio":
