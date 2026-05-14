@@ -103,5 +103,22 @@ void main() {
         expect(painter.accentColor, const Color(0xFF66BB6A));
       }
     });
+
+    testWidgets('does not render video section when no video URL is available',
+        (tester) async {
+      final exerciseWithoutVideo = {
+        'name': 'Lunge',
+        'area': 'Legs',
+        'type': 'Strength',
+        'description': 'A lower-body exercise.',
+        'equipment': ['Bodyweight'],
+      };
+
+      await tester.pumpWidget(
+          _wrap(ExerciseDetailPage(exercise: exerciseWithoutVideo)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('How to do it'), findsNothing);
+    });
   });
 }
