@@ -209,14 +209,21 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
           if (data.containsKey('goal')) {
             final backendGoal = data['goal'].toString();
             String uiGoal = backendGoal;
-            if (backendGoal == 'Fat Loss') uiGoal = 'Lose weight';
-            else if (backendGoal == 'Muscle Gain') uiGoal = 'Build muscle';
-            else if (backendGoal == 'General Fitness') uiGoal = 'Stay fit';
-            else if (backendGoal == 'Endurance Improvement') uiGoal = 'Improve endurance';
-            else if (backendGoal == 'Injury Rehabilitation') uiGoal = 'Recover from injury';
+            if (backendGoal == 'Fat Loss') {
+              uiGoal = 'Lose weight';
+            } else if (backendGoal == 'Muscle Gain') {
+              uiGoal = 'Build muscle';
+            } else if (backendGoal == 'General Fitness') {
+              uiGoal = 'Stay fit';
+            } else if (backendGoal == 'Endurance Improvement') {
+              uiGoal = 'Improve endurance';
+            } else if (backendGoal == 'Injury Rehabilitation') {
+              uiGoal = 'Recover from injury';
+            }
 
             // Special case for 'Gain weight' which maps to 'Muscle Gain' in backend
-            if (backendGoal == 'Muscle Gain' && local?['goal'] == 'Gain weight') {
+            if (backendGoal == 'Muscle Gain' &&
+                local?['goal'] == 'Gain weight') {
               uiGoal = 'Gain weight';
             }
 
