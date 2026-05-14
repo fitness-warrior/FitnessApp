@@ -14,6 +14,10 @@ In our original specification we mentioned we would add a feature to allow users
 
 A minigame during rest timers in between sets was a key feature we planned to implement, however it wasn't. This would be an engaging and valuable feature for our app if implemented correctly in the future.
 
+### Notifications
+
+Adding notifications would allow the user to be more engaged and more motivated to do a workout. Given more time we could definetly add this feature
+
 ## New Features
 
 ### Competetive Features

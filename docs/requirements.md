@@ -20,15 +20,6 @@ including losing weight, gaining muscle or maintaining a healthy lifestyle
 - FR 7 - Generate Customised Fitness Plan: The system should generate a clear customized 
 fitness plan based on user input and selected goal
 
-### Notifications
-- FR 8 - Receive Fitness Related Notifications: The system must allow users to receive 
-notifications related to their fitness activities, workout reminders, streak updates and 
-meal suggestions
-- FR 9 - Control Notification Settings: The system must provide settings that allow users 
-to fully control which notifications they receive
-- FR 10 - Enable/Disable Notifications and Specific Types: The system shall allow users to 
-enable or disable notifications at any time
-
 ### Navigation
 - FR 11 - Navigation Access: The system shall provide a navigation system that allows users 
 to access all main features of the app
