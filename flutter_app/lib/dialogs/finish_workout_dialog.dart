@@ -367,6 +367,9 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
         final type = exercise['exer_type']?.toString().toLowerCase() ?? 'strength';
         final chartName = type == 'cardio' ? 'cardio speed' : 'total weight lifted';
         await ChartService.unhideChart(userEmail, chartName, exercise['exer_name']);
+        
+        // Also unhide the automatic 'Progress' chart for this exercise
+        await ChartService.unhideChart(userEmail, 'Progress', exercise['exer_name']);
       }
       ChartService.notifyChartsChanged();
 
