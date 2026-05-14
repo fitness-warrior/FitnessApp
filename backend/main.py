@@ -990,6 +990,44 @@ async def delete_workout(
         raise HTTPException(status_code=500, detail=f"Failed to delete workout: {str(e)}")
 
 
+@app.get("/api/exercises/{exer_id}/progress")
+async def get_exercise_progress(
+    exer_id: int,
+    user_id: int = Depends(get_current_user_id),
+):
+    """Get progression data for a specific exercise over time"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            # Join user_workout to get dates and user_workout_exercise to get lift data
+            rows = await connection.fetch(
+                """
+                SELECT 
+                    uw.created_at::date as date,
+                    uwe.weight,
+                    uwe.reps,
+                    uwe.sets
+                FROM user_workout_exercise uwe
+                JOIN user_workout uw ON uw.workout_id = uwe.workout_id
+                WHERE uw.user_id = $1 AND uwe.exer_id = $2
+                ORDER BY uw.created_at ASC
+                """,
+                user_id,
+                exer_id
+            )
+            
+            return [
+                {
+                    "date": str(r["date"]),
+                    "weight": float(r["weight"]),
+                    "reps": r["reps"],
+                    "sets": r["sets"]
+                }
+                for r in rows
+            ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch exercise progress: {str(e)}")
+
+
 # ==================== STREAK ENDPOINTS ====================
 
 @app.get("/api/streak")
