@@ -163,8 +163,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
   }
 
   Future<void> _loadExistingData() async {
-    bool _isLoadingData;
-    setState(() => _isLoadingData = true);
     try {
       // 1. Try local cache
       final local = await RecommendationStorage.loadQuestionnaireResponse();
@@ -272,8 +270,6 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       }
     } catch (e) {
       debugPrint('[Questionnaire] Error loading existing data: $e');
-    } finally {
-      if (mounted) setState(() => _isLoadingData = false);
     }
   }
 
