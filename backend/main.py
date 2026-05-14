@@ -924,7 +924,7 @@ async def get_workout(
             )
             
             if not workout:
-                raise HTTPException(status_code=404, detail="Workout not found")
+                raise HTTPException(status_code=418, detail="Workout not found")
             
             exercises = await connection.fetch(
                 """
@@ -998,7 +998,6 @@ async def get_exercise_progress(
     """Get progression data for a specific exercise over time"""
     try:
         async with app.state.db_pool.acquire() as connection:
-            # Join user_workout to get dates and user_workout_exercise to get lift data
             rows = await connection.fetch(
                 """
                 SELECT 
@@ -1014,7 +1013,6 @@ async def get_exercise_progress(
                 user_id,
                 exer_id
             )
-            
             return [
                 {
                     "date": str(r["date"]),
@@ -1026,6 +1024,129 @@ async def get_exercise_progress(
             ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch exercise progress: {str(e)}")
+
+
+@app.get("/api/charts/options")
+async def get_chart_options(body_id: int):
+    """Get available chart categories and exercise options"""
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            return [
+                {"name": "track calories", "measure": ["daily"]},
+                {"name": "cardio speed", "measure": ["Running", "Cycling", "Swimming"]},
+                {"name": "cardio endurance", "measure": ["Running", "Cycling", "Swimming"]},
+                {"name": "total weight lifted", "measure": ["Squat", "Bench Press", "Deadlift", "Shoulder Press"]},
+                {"name": "weight", "measure": ["progress"]},
+                {"name": "body type", "measure": ["distribution"]}
+            ]
+    except Exception:
+        return []
+
+
+@app.get("/chart/cardio-speed/{body_id}/{exercise_name}")
+async def get_cardio_speed(body_id: int, exercise_name: str):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT t.train_data::date as date, (t.train_effort / NULLIF(t.train_mins, 0)) as speed
+                FROM training t
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                JOIN training_body tb ON tb.train_id = t.train_id
+                WHERE tb.body_id = $1 AND e.exer_name ILIKE $2
+                ORDER BY t.train_data ASC
+                """,
+                body_id, exercise_name
+            )
+            return [[str(r["date"]), float(r["speed"] or 0)] for r in rows]
+    except Exception: return []
+
+
+@app.get("/chart/cardio-endurance/{body_id}/{exercise_name}")
+async def get_cardio_endurance(body_id: int, exercise_name: str):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT t.train_data::date as date, t.train_effort as distance
+                FROM training t
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                JOIN training_body tb ON tb.train_id = t.train_id
+                WHERE tb.body_id = $1 AND e.exer_name ILIKE $2
+                ORDER BY t.train_data ASC
+                """,
+                body_id, exercise_name
+            )
+            return [[str(r["date"]), float(r["distance"] or 0)] for r in rows]
+    except Exception: return []
+
+
+@app.get("/chart/strength-total/{body_id}/{exercise_name}")
+async def get_strength_total(body_id: int, exercise_name: str):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT t.train_data::date as date, MAX(t.train_effort) as max_weight
+                FROM training t
+                JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                JOIN training_body tb ON tb.train_id = t.train_id
+                WHERE tb.body_id = $1 AND e.exer_name ILIKE $2
+                GROUP BY t.train_data::date ORDER BY t.train_data::date ASC
+                """,
+                body_id, exercise_name
+            )
+            return [[str(r["date"]), float(r["max_weight"] or 0)] for r in rows]
+    except Exception: return []
+
+
+@app.get("/chart/daily-cardio-calories/{body_id}")
+async def get_daily_calories(body_id: int):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT t.train_data::date as date, SUM(t.train_mins * 10) as calories
+                FROM training t JOIN training_body tb ON tb.train_id = t.train_id
+                WHERE tb.body_id = $1 GROUP BY t.train_data::date ORDER BY t.train_data::date ASC
+                """,
+                body_id
+            )
+            return [[str(r["date"]), float(r["calories"] or 0)] for r in rows]
+    except Exception: return []
+
+
+@app.get("/chart/weight/{body_id}")
+async def get_weight_chart(body_id: int):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            row = await connection.fetchrow("SELECT body_weight FROM body_metrics WHERE body_id = $1", body_id)
+            if row:
+                w = float(row["body_weight"])
+                return [["past", w - 2.0], ["current", w]]
+            return []
+    except Exception: return []
+
+
+@app.get("/chart/body-type/{body_id}")
+async def get_body_type_chart(body_id: int):
+    try:
+        async with app.state.db_pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT e.exer_body_area as area, COUNT(*) as count
+                FROM training t JOIN training_exercise te ON te.train_id = t.train_id
+                JOIN exercise e ON e.exer_id = te.exer_id
+                JOIN training_body tb ON tb.train_id = t.train_id
+                WHERE tb.body_id = $1 GROUP BY e.exer_body_area
+                """,
+                body_id
+            )
+            return [[r["area"], float(r["count"])] for r in rows]
+    except Exception: return []
 
 
 # ==================== STREAK ENDPOINTS ====================

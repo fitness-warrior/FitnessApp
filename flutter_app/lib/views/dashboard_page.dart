@@ -195,21 +195,33 @@ class _DashboardPage extends State<DashboardPage> {
       final minVal = chartData.reduce((a, b) => a < b ? a : b);
       final maxVal = chartData.reduce((a, b) => a > b ? a : b);
 
+      final isHistory = chartName.contains('cardio') || chartName.contains('weight') || chartName.contains('strength');
+
       final newChart = _ChartCard(
         id: chartId,
         builder: (onDismissed) => SizedBox(
           height: 300,
-          child: Core.bar(
-            key: ValueKey('$chartId-chart'),
-            name: '$chartName - $option',
-            dataValues: chartData,
-            start: minVal * 0.9,
-            range: maxVal * 1.1,
-            y: yLabel,
-            x: 'days',
-            dates: dates,
-            onDismissed: onDismissed,
-          ),
+          child: isHistory 
+            ? Core.line(
+                key: ValueKey('$chartId-chart'),
+                name: '$chartName - $option',
+                dataValues: chartData,
+                y: yLabel,
+                x: 'days',
+                dates: dates,
+                onDismissed: onDismissed,
+              )
+            : Core.bar(
+                key: ValueKey('$chartId-chart'),
+                name: '$chartName - $option',
+                dataValues: chartData,
+                start: minVal * 0.9,
+                range: maxVal * 1.1,
+                y: yLabel,
+                x: 'days',
+                dates: dates,
+                onDismissed: onDismissed,
+              ),
         ),
       );
 
