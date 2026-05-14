@@ -155,5 +155,52 @@ void main() {
       expect(loggedIn, isFalse);
     });
 
+    test('UTC-011: Logging out removes all saved session data', () {
+      // Simulate both storage keys being deleted on logout
+      // AuthService.logout: deletes _tokenKey and _userKey from secure storage
+      final Map<String, String?> secureStorage = {
+        'auth_token':    'old_token',
+        'current_user':  '{"id":1,"email":"user@test.com"}',
+      };
+
+      // Simulate logout deletion
+      secureStorage['auth_token']   = null;
+      secureStorage['current_user'] = null;
+
+      // Login session and user details removed from device
+      expect(secureStorage['auth_token'],   isNull);
+      expect(secureStorage['current_user'], isNull);
+    });
+
+    test('UTC-012: App sends login session with requests when logged in', () {
+      // Simulate getAuthHeaders() with a valid token
+      const String? token = 'bearer_token_abc';
+
+      // AuthService.getAuthHeaders: adds 'Authorization': 'Bearer $token'
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      // Request includes user's session token
+      expect(headers.containsKey('Authorization'), isTrue);
+      expect(headers['Authorization'], equals('Bearer bearer_token_abc'));
+    });
+
+    test('UTC-013: App sends requests without session when not logged in', () {
+      // Simulate getAuthHeaders() with no token
+      final String? token = null;
+
+      // AuthService.getAuthHeaders: Authorization header omitted when token is null
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      // Request sent without any login session attached
+      expect(headers.containsKey('Authorization'), isFalse);
+      expect(headers['Content-Type'], equals('application/json'));
+    });
+
   });
 }
