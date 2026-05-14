@@ -1948,6 +1948,68 @@ async def save_meal_plan(request: MealPlanRequest, user_id: int = Depends(get_cu
         raise HTTPException(status_code=500, detail=f"Failed to save meal plan: {str(e)}")
 
 
+# ==================== RECIPE ENDPOINTS ====================
+def _recipe_row_to_dict(row: asyncpg.Record) -> dict[str, Any]:
+    calories = row["recipe_calories"]
+    return {
+        "recipe_id": row["recipe_id"],
+        "recipe_meal_name": row["recipe_meal_name"],
+        "recipe_ingredients": row["recipe_ingredients"] or "",
+        "recipe_allergy_info": row["recipe_allergy_info"] or "",
+        "recipe_calories": float(calories) if calories is not None else 0.0,
+        "recipe_diet_type": row["recipe_diet_type"] or "",
+        "recipe_instructions": row["recipe_instructions"] or "",
+        "recipe_image_url": row["recipe_image_url"] or "",
+    }
+
+
+@app.get("/api/recipes")
+async def list_recipes():
+    query = """
+        SELECT
+            recipe_id,
+            recipe_meal_name,
+            recipe_ingredients,
+            recipe_allergy_info,
+            recipe_calories,
+            recipe_diet_type,
+            recipe_instructions,
+            recipe_image_url
+        FROM recipe
+        ORDER BY recipe_meal_name
+    """
+
+    async with app.state.db_pool.acquire() as connection:
+        rows = await connection.fetch(query)
+
+    return [_recipe_row_to_dict(row) for row in rows]
+
+
+@app.get("/api/recipes/{recipe_id}")
+async def get_recipe(recipe_id: int):
+    query = """
+        SELECT
+            recipe_id,
+            recipe_meal_name,
+            recipe_ingredients,
+            recipe_allergy_info,
+            recipe_calories,
+            recipe_diet_type,
+            recipe_instructions,
+            recipe_image_url
+        FROM recipe
+        WHERE recipe_id = $1
+    """
+
+    async with app.state.db_pool.acquire() as connection:
+        row = await connection.fetchrow(query, recipe_id)
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    return _recipe_row_to_dict(row)
+
+
 # ==================== WEEKLY PLAN ENDPOINTS ====================
 
 @app.get("/api/weekly-plan")

@@ -28,7 +28,7 @@ services:
       DATABASE_URL: postgresql://fitness:fitness@db:5432/fitnessapp
       DB_CONNECT_TIMEOUT: "90"
     ports:
-      - "5001:5001"
+      - "8000:5001"
     depends_on:
       db:
         condition: service_healthy
