@@ -65,5 +65,43 @@ void main() {
       expect(find.text('Unknown'), findsWidgets);
       expect(find.text('No description available.'), findsOneWidget);
     });
+
+    testWidgets('legs area highlights all legs muscle groups in body diagram',
+        (tester) async {
+      final legsExercise = {
+        'name': 'Squat',
+        'area': 'Legs',
+        'description': 'Leg-focused exercise.',
+        'equipment': ['Barbell'],
+        'video': '',
+      };
+
+      await tester
+          .pumpWidget(_wrap(ExerciseDetailPage(exercise: legsExercise)));
+      await tester.pumpAndSettle();
+
+      final paints = tester
+          .widgetList<CustomPaint>(find.byType(CustomPaint))
+          .where((paint) =>
+              paint.painter != null &&
+              paint.painter.runtimeType.toString() == '_BodyPainter')
+          .toList();
+
+      expect(paints.length, 2);
+
+      for (final paint in paints) {
+        final painter = paint.painter as dynamic;
+        final highlights = (painter.highlights as List<dynamic>)
+            .map((part) => part.toString())
+            .toSet();
+
+        expect(highlights.length, 4);
+        expect(highlights.contains('_BodyPart.quads'), isTrue);
+        expect(highlights.contains('_BodyPart.hamstrings'), isTrue);
+        expect(highlights.contains('_BodyPart.calves'), isTrue);
+        expect(highlights.contains('_BodyPart.glutes'), isTrue);
+        expect(painter.accentColor, const Color(0xFF66BB6A));
+      }
+    });
   });
 }
