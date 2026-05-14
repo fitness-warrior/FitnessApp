@@ -32,11 +32,11 @@ class ChartService {
     final key = 'dashboard_charts_$userEmail';
     final List<String> current = prefs.getStringList(key) ?? [];
     
-    // Format: "name|measure"
     final newEntry = '$chartName|$measure';
     if (!current.contains(newEntry)) {
       current.add(newEntry);
       await prefs.setStringList(key, current);
+      debugPrint('CHART_STORAGE: Saved to $key => $current');
       notifyChartsChanged();
     }
   }
@@ -45,6 +45,7 @@ class ChartService {
     final prefs = await SharedPreferences.getInstance();
     final key = 'dashboard_charts_$userEmail';
     final List<String> saved = prefs.getStringList(key) ?? [];
+    debugPrint('CHART_STORAGE: Loaded from $key => $saved');
     
     return saved.map((s) {
       final parts = s.split('|');
@@ -61,9 +62,56 @@ class ChartService {
     final List<String> current = prefs.getStringList(key) ?? [];
     
     final entry = '$chartName|$measure';
-    current.remove(entry);
-    await prefs.setStringList(key, current);
-    notifyChartsChanged();
+    if (current.contains(entry)) {
+      current.remove(entry);
+      await prefs.setStringList(key, current);
+      debugPrint('CHART_STORAGE: Deleted from $key => $current');
+      notifyChartsChanged();
+    }
+  }
+
+  static Future<void> hideChart(String userEmail, String chartName, String option) async {
+    final prefs = await SharedPreferences.getInstance();
+    final dateKey = DateTime.now().toString().split(' ')[0];
+    final key = 'hidden_charts_${dateKey}_$userEmail';
+    final List<String> current = prefs.getStringList(key) ?? [];
+    
+    final entry = '$chartName|$option';
+    if (!current.contains(entry)) {
+      current.add(entry);
+      await prefs.setStringList(key, current);
+      debugPrint('CHART_STORAGE: Hidden in $key => $current');
+    }
+  }
+
+  static Future<void> unhideChart(String userEmail, String chartName, String option) async {
+    final prefs = await SharedPreferences.getInstance();
+    final dateKey = DateTime.now().toString().split(' ')[0];
+    final key = 'hidden_charts_${dateKey}_$userEmail';
+    final List<String> current = prefs.getStringList(key) ?? [];
+    
+    final entry = '$chartName|$option';
+    if (current.contains(entry)) {
+      current.remove(entry);
+      await prefs.setStringList(key, current);
+      debugPrint('CHART_STORAGE: Unhidden from $key => $current');
+    }
+  }
+
+  static Future<bool> isChartHidden(String userEmail, String chartName, String option) async {
+    final prefs = await SharedPreferences.getInstance();
+    final dateKey = DateTime.now().toString().split(' ')[0];
+    final key = 'hidden_charts_${dateKey}_$userEmail';
+    final List<String> hidden = prefs.getStringList(key) ?? [];
+    
+    // Log the full list once per check to see what's in there
+    debugPrint('CHART_STORAGE: Checking $key => $hidden');
+    
+    final isHidden = hidden.contains('$chartName|$option');
+    if (isHidden) {
+      debugPrint('CHART_STORAGE: Chart $chartName|$option IS HIDDEN for $userEmail');
+    }
+    return isHidden;
   }
 
   static Future<int> getBodyId() async {
