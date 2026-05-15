@@ -120,9 +120,8 @@ void main() {
       home: WorkoutDayView(dayName: 'Monday', routines: mockRoutines),
     ));
 
-    // Simulate back press by finding the PopScope and triggering onPopInvoked
-    final popScope = tester.widget<PopScope>(find.byType(PopScope));
-    popScope.onPopInvokedWithResult!(false, null);
+    // Simulate back press
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
     expect(find.text('Really? Giving up?'), findsOneWidget);
@@ -159,8 +158,7 @@ void main() {
       home: WorkoutDayView(dayName: 'Monday', routines: mockRoutines),
     ));
 
-    final popScope = tester.widget<PopScope>(find.byType(PopScope));
-    popScope.onPopInvokedWithResult!(false, null);
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Yes, I give up'));
@@ -265,11 +263,53 @@ void main() {
     expect(find.text('Rest Time'), findsNothing);
   });
 
-  testWidgets('Empty routines list shows placeholder', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(
-      home: WorkoutDayView(dayName: 'Empty', routines: []),
+  testWidgets('WTC-053: Empty state renders when no workouts are provided', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(      home: WorkoutDayView(dayName: 'Empty', routines: []),
     ));
 
     expect(find.text('No routines for this day.'), findsOneWidget);
+  });
+
+  testWidgets('WTC-052: Exercise List renders with sets and reps correctly', (WidgetTester tester) async {
+    final workoutWithThreeSets = [
+      {
+        'name': 'Power Workout',
+        'exercises': [
+          {
+            'exer_id': 101,
+            'exer_name': 'Deadlift',
+            'exer_type': 'strength',
+            'sets': [
+              {'kg': '100', 'reps': '5'},
+              {'kg': '100', 'reps': '5'},
+              {'kg': '100', 'reps': '5'},
+            ]
+          },
+          {
+            'exer_id': 102,
+            'exer_name': 'Overhead Press',
+            'exer_type': 'strength',
+            'sets': [
+              {'kg': '40', 'reps': '8'},
+              {'kg': '40', 'reps': '8'},
+              {'kg': '40', 'reps': '8'},
+            ]
+          }
+        ]
+      }
+    ];
+
+    await tester.pumpWidget(MaterialApp(
+      home: WorkoutDayView(dayName: 'Legs', routines: workoutWithThreeSets),
+    ));
+
+    expect(find.text('Legs Workout'), findsOneWidget);
+    expect(find.text('Deadlift'), findsOneWidget);
+    expect(find.text('Overhead Press'), findsOneWidget);
+    
+    expect(find.text('kg'), findsNWidgets(6));
+    expect(find.text('reps'), findsNWidgets(6));
+    
+    expect(find.text('0 / 3 sets completed'), findsNWidgets(2));
   });
 }
