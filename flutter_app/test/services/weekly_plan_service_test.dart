@@ -37,7 +37,7 @@ void main() {
 
     test('Test 2: Weekly plan returns nothing when user is not logged in', () {
       // Simulate: no auth token available
-      final String? token = null;
+      const String? token = null;
 
       // WeeklyPlanService checks: if (token == null || token.isEmpty) return null
       Map<String, dynamic>? result;
@@ -87,7 +87,7 @@ void main() {
 
     test('Test 6: Weekly Plan cannot be saved if user not logged in', () {
       // Simulate: no auth token
-      final String? token = null;
+      const String? token = null;
 
       // saveWeeklyPlan checks: if (token == null || token.isEmpty) return false
       bool result = true; // assume success until check

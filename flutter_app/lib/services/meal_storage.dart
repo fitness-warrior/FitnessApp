@@ -48,11 +48,11 @@ class MealStorage {
           }
           return DailyMealPlan.fromMap(planObj);
         } else {
-          print('Failed to fetch meal plan: ${response.statusCode}');
+          // // // print('Failed to fetch meal plan: ${response.statusCode}');
         }
       }
     } catch (e) {
-      print('Error fetching meal plan: $e');
+      // // // print('Error fetching meal plan: $e');
     }
 
     // Fallback to local storage
@@ -95,7 +95,7 @@ class MealStorage {
         throw Exception('Failed to save meal plan: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error saving meal plan to backend: $e');
+      // // // print('Error saving meal plan to backend: $e');
       throw Exception('Error saving meal plan: $e');
     }
   }

@@ -59,7 +59,7 @@ class WorkoutStorage {
         final oldData = Map<String, dynamic>.from(jsonDecode(oldSessionJson));
         return [oldData]; // Migrate single to list temporarily
       } catch (e) {
-        print('Error parsing old session: $e');
+        // // // print('Error parsing old session: $e');
       }
     }
 
@@ -92,7 +92,7 @@ class WorkoutStorage {
       
       return result;
     } catch (e) {
-      print('Error deserializing workout sessions: $e');
+      // // // print('Error deserializing workout sessions: $e');
       return [];
     }
   }

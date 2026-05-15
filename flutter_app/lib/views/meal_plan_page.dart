@@ -25,8 +25,6 @@ class _MealPlanPageState extends State<MealPlanPage> {
   DailyMealPlan _currentPlan = DailyMealPlan(date: DateTime.now());
   bool _loadingPlan = true;
   double _dailyGoal = 2000.0;
-  List<String> _allergies = const [];
-  String _dietPreference = 'non-veg';
 
   Map<MealSlot, List<MealItem>> _demoSlotsFor(DateTime date) => {
         MealSlot.breakfast: [
@@ -109,13 +107,9 @@ class _MealPlanPageState extends State<MealPlanPage> {
   Future<void> _loadDailyGoal() async {
     final profile = await _loadFitnessProfile();
     final goal = _calculateDailyGoal(profile);
-    final allergies = _extractAllergies(profile);
-    final dietPreference = _extractDietPreference(profile);
     if (!mounted) return;
     setState(() {
       _dailyGoal = goal ?? 2000.0;
-      _allergies = allergies;
-      _dietPreference = dietPreference;
     });
   }
 
@@ -292,9 +286,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
     final dietPreference = _extractDietPreference(profile);
     if (mounted) {
       setState(() {
-        _allergies = allergies;
-        _dietPreference = dietPreference;
-      });
+          });
     }
 
     final selectedFood = await Navigator.push<MealItem>(
@@ -372,6 +364,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
         elevation: 0,
         title: HeaderWithDropdown(
           title: 'My Meal',
+          showMenu: false,
           onMenuSelected: (value) {
             final route = '/${value.toLowerCase().replaceAll(' ', '_')}';
             const routes = {'/my_workout', '/my_meal', '/shop'};

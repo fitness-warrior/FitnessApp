@@ -97,7 +97,7 @@ class CollectedData:
         """, (self.body_id, self.body_id, name))
         return self.cur.fetchall()
 
-    def _get_cadio_callories (self):
+    def _get_cadio_calories (self):
         self.cur.execute("""
             SELECT t.train_data, t.train_mins, t.train_effort, bm.body_weight, e.exer_light, e.exer_mid, e.exer_high
             FROM training t
@@ -127,8 +127,8 @@ class CollectedData:
     
 #set a limmit for 7 days but not max how much 1 can do in a day 
     
-    def day_cadio_callories (self):
-        rows = self._get_cadio_callories()
+    def day_cadio_calories (self):
+        rows = self._get_cadio_calories()
         if not rows:
             return []
         
@@ -232,7 +232,7 @@ class CollectedData:
     
     def total_calories_7(self):
         intake_data = self.get_daily_calories_7()
-        exercise_data = self.day_cadio_callories()
+        exercise_data = self.day_cadio_calories()
         
         # Create a dictionary for intake by date
         intake_by_date = {}
@@ -271,5 +271,5 @@ if __name__ == "__main__":
     print(CD.find_body_type())
     print(CD.get_weight())
     
-    print(CD.day_cadio_callories())
+    print(CD.day_cadio_calories())
     

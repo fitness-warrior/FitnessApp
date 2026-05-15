@@ -52,7 +52,10 @@ void main() {
         ),
       );
 
-      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      final buttonFinder = find.byWidgetPredicate((w) => w is ButtonStyleButton);
+      expect(buttonFinder, findsOneWidget);
+      
+      final button = tester.widget<ButtonStyleButton>(buttonFinder);
       final style = button.style!;
       final bgColor = style.backgroundColor?.resolve({});
 

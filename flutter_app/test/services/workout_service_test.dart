@@ -1,12 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
 import 'package:http/http.dart' as http;
 import 'package:fitness_app_flutter/services/workout_service.dart';
 
-import 'package:http/http.dart' as http;
-import 'package:fitness_app_flutter/services/workout_service.dart';
 
 // Manual Mock for http.Client
 class MockHttpClient extends Mock implements http.Client {

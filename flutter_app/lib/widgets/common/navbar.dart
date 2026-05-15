@@ -43,7 +43,7 @@ class AppBottomNavBar extends StatelessWidget {
           color: const Color(0xFF13131F),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, -2),
             ),
@@ -65,7 +65,7 @@ class AppBottomNavBar extends StatelessWidget {
     return Expanded(
       child: InkWell(
         onTap: () => _onTap(context, item.route),
-        splashColor: item.activeColor.withOpacity(0.1),
+        splashColor: item.activeColor.withValues(alpha: 0.1),
         highlightColor: Colors.transparent,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -75,7 +75,7 @@ class AppBottomNavBar extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: selected
-                    ? item.activeColor.withOpacity(0.15)
+                    ? item.activeColor.withValues(alpha: 0.15)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),

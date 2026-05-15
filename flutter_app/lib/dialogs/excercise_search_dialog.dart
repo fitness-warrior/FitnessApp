@@ -224,7 +224,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                       ),
                       child: DropdownButtonFormField<String>(
                         dropdownColor: const Color(0xFF1C1C2E),
-                        value: _selectedArea,
+                        initialValue: _selectedArea,
                         isDense: true,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
@@ -259,7 +259,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                       ),
                       child: DropdownButtonFormField<String>(
                         dropdownColor: const Color(0xFF1C1C2E),
-                        value: _selectedType,
+                        initialValue: _selectedType,
                         isDense: true,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
@@ -327,12 +327,12 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     if (_searchController.text.isEmpty && _recommended.isNotEmpty) {
       return Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
+          const Padding(
+            padding: EdgeInsets.all(12.0),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text('Recommended for you',
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           SizedBox(
@@ -371,11 +371,11 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
                             const SizedBox(height: 6),
                             Text(type, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                             const Spacer(),
-                            Align(
+                            const Align(
                                 alignment: Alignment.bottomRight,
                                 child: Text('Add',
                                     style: TextStyle(
-                                        color: const Color(0xFF4A9FFF),
+                                        color: Color(0xFF4A9FFF),
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12))),
                           ],
@@ -387,7 +387,8 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
               },
             ),
           ),
-          Divider(color: Colors.white.withOpacity(0.05)),
+          // ignore: deprecated_member_use
+          Divider(color: Colors.white.withValues(alpha: 0.05)),
         ],
       );
     }
@@ -493,9 +494,11 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        // ignore: deprecated_member_use
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.4), width: 1),
+        // ignore: deprecated_member_use
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
       ),
       child: Text(
         label,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/chart_service.dart';
+import '../services/auth_service.dart';
 import '../services/streak_service.dart';
 import '../services/workout_storage.dart';
 import '../services/workout_service.dart';
@@ -351,7 +353,28 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
             .timeout(const Duration(seconds: 5));
       } catch (_) {}
 
+      // Grant XP: 10 XP per exercise (Matches WorkoutDayView logic)
+      try {
+        final xpEarned = widget.exercises.length * 10;
+        await UserStatsService.addXP(xpEarned);
+      } catch (_) {}
+
+      // Unhide relevant charts and notify services
+      final user = await AuthService.getCurrentUser();
+      final userEmail = user?['email'] ?? 'unknown';
+
+      for (final exercise in widget.exercises) {
+        final type = exercise['exer_type']?.toString().toLowerCase() ?? 'strength';
+        final chartName = type == 'cardio' ? 'cardio speed' : 'total weight lifted';
+        await ChartService.unhideChart(userEmail, chartName, exercise['exer_name']);
+        
+        // Also unhide the automatic 'Progress' chart for this exercise
+        await ChartService.unhideChart(userEmail, 'Progress', exercise['exer_name']);
+      }
+      ChartService.notifyChartsChanged();
+
       widget.onSuccess({});
+      // ignore: use_build_context_synchronously
       Navigator.pop(context);
 
       if (mounted) {
@@ -474,7 +497,8 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF1C1C2E),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white.withOpacity(0.05)),
+                            // ignore: deprecated_member_use
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

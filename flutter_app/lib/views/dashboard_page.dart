@@ -1,18 +1,27 @@
+import 'dart:async';
 import 'package:fitness_app_flutter/graphs/core.dart';
 import 'package:fitness_app_flutter/views/add_chart_page.dart';
 import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
 import 'package:flutter/material.dart';
 import '../services/chart_service.dart';
 import '../services/user_service.dart';
-import '../widgets/questionnaire/questionnaire_widget.dart';
+import '../services/auth_service.dart';
 import '../widgets/common/navbar.dart';
 
 class _ChartCard {
   final String id;
+  final String name;
+  final String option;
   final Widget Function(VoidCallback onDismissed) builder;
 
-  const _ChartCard({required this.id, required this.builder});
+  const _ChartCard({
+    required this.id,
+    required this.name,
+    required this.option,
+    required this.builder,
+  });
 }
+
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -22,198 +31,230 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPage extends State<DashboardPage> {
-  final double start = 92.1;
-  final double range = 10;
-  List<double> weight = [
-    92.8,
-    92.3,
-    93.4,
-    91.9,
-    91.7,
-    92.3,
-    94.2,
-    93.4,
-  ];
-
-  final double calStart = 0;
-  List<double> cal = [
-    240.1,
-    110.54,
-    -170.3,
-    -220.5,
-    91.7,
-    -70.8,
-    -330.2,
-    -230.1,
-  ];
-  late double maxCalDeviation;
-
-  List<double> target = [20.5, 28.9, 17.4, 24.1];
-
-  List<String> order = [
-    "legs",
-    "back",
-    "core",
-    "arms",
-  ];
-
   late List<_ChartCard> _charts;
+  List<_ChartCard> _allExerciseCharts = [];
+  StreamSubscription? _chartSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _charts = [];
+    _refreshAllCharts();
+
+    _chartSubscription = ChartService.onChartsChanged.listen((_) {
+      _refreshAllCharts();
+    });
+  }
+
+  @override
+  void dispose() {
+    _chartSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshAllCharts() async {
+    final hidden = await ChartService.getHiddenCharts();
+    await _loadAllExerciseCharts(hidden);
+    await _loadManualCharts(hidden);
+  }
 
   Future<int?> _resolveBodyId() async {
     try {
       final profile = await UserService.getUserProfile();
       return profile?['body_id'] as int?;
     } catch (e) {
-      debugPrint('Failed to resolve body_id: $e');
+      return 0;
+    }
+  }
+
+  Future<void> _loadManualCharts(Set<String> hidden) async {
+    final bodyId = await _resolveBodyId() ?? 0;
+    final currentUser = await AuthService.getCurrentUser();
+    final userEmail = currentUser?['email'] ?? 'unknown';
+    final saved = await ChartService.getSavedCharts(userEmail);
+    
+    final List<_ChartCard> updatedManual = [];
+    for (final s in saved) {
+      final name = (s['name'] ?? '').trim();
+      final option = (s['measure'] ?? '').trim();
+      
+      // Check if hidden in the pre-fetched set
+      if (hidden.contains('$name|$option')) {
+        debugPrint('DASHBOARD: Skipping manual chart $name|$option (HIDDEN)');
+        continue;
+      }
+
+      final id = '${name}_$option'.replaceAll(' ', '_').toLowerCase();
+      final card = await _createChartCard(name, option, bodyId, id);
+      if (card != null) updatedManual.add(card);
+    }
+
+    if (mounted) {
+      setState(() {
+        _charts = updatedManual;
+      });
+    }
+  }
+
+  Future<void> _loadAllExerciseCharts(Set<String> hidden) async {
+    try {
+
+      final allProgress = await ChartService.getAllExercisesProgress();
+      final List<_ChartCard> cards = [];
+      
+      final entries = allProgress.entries.toList();
+      for (final entry in entries) {
+        final exName = entry.key.trim();
+        final history = entry.value;
+        debugPrint('DASHBOARD: Processing auto chart for "$exName"');
+
+        // Check if hidden persistently in the pre-fetched set
+        if (hidden.contains('Progress|$exName')) {
+          debugPrint('DASHBOARD: Skipping auto chart Progress|$exName (HIDDEN)');
+          continue;
+        }
+
+        final chartId = 'auto_$exName'.replaceAll(' ', '_').toLowerCase();
+        final values = history.map((e) => (e[1] as num).toDouble()).toList();
+        final dates = history.map((e) => e[0].toString()).toList();
+
+        if (values.isEmpty) continue;
+
+        double minVal = values.reduce((a, b) => a < b ? a : b);
+        double maxVal = values.reduce((a, b) => a > b ? a : b);
+        if (minVal == maxVal) {
+          minVal *= 0.9;
+          maxVal *= 1.1;
+        }
+
+        cards.add(_ChartCard(
+          id: chartId,
+          name: 'Progress',
+          option: exName,
+          builder: (onDismissed) => Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C2E),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 5))
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              height: 250,
+              child: Core.bar(
+                key: ValueKey(chartId),
+                name: exName,
+                dataValues: values,
+                start: (minVal + maxVal) / 2,
+                range: (maxVal - minVal) / 2 + (maxVal * 0.1 + 1),
+                y: 'kg',
+                x: 'date',
+                dates: dates,
+                onDismissed: onDismissed,
+              ),
+            ),
+          ),
+        ));
+      }
+      
+      if (mounted) {
+        setState(() {
+          _allExerciseCharts = cards;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading auto charts: $e');
+    }
+  }
+
+  Future<_ChartCard?> _createChartCard(String chartName, String option, int bodyId, String chartId) async {
+    try {
+      List<double> chartData = [];
+      List<String> dates = [];
+      String yLabel = 'kg';
+
+      if (chartName == 'total weight lifted' || chartName == 'weight personal bests') {
+        final data = await ChartService.getStrengthTotal(option, bodyId);
+        chartData = data.map((e) => (e[1] as num).toDouble()).toList();
+        dates = data.map((item) => item[0].toString()).toList();
+      }
+
+      if (chartData.isEmpty) return null;
+
+      final minVal = chartData.reduce((a, b) => a < b ? a : b);
+      final maxVal = chartData.reduce((a, b) => a > b ? a : b);
+
+      return _ChartCard(
+        id: chartId,
+        name: chartName,
+        option: option,
+        builder: (onDismissed) => Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C2E),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            height: 250,
+            child: Core.bar(
+              key: ValueKey(chartId),
+              name: '$chartName - $option',
+              dataValues: chartData,
+              start: (minVal + maxVal) / 2,
+              range: (maxVal - minVal) / 2 + (maxVal * 0.1 + 1),
+              y: yLabel,
+              x: 'date',
+              dates: dates,
+              onDismissed: onDismissed,
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
       return null;
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    maxCalDeviation = cal.reduce((a, b) => a.abs() > b.abs() ? a : b).abs();
-    _charts = [
-      
-    ];
+  Future<void> _removeChart(String id) async {
+    final currentUser = await AuthService.getCurrentUser();
+    final userEmail = currentUser?['email'] ?? 'unknown';
+
+    // Find chart in both lists to get name and option
+    final chart = [..._charts, ..._allExerciseCharts].firstWhere(
+      (c) => c.id == id,
+      orElse: () => _ChartCard(id: '', name: '', option: '', builder: (_) => Container()),
+    );
+
+    if (chart.id.isNotEmpty) {
+      // Persistently hide
+      debugPrint('DASHBOARD: Removing chart ${chart.name}|${chart.option}');
+      await ChartService.hideChart(userEmail, chart.name, chart.option);
+    }
+
+    if (mounted) {
+      setState(() {
+        _charts.removeWhere((c) => c.id == id);
+        _allExerciseCharts.removeWhere((c) => c.id == id);
+      });
+    }
   }
 
-  void _removeChart(String id) {
-    setState(() {
-      _charts.removeWhere((chart) => chart.id == id);
-    });
-  }
-
-  Future<void> _addChartFromSelection(String chartName, String option, int bodyId) async {
-    try {
-      final chartId = '${chartName}_${option}'.replaceAll(' ', '_').toLowerCase();
-      List<double> chartData = [];
-      List<String> dates = [];
-      String yLabel = '';
-      
-      if (chartName == 'track callories') {
-        try {
-          final data = await ChartService.getDailyCardioCalories(bodyId);
-          chartData = ChartService.extractValues(data);
-          dates = data.map((item) => item[0].toString()).toList();
-          yLabel = 'calories';
-        } catch (e) {
-          debugPrint('Error loading cardio calories: $e');
-          chartData = [100, 150, 200, 175, 225, 250, 180, 200];
-        }
-      } else if (chartName == 'cardio speed') {
-        try {
-          final data = await ChartService.getCardioSpeed(option, bodyId);
-          chartData = ChartService.extractValues(data);
-          dates = data.map((item) => item[0].toString()).toList();
-          yLabel = 'speed (m/min)';
-        } catch (e) {
-          debugPrint('Error loading cardio speed: $e');
-          chartData = [100, 120, 110, 130, 125, 140, 135, 150];
-        }
-      } else if (chartName == 'cardio enduance') {
-        try {
-          final data = await ChartService.getCardioEndurance(option, bodyId);
-          chartData = ChartService.extractValues(data);
-          dates = data.map((item) => item[0].toString()).toList();
-          yLabel = 'distance (km)';
-        } catch (e) {
-          debugPrint('Error loading cardio endurance: $e');
-          chartData = [5.2, 5.5, 5.1, 6.0, 5.8, 6.2, 5.9, 6.5];
-        }
-      } else if (chartName == 'total weight lifted' || chartName == 'weight personal bests') {
-        try {
-          final data = await ChartService.getStrengthTotal(option, bodyId);
-          chartData = ChartService.extractValues(data);
-          dates = data.map((item) => item[0].toString()).toList();
-          yLabel = 'weight (kg)';
-        } catch (e) {
-          debugPrint('Error loading strength total: $e');
-          chartData = [80, 85, 82, 90, 88, 95, 92, 100];
-        }
-      }
-
-      else if (chartName == 'weight') {
-        try {
-          final data = await ChartService.getWeight(bodyId);
-          chartData = ChartService.extractValues(data);
-          dates = data.map((item) => item[0].toString()).toList();
-          yLabel = 'weight (kg)';
-        } catch (e) {
-          debugPrint('Error loading weight: $e');
-          chartData = [0.0, 0.0];
-          dates = ['current', 'past'];
-          yLabel = 'weight (kg)';
-        }
-      } else if (chartName == 'body type') {
-        try {
-          final data = await ChartService.getBodyType(bodyId);
-          chartData = ChartService.extractValues(data);
-          // labels come from data first column
-          final labels = data.map((item) => item[0].toString()).toList();
-
-          final newChart = _ChartCard(
-            id: '${chartId}-pie',
-            builder: (onDismissed) => SizedBox(
-              height: 320,
-              child: Core.pie(
-                key: ValueKey('$chartId-pie'),
-                name: '$chartName',
-                dataValues: chartData,
-                labels: labels,
-                onDismissed: onDismissed,
-              ),
-            ),
-          );
-
-          if (mounted) {
-            setState(() {
-              _charts.add(newChart);
-            });
-          }
-          return;
-        } catch (e) {
-          debugPrint('Error loading body type: $e');
-          chartData = [0, 0, 0, 0];
-          dates = [];
-        }
-      }
-      
-      if (chartData.isEmpty) {
-        chartData = [10, 12, 11, 13, 12, 14, 13, 15];
-      }
-      
-      final minVal = chartData.reduce((a, b) => a < b ? a : b);
-      final maxVal = chartData.reduce((a, b) => a > b ? a : b);
-      
-      final newChart = _ChartCard(
-        id: chartId,
-        builder: (onDismissed) => SizedBox(
-          height: 300,
-          child: Core.bar(
-            key: ValueKey('$chartId-chart'),
-            name: '$chartName - $option',
-            dataValues: chartData,
-            start: minVal * 0.9,
-            range: maxVal * 1.1,
-            y: yLabel,
-            x: 'days',
-            dates: dates,
-            onDismissed: onDismissed,
-          ),
-        ),
-      );
-      
-      if (mounted) {
-        setState(() {
-          _charts.add(newChart);
-        });
-      }
-    } catch (e) {
-      debugPrint('Error adding chart: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding chart: $e')),
-      );
+  Future<void> _triggerAddChart() async {
+    final bodyId = await _resolveBodyId() ?? 0;
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddChart(bodyId: bodyId),
+      ),
+    );
+    if (result != null) {
+      final currentUser = await AuthService.getCurrentUser();
+      final userEmail = currentUser?['email'] ?? 'unknown';
+      await ChartService.saveChart(userEmail, bodyId, result['chartName'], result['option']);
+      _refreshAllCharts();
     }
   }
 
@@ -226,102 +267,70 @@ class _DashboardPage extends State<DashboardPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('My Chart'),
-            SizedBox(height: 2),
-            Text(
-              '<---- Swipe left to delete chart',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
+        title: const Text('Exercise Progress', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           const StreakDisplay(compact: true),
           IconButton(
             icon: const Icon(Icons.add_box),
-            tooltip: 'Add Chart',
-            onPressed: () async {
-              final bodyId = await _resolveBodyId();
-              if (!mounted) return;
-              if (bodyId == null) {
-                final completed = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const QuestionnairePage(isOnboarding: false),
-                  ),
-                );
-                if (!mounted || completed != true) return;
-
-                final refreshedBodyId = await _resolveBodyId();
-                if (!mounted) return;
-                if (refreshedBodyId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Complete your profile first so chart options can load.',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-
-                final refreshedResult = await Navigator.push<Map<String, dynamic>>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddChart(bodyId: refreshedBodyId),
-                  ),
-                );
-                if (refreshedResult != null) {
-                  await _addChartFromSelection(
-                    refreshedResult['chartName'] as String,
-                    refreshedResult['option'] as String,
-                    refreshedBodyId,
-                  );
-                }
-                return;
-              }
-
-              final result = await Navigator.push<Map<String, dynamic>>(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddChart(bodyId: bodyId),
-                ),
-              );
-              if (result != null) {
-                await _addChartFromSelection(
-                  result['chartName'] as String,
-                  result['option'] as String,
-                  bodyId,
-                );
-              }
-            },
+            onPressed: _triggerAddChart,
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Column(
-          children: [
-            if (_charts.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                child: Text(
-                  'No charts yet. Use the Add Chart button to create a new chart.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
+      body: RefreshIndicator(
+        onRefresh: _refreshAllCharts,
+        backgroundColor: const Color(0xFF1C1C2E),
+        color: Colors.greenAccent,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              if (_allExerciseCharts.isNotEmpty) ...[
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Automatic Exercise Charts",
+                    style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                 ),
-              ),
-            for (final chart in _charts) ...[
-              chart.builder(() => _removeChart(chart.id)),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+                for (final chart in _allExerciseCharts) ...[
+                  chart.builder(() => _removeChart(chart.id)),
+                  const SizedBox(height: 16),
+                ],
+              ],
+              if (_charts.isNotEmpty) ...[
+                const Divider(color: Colors.white10, height: 32),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Manual Charts",
+                    style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (final chart in _charts) ...[
+                  chart.builder(() => _removeChart(chart.id)),
+                  const SizedBox(height: 16),
+                ],
+              ],
+              if (_charts.isEmpty && _allExerciseCharts.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 100),
+                    child: Column(
+                      children: [
+                        Icon(Icons.fitness_center, size: 80, color: Colors.white.withValues(alpha: 0.1)),
+                        const SizedBox(height: 16),
+                        const Text('No charts found', style: TextStyle(color: Colors.white54, fontSize: 18)),
+                        const Text('Finish an exercise to see your progress here!', style: TextStyle(color: Colors.white24)),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 80),
             ],
-          ],
+          ),
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),

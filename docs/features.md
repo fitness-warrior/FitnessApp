@@ -13,14 +13,8 @@ synchronised across all devices.
 
 Users input their fitness data including weight, height, activity level and diet. 
 They then select a personal fitness goal such as losing weight, gaining muscle, or 
-maintaining a healthy lifestyle. The system generates a customised fitness plan based 
+maintaining a healthy lifestyle. The system takes the user to the workout screen to generate a customised fitness plan based 
 on this information.
-
-## Notifications
-
-Users receive fitness related notifications including workout reminders, streak updates 
-and meal suggestions. Users have full control over their notifications and can enable 
-or disable specific notification types at any time.
 
 ## Navigation
 
@@ -35,10 +29,7 @@ and uses this data for progress tracking, streak calculation and reward allocati
 
 ## Rewards System
 
-Users are automatically rewarded when they complete a task. Rewards come in the form 
-of avatar items, accessories, cosmetic upgrades and in-game currency. The type and 
-rarity of the reward is determined by the difficulty of the completed task. Rewards 
-are added to the user's inventory immediately and cannot be earned twice for the same task.
+Users are automatically rewarded when they complete a task. Rewards are a XP and levelling based system
 
 ## Progress Tracking
 

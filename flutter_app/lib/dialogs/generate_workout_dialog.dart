@@ -105,6 +105,7 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
       );
 
       // 👉 NOW CLOSE GENERATE DIALOG ONLY ONCE
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pop();
 
       // 👉 THEN RETURN DATA
@@ -161,7 +162,8 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
       icon: Icon(icon, size: 20),
       label: Text(label),
       style: ElevatedButton.styleFrom(
-        backgroundColor: selected ? const Color(0xFF66BB6A).withOpacity(0.2) : const Color(0xFF1C1C2E),
+        // ignore: deprecated_member_use
+        backgroundColor: selected ? const Color(0xFF66BB6A).withValues(alpha: 0.2) : const Color(0xFF1C1C2E),
         foregroundColor: selected ? const Color(0xFF66BB6A) : Colors.grey[400],
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -181,11 +183,11 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
       backgroundColor: const Color(0xFF0D0D14),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: _isLoading
-          ? Padding(
-              padding: const EdgeInsets.all(30),
+          ? const Padding(
+              padding: EdgeInsets.all(30),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   CircularProgressIndicator(color: Color(0xFF4A9FFF)),
                   SizedBox(height: 24),
                   Text(

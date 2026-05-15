@@ -8,6 +8,11 @@ class ExerciseDb {
   ExerciseDb._();
 
   static String get baseUrl => ApiConfig.baseUrl;
+  
+  http.Client? _client;
+  @visibleForTesting
+  set client(http.Client value) => _client = value;
+  http.Client get client => _client ?? http.Client();
 
   Map<String, dynamic> _normalizeRow(Map<String, dynamic> row) {
     final Map<String, dynamic> m = Map<String, dynamic>.from(row);
@@ -49,7 +54,7 @@ class ExerciseDb {
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
 
-      final response = await http.get(
+      final response = await client.get(
         uri,
         headers: {'Content-Type': 'application/json'},
       );
@@ -71,7 +76,7 @@ class ExerciseDb {
 
   Future<Map<String, dynamic>?> getExercise(int id) async {
     try {
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/exercises/$id'),
         headers: {'Content-Type': 'application/json'},
       );
@@ -91,7 +96,7 @@ class ExerciseDb {
 
   Future<List<Map<String, dynamic>>> searchExercises(String query) async {
     try {
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/exercises/search?q=$query'),
         headers: {'Content-Type': 'application/json'},
       );

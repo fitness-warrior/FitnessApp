@@ -43,13 +43,13 @@ void main() {
       MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
 
   setUpAll(() {
-    secureStorageChannel.setMockMethodCallHandler((call) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, (call) async {
       return null;
     });
   });
 
   tearDownAll(() {
-    secureStorageChannel.setMockMethodCallHandler(null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, null);
   });
 
   setUp(() async {

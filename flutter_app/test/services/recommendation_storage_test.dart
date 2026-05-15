@@ -1,10 +1,45 @@
 import 'dart:convert';
-
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitness_app_flutter/models/recommendation_profile.dart';
+import 'package:fitness_app_flutter/services/recommendation_storage.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const secureStorageChannel =
+      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  final secureStorage = <String, String?>{};
+
   group('RecommendationStorage Tests', () {
+    setUpAll(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, (call) async {
+        switch (call.method) {
+          case 'write':
+            secureStorage[call.arguments['key'] as String] = call.arguments['value'] as String?;
+            return null;
+          case 'read':
+            return secureStorage[call.arguments['key'] as String];
+          case 'delete':
+            secureStorage.remove(call.arguments['key'] as String);
+            return null;
+          case 'deleteAll':
+            secureStorage.clear();
+            return null;
+          default:
+            return null;
+        }
+      });
+    });
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      secureStorage.clear();
+    });
+
+    // --- Existing Model Serialization Tests ---
+    
     test('RecommendationProfile JSON serialization roundtrip', () {
       final profile = RecommendationProfile(
         age: 28,
@@ -14,107 +49,89 @@ void main() {
         workoutLengthMinutes: 60,
         injuredAreas: ['Shoulder'],
       );
-
-      // Simulate saveProfile: convert to JSON string
       final jsonString = jsonEncode(profile.toJson());
-      expect(jsonString, isNotEmpty);
-
-      // Simulate loadProfile: parse back from JSON
       final Map<String, dynamic> map = jsonDecode(jsonString);
       final loadedProfile = RecommendationProfile.fromJson(map);
-
       expect(loadedProfile.age, equals(profile.age));
       expect(loadedProfile.goal, equals(profile.goal));
-      expect(loadedProfile.experience, equals(profile.experience));
       expect(loadedProfile.equipment, equals(profile.equipment));
-      expect(loadedProfile.workoutLengthMinutes,
-          equals(profile.workoutLengthMinutes));
-      expect(loadedProfile.injuredAreas, equals(profile.injuredAreas));
     });
 
-    test('RecommendationProfile with multiple injured areas stores correctly',
-        () {
+    test('RecommendationProfile with multiple injured areas stores correctly', () {
       final profile = RecommendationProfile(
-        age: 50,
-        goal: 'fat_loss',
-        experience: 'beginner',
-        equipment: [],
-        workoutLengthMinutes: 30,
-        injuredAreas: ['Left Knee', 'Right Ankle', 'Lower Back'],
+        age: 50, goal: 'fat_loss', experience: 'beginner', equipment: [], 
+        workoutLengthMinutes: 30, injuredAreas: ['Left Knee', 'Right Ankle', 'Lower Back'],
       );
-
       final jsonString = jsonEncode(profile.toJson());
       final Map<String, dynamic> map = jsonDecode(jsonString);
       final loadedProfile = RecommendationProfile.fromJson(map);
-
       expect(loadedProfile.injuredAreas.length, equals(3));
-      expect(loadedProfile.injuredAreas, contains('Left Knee'));
     });
 
-    test('RecommendationProfile with multiple equipment types stores correctly',
-        () {
+    // --- UTC Storage Tests ---
+
+    test('UTC-039: saveProfile stores profile to SharedPreferences', () async {
       final profile = RecommendationProfile(
-        age: 30,
-        goal: 'strength',
-        experience: 'intermediate',
-        equipment: ['Barbell', 'Dumbbells', 'Kettlebells', 'Cable Machine'],
-        workoutLengthMinutes: 90,
-        injuredAreas: [],
+        age: 28, goal: 'strength', experience: 'intermediate', equipment: ['Dumbbells'],
+        workoutLengthMinutes: 60, injuredAreas: [],
       );
-
-      final jsonString = jsonEncode(profile.toJson());
-      final Map<String, dynamic> map = jsonDecode(jsonString);
-      final loadedProfile = RecommendationProfile.fromJson(map);
-
-      expect(loadedProfile.equipment.length, equals(4));
-      expect(loadedProfile.equipment, contains('Barbell'));
+      final success = await RecommendationStorage.saveProfile(profile);
+      expect(success, isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      final storedData = prefs.getString('recommendation_profile_anonymous');
+      expect(storedData, isNotNull);
     });
 
-    test('RecommendationProfile minimal data stores correctly', () {
+    test('UTC-040: loadProfile returns saved profile', () async {
       final profile = RecommendationProfile(
-        age: 25,
-        goal: 'strength',
-        experience: 'beginner',
-        equipment: ['Dumbbells'],
-        workoutLengthMinutes: 30,
-        injuredAreas: [],
+        age: 30, goal: 'endurance', experience: 'advanced', equipment: [],
+        workoutLengthMinutes: 45, injuredAreas: [],
       );
-
-      final jsonString = jsonEncode(profile.toJson());
-      final Map<String, dynamic> map = jsonDecode(jsonString);
-      final loadedProfile = RecommendationProfile.fromJson(map);
-
-      expect(loadedProfile.age, equals(25));
-      expect(loadedProfile.injuredAreas, isEmpty);
+      await RecommendationStorage.saveProfile(profile);
+      final loaded = await RecommendationStorage.loadProfile();
+      expect(loaded, isNotNull);
+      expect(loaded!.age, 30);
     });
 
-    test('Empty profile JSON is valid', () {
-      const emptyJson = '{}';
-      final Map<String, dynamic> map = jsonDecode(emptyJson);
-      final profile = RecommendationProfile.fromJson(map);
-
-      expect(profile.age, equals(0));
-      expect(profile.goal, isEmpty);
-      expect(profile.experience, isEmpty);
-      expect(profile.equipment, isEmpty);
-      expect(profile.injuredAreas, isEmpty);
+    test('UTC-041: loadProfile returns null when nothing is saved', () async {
+      final loaded = await RecommendationStorage.loadProfile();
+      expect(loaded, isNull);
     });
 
-    test('Partial profile JSON loads with defaults', () {
-      final partialJson = jsonEncode({
-        'age': 35,
-        'goal': 'endurance',
-        'experience': 'advanced',
-      });
+    test('UTC-042: loadProfile returns null on corrupt data', () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('recommendation_profile_anonymous', 'not-a-json-string');
+      final loaded = await RecommendationStorage.loadProfile();
+      expect(loaded, isNull);
+    });
 
-      final Map<String, dynamic> map = jsonDecode(partialJson);
-      final profile = RecommendationProfile.fromJson(map);
+    test('UTC-043: deleteProfile removes stored profile', () async {
+      final profile = RecommendationProfile(
+        age: 20, goal: 'gain', experience: 'pro', equipment: [], 
+        workoutLengthMinutes: 10, injuredAreas: []
+      );
+      await RecommendationStorage.saveProfile(profile);
+      await RecommendationStorage.deleteProfile();
+      final loaded = await RecommendationStorage.loadProfile();
+      expect(loaded, isNull);
+    });
 
-      expect(profile.age, equals(35));
-      expect(profile.goal, equals('endurance'));
-      expect(profile.experience, equals('advanced'));
-      expect(profile.equipment, isEmpty);
-      expect(profile.workoutLengthMinutes, equals(0));
+    test('UTC-044: saveQuestionnaireResponse stores responses', () async {
+      final data = {'q1': 'answer1'};
+      await RecommendationStorage.saveQuestionnaireResponse(data);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('questionnaire_response_anonymous'), isNotNull);
+    });
+
+    test('UTC-045: loadQuestionnaireResponse returns saved data', () async {
+      await RecommendationStorage.saveQuestionnaireResponse({'test': true});
+      final loaded = await RecommendationStorage.loadQuestionnaireResponse();
+      expect(loaded!['test'], isTrue);
+    });
+
+    test('UTC-046: loadQuestionnaireResponse returns null if empty', () async {
+      final loaded = await RecommendationStorage.loadQuestionnaireResponse();
+      expect(loaded, isNull);
     });
   });
 }

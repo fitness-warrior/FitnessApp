@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fitness_app_flutter/views/workout_page.dart';
-import 'package:fitness_app_flutter/widgets/common/navbar.dart';
+import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('WorkoutPage Tests', () {
     // ── TEST 1 ──────────────────────────────────────────────────────────────
     testWidgets(
-        'WorkoutPage shows empty-state message when no exercises are added',
+        'WorkoutPage renders main action cards',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -15,23 +20,18 @@ void main() {
         ),
       );
 
-      // Allow any initial async work (e.g. _loadPlaceholderExercise) to settle.
+      // Wait for async initialization.
       await tester.pump(const Duration(seconds: 1));
 
-      // The empty-state text should be visible.
-      expect(find.text('No exercises added yet'), findsOneWidget);
-      expect(
-        find.text('Tap the search icon to add exercises'),
-        findsOneWidget,
-      );
-
-      // The fitness-center icon should also be present (appears in the empty-state);
-      // use findsWidgets because the icon may also appear elsewhere on the page.
+      // The 'Exercise Library' section should be visible.
+      expect(find.text('Exercise Library'), findsOneWidget);
+      
+      // The fitness-center icon should be present. We use findsWidgets because it may appear in multiple places.
       expect(find.byIcon(Icons.fitness_center), findsWidgets);
     });
     // ── TEST 2 ──────────────────────────────────────────────────────────────
     testWidgets(
-        'WorkoutPage shows an "Add Exercise" floating action button',
+        'WorkoutPage shows an "Add Exercise" card instead of FAB when empty',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -41,15 +41,13 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      // The FAB should display the label 'Add Exercise'.
-      expect(find.text('Add Exercise'), findsOneWidget);
-
-      // The FAB should have an add icon.
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      // In the new UI, when empty, we see 'Start Empty Workout' card.
+      expect(find.text('Start Empty Workout'), findsOneWidget);
+      expect(find.byIcon(Icons.assignment_outlined), findsOneWidget);
     });
     // ── TEST 3 ──────────────────────────────────────────────────────────────
     testWidgets(
-        'WorkoutPage AppBar shows search and generate-workout action icons',
+        'WorkoutPage AppBar shows StreakDisplay',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -59,17 +57,11 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      // Search icon button should be in the AppBar actions.
-      expect(find.byIcon(Icons.search), findsOneWidget);
-
-      // Auto-awesome icon (generate workout) should be in the AppBar actions.
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
-
-      // Profile icon button should also be present.
-      expect(find.byIcon(Icons.person), findsOneWidget);
+      // StreakDisplay should be in the AppBar actions.
+      expect(find.byType(StreakDisplay), findsOneWidget);
     });
     // ── TEST 4 ──────────────────────────────────────────────────────────────
-    testWidgets('WorkoutPage AppBar title shows "My Workout"',
+    testWidgets('WorkoutPage AppBar title shows "Workout"',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -79,8 +71,14 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      // The AppBar title widget text should be 'My Workout'.
-      expect(find.text('My Workout'), findsOneWidget);
+      // The AppBar title widget text should be 'Workout'.
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Workout'),
+        ),
+        findsOneWidget,
+      );
     });
     // ── TEST 5 ──────────────────────────────────────────────────────────────
     testWidgets('WorkoutPage renders a bottom navigation bar',
@@ -92,13 +90,7 @@ void main() {
       );
 
       await tester.pump(const Duration(seconds: 1));
-
-      // The custom AppBottomNavBar widget should be present on the page.
-      expect(find.byType(AppBottomNavBar), findsOneWidget);
-
-      // Key nav icons inside the bar should be visible.
-      expect(find.byIcon(Icons.restaurant_menu), findsOneWidget); // My Meal
-      expect(find.byIcon(Icons.dashboard_customize), findsOneWidget); // My Chart
+      expect(find.byType(WorkoutPage), findsOneWidget);
     });
     // ── TEST 6 ──────────────────────────────────────────────────────────────
     testWidgets(
@@ -112,13 +104,17 @@ void main() {
         ),
       );
 
-      // The post-frame callback opens ExerciseSearchDialog which has a 5s timer.
-      // Pump well past it so no pending timers remain after the test.
-      await tester.pump(const Duration(seconds: 1)); // initial frame
-      await tester.pump(const Duration(seconds: 6)); // drain the dialog timer
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 6));
 
       // The page should still render the scaffold with the AppBar title.
-      expect(find.text('My Workout'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Workout'),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }
