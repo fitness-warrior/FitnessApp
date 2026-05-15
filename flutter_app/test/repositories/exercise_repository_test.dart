@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fitness_app_flutter/services/exercise_service.dart';
+import 'package:fitness_app_flutter/repositories/exercise_repository.dart';
 
 class _FakeHttpResult {
   _FakeHttpResult({required this.statusCode, required this.body});
 
   final int statusCode;
-  final dynamic body; // Can be List or Map
+  final dynamic body; 
 }
 
 typedef _ApiResponder = _FakeHttpResult Function(String method, Uri url);
@@ -162,97 +162,17 @@ void main() {
     );
   }
 
-  group('ExerciseService Tests', () {
-    test('ExerciseService base URL is configured', () {
-      final baseUrl = ExerciseService.baseUrl;
-      expect(baseUrl, isNotEmpty);
-      expect(baseUrl, isA<String>());
-    });
-
-    test('UTC-055 Exercise data mapped to correct field names', () async {
-      final rawResponse = [
-        {
-          'id': 5,
-          'name': 'Pull-up',
-          'area': 'Back',
-          'type': 'strength',
-          'description': 'Upper body pulling exercise',
-          'equipment': ['pullup bar']
-        },
-      ];
-
-      final exercises = await runWithFakeHttp(
-        () => ExerciseService.listExercises(),
-        (method, url) {
-          return _FakeHttpResult(statusCode: 200, body: rawResponse);
-        },
-      );
-
-      expect(exercises.length, equals(1));
-      expect(exercises[0]['exer_id'], equals(5));
-      expect(exercises[0]['exer_name'], equals('Pull-up'));
-      expect(exercises[0]['exer_body_area'], equals('Back'));
-      expect(exercises[0]['exer_type'], equals('strength'));
-      expect(exercises[0]['exer_descrip'], equals('Upper body pulling exercise'));
-    });
-
-    test('UTC-056 Equipment list is formatted correctly', () async {
-      final rawResponse = {
-        'id': 1,
-        'name': 'Circuit Training',
-        'equipment': ['Dumbbell', 'Barbell', 'Rope'],
-      };
-
+  group('ExerciseRepository Tests', () {
+    test('UTC-064 Returns nothing when exercise cannot be found anywhere', () async {
       final exercise = await runWithFakeHttp(
-        () => ExerciseService.getExercise(1),
+        () => ExerciseRepository.getExerciseById(999),
         (method, url) {
-          return _FakeHttpResult(statusCode: 200, body: rawResponse);
+          // Always return 404 for both local ExerciseDb and remote ExerciseService
+          return _FakeHttpResult(statusCode: 404, body: {});
         },
       );
 
-      expect(exercise['exer_equip'], equals('Dumbbell, Barbell, Rope'));
-    });
-
-    test('UTC-057 Single Exercise loads correctly', () async {
-      final rawResponse = {
-        'id': 2,
-        'name': 'Bench Press',
-        'area': 'Chest',
-      };
-
-      final exercise = await runWithFakeHttp(
-        () => ExerciseService.getExercise(2),
-        (method, url) {
-          return _FakeHttpResult(statusCode: 200, body: rawResponse);
-        },
-      );
-
-      expect(exercise['exer_name'], equals('Bench Press'));
-      expect(exercise['exer_body_area'], equals('Chest'));
-    });
-
-    test('UTC-058 Not found error when an exercise can\'t be found', () async {
-      await expectLater(
-        () => runWithFakeHttp(
-          () => ExerciseService.getExercise(999),
-          (method, url) {
-            return _FakeHttpResult(statusCode: 404, body: {});
-          },
-        ),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Exercise not found'))),
-      );
-    });
-
-    test('UTC-059 Error when server fails to load exercise', () async {
-      await expectLater(
-        () => runWithFakeHttp(
-          () => ExerciseService.getExercise(2),
-          (method, url) {
-            return _FakeHttpResult(statusCode: 500, body: {});
-          },
-        ),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Failed to load exercise'))),
-      );
+      expect(exercise, isNull);
     });
   });
 }
