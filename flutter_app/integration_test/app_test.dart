@@ -8,7 +8,8 @@ import 'package:fitness_app_flutter/main.dart' as app;
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('crawl tappables and verify app stability', (WidgetTester tester) async {
+  testWidgets('crawl tappables and verify app stability',
+      (WidgetTester tester) async {
     // Launch the app
     app.main();
     await tester.pumpAndSettle();
@@ -33,7 +34,7 @@ void main() {
       'remove',
       'reset',
     };
-    
+
     final skipTypes = {
       '_ModalBarrierGestureDetector',
       'RawGestureDetector',
@@ -75,7 +76,15 @@ void main() {
 
         // If an AlertDialog appears, try to dismiss safely
         if (find.byType(AlertDialog).evaluate().isNotEmpty) {
-          final neutralTexts = ['Cancel', 'Close', 'No', 'Back', 'Dismiss', 'OK', 'Okay'];
+          final neutralTexts = [
+            'Cancel',
+            'Close',
+            'No',
+            'Back',
+            'Dismiss',
+            'OK',
+            'Okay'
+          ];
           bool dismissed = false;
           for (final t in neutralTexts) {
             final tf = find.text(t);
@@ -112,15 +121,16 @@ void main() {
     // Walk through typed finders and tap unique widgets
     for (final finder in typedFinders) {
       if (tapCount >= maxTaps) break;
-      
+
       final matches = finder.evaluate().toList();
       for (var i = 0; i < matches.length; i++) {
         if (tapCount >= maxTaps) break;
-        
+
         final element = matches[i];
         final widget = element.widget;
         final text = extractTextFromElement(element);
-        final descriptor = '${widget.runtimeType} ${text.isEmpty ? '' : '"$text"'}';
+        final descriptor =
+            '${widget.runtimeType} ${text.isEmpty ? '' : '"$text"'}';
         final lc = descriptor.toLowerCase();
 
         // Skip duplicates
