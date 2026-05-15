@@ -65,18 +65,25 @@ void main() {
       expect(result, []);
     });
 
-    test('Normalization handles various field names and equipment formats', () async {
+    test('UTC-055: Exercise data mapped to correct field names from alternative sources', () async {
       db.client = MockClient((request) async {
         final data = [
           {
             'id': 10,
             'title': 'Dips',
             'body_area': 'triceps',
+            'type': 'strength',
+            'description': 'Description here',
+            'video_url': 'http://vid.com',
             'equipment': 'Parallel Bars'
           },
           {
             'exer_id': 11,
             'exer_name': 'Pull-up',
+            'exer_body_area': 'Back',
+            'exer_type': 'strength',
+            'exer_descrip': 'Back exercise',
+            'exer_vid': 'http://pullup.com',
             'exer_equip': 'Bar'
           }
         ];
@@ -85,13 +92,37 @@ void main() {
 
       final result = await db.listExercises();
       
+      // Verify first item mapping
       expect(result[0]['exer_id'], 10);
       expect(result[0]['exer_name'], 'Dips');
       expect(result[0]['exer_body_area'], 'triceps');
+      expect(result[0]['exer_type'], 'strength');
+      expect(result[0]['exer_descrip'], 'Description here');
+      expect(result[0]['exer_vid'], 'http://vid.com');
       expect(result[0]['exer_equip'], 'Parallel Bars');
       
+      // Verify second item mapping
       expect(result[1]['exer_id'], 11);
       expect(result[1]['exer_name'], 'Pull-up');
+      expect(result[1]['exer_body_area'], 'Back');
+    });
+
+    test('UTC-056: Equipment list is formatted correctly from list to readable string', () async {
+      db.client = MockClient((request) async {
+        final data = [
+          {
+            'id': 1,
+            'name': 'Bench Press',
+            'equipment': ['Barbell', 'Dumbbell']
+          }
+        ];
+        return http.Response(jsonEncode(data), 200);
+      });
+
+      final result = await db.listExercises();
+      
+      // Verify equipment list joined into readable string
+      expect(result[0]['exer_equip'], 'Barbell, Dumbbell');
     });
 
     test('listExercises with all params and equipment', () async {
