@@ -115,7 +115,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final selectedButton = tester.widget<ElevatedButton>(
-            find.widgetWithText(ElevatedButton, equip).first);
+            find.ancestor(of: find.text(equip), matching: find.byType(ElevatedButton)).first);
         expect(selectedButton, isNotNull);
 
         // Deselect for next iteration
@@ -189,7 +189,7 @@ void main() {
       await tester.pumpAndSettle();
 
       var selectedButton = tester.widget<ElevatedButton>(
-          find.widgetWithText(ElevatedButton, 'Gym').first);
+          find.ancestor(of: find.text('Gym'), matching: find.byType(ElevatedButton)).first);
       expect(selectedButton, isNotNull);
 
       // Switch to different equipment
@@ -197,7 +197,7 @@ void main() {
       await tester.pumpAndSettle();
 
       selectedButton = tester.widget<ElevatedButton>(
-          find.widgetWithText(ElevatedButton, 'Cardio').first);
+          find.ancestor(of: find.text('Cardio'), matching: find.byType(ElevatedButton)).first);
       expect(selectedButton, isNotNull);
     });
 
@@ -220,7 +220,7 @@ void main() {
 
       // Buttons should be enabled before generation
       final generateButton =
-          tester.widget<ElevatedButton>(find.text('Generate'));
+          tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'Generate'));
       expect(generateButton.onPressed, isNotNull);
     });
 
