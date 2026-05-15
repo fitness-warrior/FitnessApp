@@ -100,3 +100,25 @@ async def test_tc042_complete_task_duplicate(client, mock_conn):
     
     assert response.status_code == 200
     assert response.json()["status"] == "already_completed"
+
+@pytest.mark.asyncio
+async def test_tc043_complete_task_streak_increment(client, mock_conn):
+    """FR16: Completed tasks update streak"""
+    token = create_access_token(data={"sub": "1"})
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    from datetime import date, timedelta
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    
+    # Task exists, Streak exists from yesterday
+    mock_conn.fetchrow.side_effect = [
+        {"name": "Daily Pushups"},
+        {"streak_id": 1, "last_workout_date": yesterday, "current_streak": 5}
+    ]
+    mock_conn.fetchval.return_value = None # Not completed today
+    
+    response = await client.post("/api/user/tasks/102/complete", headers=headers)
+    
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
