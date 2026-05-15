@@ -100,6 +100,25 @@ async def lifespan(app: FastAPI):
                 UNIQUE (user_id, chart_name, option)
             )
         """)
+        # FR13 - Create Custom Tasks
+        await _conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_tasks (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                goal TEXT NOT NULL,
+                frequency TEXT NOT NULL DEFAULT 'daily',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await _conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_task_completions (
+                id SERIAL PRIMARY KEY,
+                task_id INT NOT NULL REFERENCES user_tasks(id) ON DELETE CASCADE,
+                completed_at DATE NOT NULL DEFAULT CURRENT_DATE,
+                UNIQUE (task_id, completed_at)
+            )
+        """)
     try:
         yield
     finally:
@@ -238,6 +257,12 @@ class QuestionnaireRequest(BaseModel):
     injuries: list
     diet_preference: str
     allergies: list
+
+# Task Models
+class TaskRequest(BaseModel):
+    task_name: str | None
+    goal: str | None
+    frequency: str = "daily"
 
 
 def _map_body_goal(goal: str) -> str:
@@ -1025,6 +1050,75 @@ async def unhide_chart(chart_name: str, option: str, user_id: int = Depends(get_
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to unhide chart: {str(e)}")
+
+# ==================== TASK ENDPOINTS ====================
+@app.post("/api/user/tasks")
+async def create_task(request: TaskRequest, user_id: int = Depends(get_current_user_id)):
+    """Create a new custom task (FR13)"""
+    if not request.task_name or not request.task_name.strip():
+        raise HTTPException(status_code=400, detail="Please enter a task name")
+    if not request.goal or not request.goal.strip():
+        raise HTTPException(status_code=400, detail="Please link task to a goal")
+    
+    try:
+        async with app.state.db_pool.acquire() as conn:
+            row = await conn.fetchrow("""
+                INSERT INTO user_tasks (user_id, name, goal, frequency)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id, name, goal, frequency
+            """, user_id, request.task_name.strip(), request.goal.strip(), request.frequency)
+            return dict(row)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
+
+@app.put("/api/user/tasks/{task_id}")
+async def update_task(task_id: int, request: TaskRequest, user_id: int = Depends(get_current_user_id)):
+    """Update an existing task (FR14)"""
+    try:
+        async with app.state.db_pool.acquire() as conn:
+            # Verify ownership
+            existing = await conn.fetchval("SELECT id FROM user_tasks WHERE id = $1 AND user_id = $2", task_id, user_id)
+            if not existing:
+                raise HTTPException(status_code=404, detail="Task not found")
+            
+            await conn.execute("""
+                UPDATE user_tasks
+                SET name = $1, goal = $2, frequency = $3
+                WHERE id = $4
+            """, request.task_name.strip(), request.goal.strip(), request.frequency, task_id)
+            return {"status": "success"}
+    except HTTPException: raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update task: {str(e)}")
+
+@app.post("/api/user/tasks/{task_id}/complete")
+async def complete_task(task_id: int, user_id: int = Depends(get_current_user_id)):
+    """Mark task as complete today (FR15)"""
+    try:
+        async with app.state.db_pool.acquire() as conn:
+            # 1. Verify ownership
+            task = await conn.fetchrow("SELECT name FROM user_tasks WHERE id = $1 AND user_id = $2", task_id, user_id)
+            if not task:
+                raise HTTPException(status_code=404, detail="Task not found")
+            
+            # 2. Prevent double completion
+            already_done = await conn.fetchval("SELECT id FROM user_task_completions WHERE task_id = $1 AND completed_at = CURRENT_DATE", task_id)
+            if already_done:
+                return {"status": "already_completed", "message": "Task already marked complete today"}
+
+            # 3. Record completion
+            await conn.execute("INSERT INTO user_task_completions (task_id) VALUES ($1)", task_id)
+            
+            # 4. Update Daily Streak (Basic for now, FR16 will refine)
+            streak = await conn.fetchrow("SELECT streak_id FROM user_streak WHERE user_id = $1", user_id)
+            today = date.today()
+            if not streak:
+                await conn.execute("INSERT INTO user_streak (user_id, current_streak, last_workout_date, streak_start_date) VALUES ($1, 1, $2, $2)", user_id, today)
+            
+            return {"status": "success", "message": f"Task '{task['name']}' completed!"}
+    except HTTPException: raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to complete task: {str(e)}")
 
 @app.get("/api/workouts/{workout_id}")
 async def get_workout(
