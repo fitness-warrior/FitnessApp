@@ -139,6 +139,10 @@ class StreakService {
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
+  static http.Client? _client;
+  @visibleForTesting
+  static set client(http.Client value) => _client = value;
+  static http.Client get client => _client ?? http.Client();
 
   /// Update streak after a workout is completed.
   /// Always updates locally first so the counter works offline.
@@ -156,7 +160,7 @@ class StreakService {
   static Future<void> _syncStreakToApi() async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      await http
+      await client
           .post(Uri.parse('$baseUrl/streak/update'), headers: headers)
           .timeout(const Duration(seconds: 5));
     } catch (_) {
@@ -169,7 +173,7 @@ class StreakService {
   static Future<Map<String, dynamic>> getStreak() async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      final response = await http
+      final response = await client
           .get(Uri.parse('$baseUrl/streak'), headers: headers)
           .timeout(const Duration(seconds: 4));
 
