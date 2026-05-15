@@ -50,5 +50,29 @@ void main() {
       final workouts = await WorkoutStorage.getWorkouts();
       expect(workouts, []);
     });
+
+    test('deleteWorkout removes correct workout according to index', () async {
+      await WorkoutStorage.saveWorkout([], workoutName: 'Workout 1');
+      await WorkoutStorage.saveWorkout([], workoutName: 'Workout 2');
+      await WorkoutStorage.saveWorkout([], workoutName: 'Workout 3');
+      
+      // Reversed list is [Workout 3, Workout 2, Workout 1]
+      // deleteWorkout(0) should remove Workout 3 (the newest)
+      await WorkoutStorage.deleteWorkout(0);
+      
+      final workouts = await WorkoutStorage.getWorkouts();
+      expect(workouts.length, 2);
+      expect(workouts[0]['name'], 'Workout 2');
+      expect(workouts[1]['name'], 'Workout 1');
+    });
+
+    test('clearAllCurrentWorkoutSessions removes session data', () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(sessionKey, 'some session data');
+      
+      await WorkoutStorage.clearAllCurrentWorkoutSessions();
+      
+      expect(prefs.getString(sessionKey), isNull);
+    });
   });
 }
