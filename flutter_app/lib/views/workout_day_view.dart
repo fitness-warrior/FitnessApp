@@ -488,6 +488,10 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                       final exercise = exercises[eIndex];
                       final exerName =
                           exercise['exer_name'] ?? 'Unknown Exercise';
+                      final exerType =
+                          exercise['exer_type']?.toString().toLowerCase() ??
+                              'strength';
+                      final isExerciseCardio = exerType == 'cardio';
                       final setsRaw = exercise['sets'];
                       final sets = setsRaw is List ? setsRaw : [];
 
@@ -562,9 +566,6 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                                   _completedSets[rIndex]![eIndex]![sIndex];
                               final controllers =
                                   _setControllers[rIndex]![eIndex]![sIndex];
-                              final isCardio =
-                                  controllers['time']!.text.isNotEmpty ||
-                                      controllers['distance']!.text.isNotEmpty;
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
@@ -587,7 +588,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                                       ),
                                     ),
                                     const SizedBox(width: 16),
-                                    if (isCardio) ...[
+                                    if (isExerciseCardio) ...[
                                       Expanded(
                                           child: _buildCompactTextField(
                                               controller: controllers['time']!,
@@ -616,8 +617,12 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                                     ],
                                     const SizedBox(width: 16),
                                     GestureDetector(
-                                      onTap: () => _toggleSet(rIndex, eIndex,
-                                          sIndex, isSetComplete, isCardio),
+                                      onTap: () => _toggleSet(
+                                          rIndex,
+                                          eIndex,
+                                          sIndex,
+                                          isSetComplete,
+                                          isExerciseCardio),
                                       child: AnimatedContainer(
                                         duration:
                                             const Duration(milliseconds: 200),
