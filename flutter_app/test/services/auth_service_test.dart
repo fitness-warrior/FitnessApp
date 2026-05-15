@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
+import 'dart:typed_data';
 import 'package:fitness_app_flutter/services/auth_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,7 +19,7 @@ typedef _AuthResponder = _FakeHttpResult Function(
   String body,
 );
 
-}
+
 
 class _FakeHttpClient implements HttpClient {
   _FakeHttpClient(this.responder);
@@ -39,11 +39,12 @@ class _FakeHttpClient implements HttpClient {
 }
 
 class _FakeHttpClientRequest implements HttpClientRequest {
-  _FakeHttpClientRequest(this.method, this.url, this.responder);
+  _FakeHttpClientRequest(this.method, this.uri, this.responder);
 
+  @override
   final String method;
   @override
-  final Uri url;
+  final Uri uri;
   final _AuthResponder responder;
   final BytesBuilder _bytes = BytesBuilder();
   final _FakeHttpHeaders _headers = _FakeHttpHeaders();
@@ -65,7 +66,7 @@ class _FakeHttpClientRequest implements HttpClientRequest {
 
   @override
   Future<HttpClientResponse> close() async {
-    final response = responder(method, url, utf8.decode(_bytes.takeBytes()));
+    final response = responder(method, uri, utf8.decode(_bytes.takeBytes()));
     return _FakeHttpClientResponse(response.statusCode, response.body);
   }
 

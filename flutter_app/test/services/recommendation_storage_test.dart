@@ -156,7 +156,7 @@ void main() {
       expect(result, isTrue);
 
       final prefs = await SharedPreferences.getInstance();
-      final key = 'recommendation_profile_anonymous'; 
+      const key = 'recommendation_profile_anonymous'; 
       expect(prefs.containsKey(key), isTrue);
     });
 
@@ -223,7 +223,7 @@ void main() {
       expect(result, isTrue);
 
       final prefs = await SharedPreferences.getInstance();
-      final key = 'questionnaire_response_anonymous';
+      const key = 'questionnaire_response_anonymous';
       expect(prefs.containsKey(key), isTrue);
     });
 

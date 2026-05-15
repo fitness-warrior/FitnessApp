@@ -7,6 +7,8 @@ import 'package:fitness_app_flutter/services/streak_service.dart';
 import 'package:fitness_app_flutter/services/user_stats_service.dart';
 import 'package:http/testing.dart';
 import 'package:http/http.dart' as http;
+import 'package:fitness_app_flutter/models/daily_meal_plan.dart';
+import 'package:fitness_app_flutter/models/meal_item.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +23,13 @@ void main() {
       await tester.pumpWidget(const MaterialApp(
         home: WorkoutDayView(
           dayName: 'Monday',
-          routineName: 'Push Day',
-          exercises: [
-            {'exer_name': 'Bench Press', 'sets': 1, 'reps': 10},
+          routines: [
+            {
+              'routine_name': 'Push Day',
+              'exercises': [
+                {'exer_name': 'Bench Press', 'sets': 1, 'reps': 10}
+              ]
+            }
           ],
         ),
       ));
@@ -55,13 +61,12 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: MealSlotCard(
-            slotType: 'Breakfast',
-            recipeName: 'Oatmeal',
-            calories: 350,
-            recipeId: 1,
-            isLogged: false,
-            onLogMeal: () {},
-            onSwapMeal: () {},
+            slot: MealSlot.breakfast,
+            items: const [
+              MealItem(id: 1, name: 'Oatmeal', type: 'Carbs', calories: 350)
+            ],
+            onDeleteFood: (index) {},
+            onAddFood: () {},
           ),
         ),
       ));
@@ -71,10 +76,6 @@ void main() {
       expect(find.text('Breakfast'), findsOneWidget);
       expect(find.text('Oatmeal'), findsOneWidget);
       expect(find.text('350 kcal'), findsOneWidget);
-
-      // Verify buttons
-      expect(find.text('Log'), findsOneWidget);
-      expect(find.text('Swap'), findsOneWidget);
     });
   });
 }

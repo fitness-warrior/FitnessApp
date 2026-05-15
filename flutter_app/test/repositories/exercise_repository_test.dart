@@ -31,10 +31,11 @@ class _FakeHttpClient implements HttpClient {
 }
 
 class _FakeHttpClientRequest implements HttpClientRequest {
-  _FakeHttpClientRequest(this.method, this.url, this.responder);
+  _FakeHttpClientRequest(this.method, this.uri, this.responder);
+  @override
   final String method;
   @override
-  final Uri url;
+  final Uri uri;
   final _ApiResponder responder;
   final _FakeHttpHeaders _headers = _FakeHttpHeaders();
 
@@ -43,7 +44,7 @@ class _FakeHttpClientRequest implements HttpClientRequest {
 
   @override
   Future<HttpClientResponse> close() async {
-    final response = responder(method, url);
+    final response = responder(method, uri);
     return _FakeHttpClientResponse(response.statusCode, response.body);
   }
 
