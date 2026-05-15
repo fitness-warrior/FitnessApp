@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from pydantic import BaseModel
+from asyncio import ensure_future
 
 from database.exercise import ExerciseSelection
 from database.chart_data import CollectedData
