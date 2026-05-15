@@ -596,7 +596,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                  border:
+                      Border.all(color: Colors.orange.withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -711,195 +712,112 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _openRoutineDetailsDialog(
-      Map<String, dynamic> workout, String routineName) {
-    final exercises = workout['exercises'];
-    final exerciseList = exercises is List ? exercises : [];
-    final dateText = workout['date']?.toString() ?? 'Unknown date';
-
+    Map<String, dynamic> workout,
+    String routineName,
+  ) {
+    final originalIdx = _savedWorkouts.indexOf(workout);
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF0D0D14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        insetPadding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C2E),
+        title: Text(routineName, style: const TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: double.maxFinite,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1C1C2E),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+              Text(
+                workout['date']?.toString() ?? '',
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              ...((workout['exercises'] as List? ?? []).map((e) {
+                final name = e['exer_name']?.toString() ?? 'Exercise';
+                final sets = (e['sets'] as List? ?? []);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    '$name — ${sets.length} set(s)',
+                    style: TextStyle(color: Colors.grey[300], fontSize: 13),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$routineName Details',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Date: $dateText',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'EXERCISES',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF4A9FFF),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    exerciseList.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              'No exercises recorded',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          )
-                        : Column(
-                            children: List.generate(exerciseList.length, (idx) {
-                              final exercise = exerciseList[idx];
-                              final exerName =
-                                  exercise['exer_name'] ?? 'Unknown Exercise';
-                              final sets = exercise['sets'];
-                              final setsList = sets is List ? sets : [];
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1C1C2E),
-                                  borderRadius: BorderRadius.circular(16),
-<<<<<<< HEAD
-                                  border: Border.all(
-                                      color: Colors.white.withOpacity(0.05)),
-=======
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
->>>>>>> 7063d0a72c4a30019032b2b06ed3ee7c38ed9b59
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      exerName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    ...List.generate(setsList.length, (setIdx) {
-                                      final set = setsList[setIdx];
-                                      final kg = set['kg']?.toString() ?? '0';
-                                      final reps =
-                                          set['reps']?.toString() ?? '0';
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 6),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2),
-                                              decoration: BoxDecoration(
-<<<<<<< HEAD
-                                                color: Colors.white
-                                                    .withOpacity(0.05),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-=======
-                                                color: Colors.white.withValues(alpha: 0.05),
-                                                borderRadius: BorderRadius.circular(4),
->>>>>>> 7063d0a72c4a30019032b2b06ed3ee7c38ed9b59
-                                              ),
-                                              child: Text(
-                                                'Set ${setIdx + 1}',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.grey[400],
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Text(
-                                              '$reps × ${kg}kg',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1C1C2E),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-<<<<<<< HEAD
-                            side: BorderSide(
-                                color: Colors.white.withOpacity(0.1)),
-=======
-                            side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
->>>>>>> 7063d0a72c4a30019032b2b06ed3ee7c38ed9b59
-                          ),
-                        ),
-                        child: const Text('Close'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                );
+              }).toList()),
             ],
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (!mounted) return;
+              // Load workout into tracker
+              setState(() {
+                _workoutExercises = (workout['exercises'] as List? ?? [])
+                    .cast<Map<String, dynamic>>()
+                    .map((e) => _normalizeExercise(e))
+                    .toList();
+                _setControllers.clear();
+                for (var i = 0; i < _workoutExercises.length; i++) {
+                  final exer = _workoutExercises[i];
+                  final isCardio =
+                      exer['exer_type']?.toString().toLowerCase() == 'cardio';
+                  final sets = (workout['exercises'] as List? ?? [])
+                          .asMap()
+                          .containsKey(i)
+                      ? ((workout['exercises'] as List)[i]['sets'] as List? ??
+                          [])
+                      : [];
+                  _setControllers[i] = sets.isNotEmpty
+                      ? sets.map((s) {
+                          final map =
+                              s is Map ? Map<String, dynamic>.from(s) : {};
+                          return isCardio
+                              ? {
+                                  'time': _createAutoSaveController(
+                                      initialText:
+                                          map['time']?.toString() ?? ''),
+                                  'distance': _createAutoSaveController(
+                                      initialText:
+                                          map['distance']?.toString() ?? ''),
+                                }
+                              : {
+                                  'kg': _createAutoSaveController(
+                                      initialText: map['kg']?.toString() ?? ''),
+                                  'reps': _createAutoSaveController(
+                                      initialText:
+                                          map['reps']?.toString() ?? ''),
+                                };
+                        }).toList()
+                      : [
+                          isCardio
+                              ? {
+                                  'time': _createAutoSaveController(),
+                                  'distance': _createAutoSaveController(),
+                                }
+                              : {
+                                  'kg': _createAutoSaveController(),
+                                  'reps': _createAutoSaveController(),
+                                }
+                        ];
+                }
+              });
+              _saveCurrentWorkoutSession();
+            },
+            child: const Text('Load into Tracker'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (originalIdx != -1) _deleteRoutine(originalIdx);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
@@ -1650,7 +1568,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
-<<<<<<< HEAD
                                               color: const Color(0xFF7C5CBF)
                                                   .withOpacity(0.25),
                                               borderRadius:
@@ -1659,11 +1576,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                                   color:
                                                       const Color(0xFF7C5CBF),
                                                   width: 1),
-=======
-                                              color: const Color(0xFF7C5CBF).withValues(alpha: 0.25),
-                                              borderRadius: BorderRadius.circular(20),
-                                              border: Border.all(color: const Color(0xFF7C5CBF), width: 1),
->>>>>>> 7063d0a72c4a30019032b2b06ed3ee7c38ed9b59
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
