@@ -1,9 +1,29 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitness_app_flutter/models/recommendation_profile.dart';
+import 'package:fitness_app_flutter/services/recommendation_storage.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const secureStorageChannel =
+      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(secureStorageChannel, (call) async {
+      return null;
+    });
+  });
+
+  tearDownAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(secureStorageChannel, null);
+  });
+
   group('RecommendationStorage Tests', () {
     test('RecommendationProfile JSON serialization roundtrip', () {
       final profile = RecommendationProfile(
@@ -115,6 +135,77 @@ void main() {
       expect(profile.experience, equals('advanced'));
       expect(profile.equipment, isEmpty);
       expect(profile.workoutLengthMinutes, equals(0));
+    });
+  });
+
+  group('RecommendationStorage SharedPreferences Tests', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test('saveProfile stores profile', () async {
+      final profile = RecommendationProfile(
+        age: 25,
+        goal: 'strength',
+        experience: 'beginner',
+        equipment: [],
+        workoutLengthMinutes: 30,
+        injuredAreas: [],
+      );
+      final result = await RecommendationStorage.saveProfile(profile);
+      expect(result, isTrue);
+
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'recommendation_profile_anonymous'; 
+      expect(prefs.containsKey(key), isTrue);
+    });
+
+    test('loadProfile returns saved profile', () async {
+      final profile = RecommendationProfile(
+        age: 30,
+        goal: 'endurance',
+        experience: 'intermediate',
+        equipment: ['Dumbbells'],
+        workoutLengthMinutes: 45,
+        injuredAreas: [],
+      );
+      await RecommendationStorage.saveProfile(profile);
+
+      final loaded = await RecommendationStorage.loadProfile();
+      expect(loaded, isNotNull);
+      expect(loaded!.age, equals(30));
+      expect(loaded.goal, equals('endurance'));
+    });
+
+    test('loadProfile returns null when nothing is saved', () async {
+      final loaded = await RecommendationStorage.loadProfile();
+      expect(loaded, isNull);
+    });
+
+    test('loadProfile returns null on corrupt data', () async {
+      SharedPreferences.setMockInitialValues({
+        'recommendation_profile_anonymous': 'this is not valid json',
+      });
+      final loaded = await RecommendationStorage.loadProfile();
+      expect(loaded, isNull);
+    });
+
+    test('deleteProfile removes stored profile', () async {
+      final profile = RecommendationProfile(
+        age: 25,
+        goal: 'strength',
+        experience: 'beginner',
+        equipment: [],
+        workoutLengthMinutes: 30,
+        injuredAreas: [],
+      );
+      await RecommendationStorage.saveProfile(profile);
+      
+      final deleted = await RecommendationStorage.deleteProfile();
+      expect(deleted, isTrue);
+
+      final loaded = await RecommendationStorage.loadProfile();
+      expect(loaded, isNull);
     });
   });
 }
