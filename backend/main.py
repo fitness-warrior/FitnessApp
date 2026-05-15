@@ -4,7 +4,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 import asyncio
 import time
-from datetime import date
+from datetime import date, timedelta
 import asyncpg
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Header
@@ -1109,11 +1109,34 @@ async def complete_task(task_id: int, user_id: int = Depends(get_current_user_id
             # 3. Record completion
             await conn.execute("INSERT INTO user_task_completions (task_id) VALUES ($1)", task_id)
             
-            # 4. Update Daily Streak (Basic for now, FR16 will refine)
-            streak = await conn.fetchrow("SELECT streak_id FROM user_streak WHERE user_id = $1", user_id)
+            # 4. Update Daily Streak (FR16)
+            streak = await conn.fetchrow("SELECT streak_id, last_workout_date, current_streak FROM user_streak WHERE user_id = $1", user_id)
             today = date.today()
+            
             if not streak:
-                await conn.execute("INSERT INTO user_streak (user_id, current_streak, last_workout_date, streak_start_date) VALUES ($1, 1, $2, $2)", user_id, today)
+                await conn.execute("""
+                    INSERT INTO user_streak (user_id, current_streak, last_workout_date, streak_start_date)
+                    VALUES ($1, 1, $2, $2)
+                """, user_id, today)
+            else:
+                last_date = streak['last_workout_date']
+                if last_date != today:
+                    if last_date == today - timedelta(days=1):
+                        # Consecutive day
+                        await conn.execute("""
+                            UPDATE user_streak 
+                            SET current_streak = current_streak + 1, 
+                                last_workout_date = $1 
+                            WHERE user_id = $2
+                        """, today, user_id)
+                    else:
+                        # Gap in activity - reset streak to 1
+                        await conn.execute("""
+                            UPDATE user_streak 
+                            SET current_streak = 1, 
+                                last_workout_date = $1 
+                            WHERE user_id = $2
+                        """, today, user_id)
             
             return {"status": "success", "message": f"Task '{task['name']}' completed!"}
     except HTTPException: raise
