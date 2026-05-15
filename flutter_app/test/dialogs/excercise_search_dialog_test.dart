@@ -87,7 +87,7 @@ void main() {
         (WidgetTester tester) async {
       await openDialog(tester);
 
-      final dropdowns = find.byType(DropdownButtonFormField);
+      final dropdowns = find.byType(DropdownButtonFormField<String>);
       expect(dropdowns, findsWidgets);
 
       await tester.tap(dropdowns.first);
@@ -105,7 +105,7 @@ void main() {
     testWidgets('type dropdown opens options', (WidgetTester tester) async {
       await openDialog(tester);
 
-      final dropdowns = find.byType(DropdownButtonFormField);
+      final dropdowns = find.byType(DropdownButtonFormField<String>);
       await tester.tap(dropdowns.at(1));
       await tester.pumpAndSettle();
 
@@ -119,14 +119,14 @@ void main() {
         (WidgetTester tester) async {
       await openDialog(tester);
 
-      final dropdowns = find.byType(DropdownButtonFormField);
+      final dropdowns = find.byType(DropdownButtonFormField<String>);
       await tester.tap(dropdowns.first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Chest').last);
       await tester.pumpAndSettle();
 
       expect(find.byType(Dialog), findsOneWidget);
-      expect(find.byType(DropdownButtonFormField), findsWidgets);
+      expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
     });
 
     testWidgets('search field updates controller text',
