@@ -37,3 +37,47 @@ async def test_tc042_browse_meals(client, mock_conn):
     data = response.json()
     assert len(data) == 2
     assert data[0]["recipe_meal_name"] == "Chicken Salad"
+
+@pytest.mark.asyncio
+async def test_tc043_save_meal_plan(client, mock_conn):
+    """FR33 - Browse and Choose Meals: Save meal plan for a date"""
+    token = create_access_token(data={"sub": "1"})
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    mock_conn.fetchval.return_value = None # No existing plan
+    
+    payload = {
+        "plan_date": "2024-05-20",
+        "plan": {
+            "breakfast": {"name": "Chicken Salad", "recipe_id": 1},
+            "lunch": {"name": "Beef Tacos", "recipe_id": 2},
+            "dinner": {"name": "Chicken Salad", "recipe_id": 1}
+        }
+    }
+    
+    response = await client.post("/api/meals", json=payload, headers=headers)
+    
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+
+@pytest.mark.asyncio
+async def test_tc044_update_meal_plan(client, mock_conn):
+    """FR33 - Browse and Choose Meals: Update existing meal plan"""
+    token = create_access_token(data={"sub": "1"})
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    mock_conn.fetchval.return_value = 500 # Existing plan ID
+    
+    payload = {
+        "plan_date": "2024-05-20",
+        "plan": {
+            "breakfast": {"name": "Updated Salad", "recipe_id": 1},
+            "lunch": {"name": "Beef Tacos", "recipe_id": 2},
+            "dinner": {"name": "Chicken Salad", "recipe_id": 1}
+        }
+    }
+    
+    response = await client.post("/api/meals", json=payload, headers=headers)
+    
+    assert response.status_code == 200
+    assert response.json()["success"] is True
