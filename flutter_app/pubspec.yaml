@@ -23,9 +23,6 @@ flutter:
 
   assets:
     - assets/images/
-    - images/game_costume/           # costume reward images (earth, fire, etc.)
-    - images/game_costume/game_chars/ # boss sprites (will add later)
-    - images/game_costume/backgrounds/          # City1-4 background PNGs
 
 dev_dependencies:
   flutter_test:
