@@ -1,9 +1,15 @@
 from login import CONN
+from passlib.context import CryptContext
+
+pwd = CryptContext(schemes=["argon2"], deprecated="auto")
+
 
 class DatabaseSQL():
     def __init__(self,CONN):
         self.conn = CONN
         self.cur = self.conn.cursor()
+    
+
         
     def create_type(self):
         self.cur.execute("""
@@ -51,7 +57,9 @@ CREATE TABLE users (
     game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
     user_name VARCHAR(40) NOT NULL,
     user_surname VARCHAR(40) NOT NULL,
-    user_email VARCHAR(40) UNIQUE NOT NULL
+    user_email VARCHAR(40) UNIQUE NOT NULL,
+    user_password TEXT DEFAULT NULL
+
 );
 
 ---------------- EQUIPMENT ----------------
@@ -236,9 +244,10 @@ CREATE TABLE collection_foods (
 
         """)
         self.conn.commit()
-    
+
     def add_data(self):
         self.cur.execute("""
+                         
 INSERT INTO game_char
 (game_char_level, game_char_colour, game_char_type,
  game_char_hp, game_char_attack, game_char_speed)
@@ -263,6 +272,8 @@ VALUES
 (6, 'Lisa', 'Garcia', 'lisa.garcia@email.com'),
 (7, 'James', 'Miller', 'james.miller@email.com'),
 (8, 'Anna', 'Davis', 'anna.davis@email.com');
+                         
+
 
 INSERT INTO equipment (equip_id, equipment) VALUES
 (1,'Dumbbells'),
@@ -692,14 +703,61 @@ INSERT INTO food (food_name, food_type, food_calories, food_fat, food_fibre, foo
         """)
         self.conn.commit()
 
-    def delete_all(self):
+def add_seed_passwords(self):
+        emails = [
+            "john.smith@email.com",
+            "sarah.j@email.com",
+            "mike.w@email.com",
+            "emma.brown@email.com",
+            "david.jones@email.com",
+            "lisa.garcia@email.com",
+            "james.miller@email.com",
+            "anna.davis@email.com",
+        ]
+
+        for email in emails:
+            hashed_password = pwd.hash("password")
+            self.cur.execute(
+                """
+                UPDATE users
+                SET user_password = %s
+                WHERE user_email = %s
+                """,
+                (hashed_password, email),
+            )
+
+        self.conn.commit()
+
+def check_password(self, email, plain_password):
+        self.cur.execute(
+            """
+            SELECT user_password
+            FROM users
+            WHERE user_email = %s
+            """,
+            (email,),
+        )
+
+        row = self.cur.fetchone()
+
+        if row is None:
+            return False
+
+        stored_hash = row[0]
+
+        if stored_hash is None:
+            return False
+
+        return pwd.verify(plain_password, stored_hash)
+
+def delete_all(self):
         self.cur.execute("""
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
-                         """)
+        """)
         self.conn.commit()
-        
-    def run(self):
+
+def run(self):
         try:
             self.delete_all()
             self.create_type()
@@ -713,3 +771,8 @@ CREATE SCHEMA public;
 if __name__ == "__main__":
     test = DatabaseSQL(CONN)
     test.run()
+
+    if test.check_password("john.smith@email.com", "password"):
+        print("Login successful")
+    else:
+        print("Wrong password")

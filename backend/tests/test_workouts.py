@@ -1,5 +1,5 @@
 import pytest
-from auth import create_access_token
+from flutter_app.python.auth import create_access_token
 from unittest.mock import AsyncMock, MagicMock
 
 # ==================== FR24: STORE FITNESS DATA ====================

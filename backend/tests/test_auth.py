@@ -1,5 +1,5 @@
 import pytest
-from auth import hash_password
+from flutter_app.python.auth import hash_password
 
 # ==================== FR1: ACCOUNT CREATION TESTS ====================
 
