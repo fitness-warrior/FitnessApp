@@ -208,4 +208,41 @@ void main() {
       expect(loaded, isNull);
     });
   });
+
+  group('RecommendationStorage Questionnaire Tests', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test('saveQuestionnaireResponse stores responses', () async {
+      final data = {
+        'age': 25,
+        'goal': 'gain_muscle'
+      };
+      final result = await RecommendationStorage.saveQuestionnaireResponse(data);
+      expect(result, isTrue);
+
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'questionnaire_response_anonymous';
+      expect(prefs.containsKey(key), isTrue);
+    });
+
+    test('loadQuestionnaireResponse returns saved data', () async {
+      final data = {
+        'age': 25,
+        'goal': 'gain_muscle'
+      };
+      await RecommendationStorage.saveQuestionnaireResponse(data);
+
+      final loaded = await RecommendationStorage.loadQuestionnaireResponse();
+      expect(loaded, isNotNull);
+      expect(loaded!['age'], equals(25));
+      expect(loaded['goal'], equals('gain_muscle'));
+    });
+
+    test('loadQuestionnaireResponse returns null if empty', () async {
+      final loaded = await RecommendationStorage.loadQuestionnaireResponse();
+      expect(loaded, isNull);
+    });
+  });
 }
