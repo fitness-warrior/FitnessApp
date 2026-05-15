@@ -1161,7 +1161,7 @@ async def get_workout(
             )
             
             if not workout:
-                raise HTTPException(status_code=418, detail="Workout not found")
+                raise HTTPException(status_code=404, detail="Workout not found")
             
             exercises = await connection.fetch(
                 """
