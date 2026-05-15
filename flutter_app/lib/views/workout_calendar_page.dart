@@ -332,7 +332,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
           final isToday = (i + 1) == todayWeekday;
           final isCompleted = _isDayCompleted(i);
           final assignedCount = (_weeklyPlanNames[day] ?? []).length;
-          final resolved = _resolvedRoutines(day);
+          _resolvedRoutines(day);
 
           return GestureDetector(
             onLongPress: () => _openAssignDialog(day),
@@ -353,7 +353,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                         : null),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),
@@ -389,7 +389,7 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF4A9FFF).withOpacity(0.2),
+                                color: const Color(0xFF4A9FFF).withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Text('Today',
@@ -418,12 +418,12 @@ class _WorkoutCalendarPageState extends State<WorkoutCalendarPage> {
                                           top: 3, bottom: 3),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF4A9FFF)
-                                            .withOpacity(0.15),
+                                            .withValues(alpha: 0.15),
                                         borderRadius:
                                             BorderRadius.circular(20),
                                         border: Border.all(
                                           color: const Color(0xFF4A9FFF)
-                                              .withOpacity(0.4),
+                                              .withValues(alpha: 0.4),
                                           width: 1,
                                         ),
                                       ),

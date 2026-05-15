@@ -13,14 +13,8 @@ String _formatDate(DateTime date) {
   return '$y-$m-$d';
 }
 
-String _todayKey() => _formatDate(DateTime.now());
 String _yesterdayKey() => _formatDate(DateTime.now().subtract(const Duration(days: 1)));
 String _weekAgoKey() => _formatDate(DateTime.now().subtract(const Duration(days: 7)));
-String _weekStartKey() {
-  final now = DateTime.now();
-  final monday = now.subtract(Duration(days: now.weekday - 1));
-  return _formatDate(monday);
-}
 String _previousWeekStartKey() {
   final now = DateTime.now();
   final monday = now.subtract(Duration(days: now.weekday - 1));
@@ -44,14 +38,14 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    secureStorageChannel.setMockMethodCallHandler((call) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, (call) async {
       if (call.method == 'read') return jsonEncode({'user_id': 123});
       return null;
     });
   });
 
   tearDown(() {
-    secureStorageChannel.setMockMethodCallHandler(null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, null);
   });
 
   group('StreakService 100% Coverage', () {

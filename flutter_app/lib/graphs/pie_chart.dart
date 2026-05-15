@@ -28,7 +28,7 @@ class MyPieChart extends StatelessWidget {
         SizedBox(
           height: 180,
           child: PieChart(
-            swapAnimationDuration: const Duration(milliseconds: 500),
+            duration: const Duration(milliseconds: 500),
             PieChartData(
               sections: [
                 if (num[0] > 0) PieChartSectionData(value: num[0], color: sectionColors[0]),

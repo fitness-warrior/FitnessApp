@@ -15,7 +15,7 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    secureStorageChannel.setMockMethodCallHandler((call) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, (call) async {
       if (call.method == 'read') return jsonEncode({'user_id': 123});
       return null;
     });
@@ -26,7 +26,7 @@ void main() {
   });
 
   tearDown(() {
-    secureStorageChannel.setMockMethodCallHandler(null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, null);
   });
 
   final mockRoutines = [
@@ -122,7 +122,7 @@ void main() {
 
     // Simulate back press by finding the PopScope and triggering onPopInvoked
     final popScope = tester.widget<PopScope>(find.byType(PopScope));
-    popScope.onPopInvoked!(false);
+    popScope.onPopInvokedWithResult!(false, null);
     await tester.pumpAndSettle();
 
     expect(find.text('Really? Giving up?'), findsOneWidget);
@@ -160,7 +160,7 @@ void main() {
     ));
 
     final popScope = tester.widget<PopScope>(find.byType(PopScope));
-    popScope.onPopInvoked!(false);
+    popScope.onPopInvokedWithResult!(false, null);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Yes, I give up'));
@@ -266,8 +266,8 @@ void main() {
   });
 
   testWidgets('Empty routines list shows placeholder', (WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: WorkoutDayView(dayName: 'Empty', routines: const []),
+    await tester.pumpWidget(const MaterialApp(
+      home: WorkoutDayView(dayName: 'Empty', routines: []),
     ));
 
     expect(find.text('No routines for this day.'), findsOneWidget);

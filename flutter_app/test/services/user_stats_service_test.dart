@@ -2,9 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitness_app_flutter/services/user_stats_service.dart';
-import 'package:fitness_app_flutter/services/auth_service.dart';
 import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 import 'package:http/http.dart' as http;
 
 @GenerateMocks([http.Client])
@@ -17,7 +15,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       
       const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
-      channel.setMockMethodCallHandler((MethodCall methodCall) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
         if (methodCall.method == 'read') {
           return null; // Simulate no user logged in
         }
@@ -54,7 +52,7 @@ void main() {
       TestWidgetsFlutterBinding.ensureInitialized();
       SharedPreferences.setMockInitialValues({});
       const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
-      channel.setMockMethodCallHandler((MethodCall methodCall) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
         return null;
       });
     });

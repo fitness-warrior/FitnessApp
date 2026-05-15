@@ -385,7 +385,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const SizedBox(height: 24),
 
-                          _SectionHeader(title: 'Recommendations'),
+                          const _SectionHeader(title: 'Recommendations'),
                           const SizedBox(height: 10),
                           _RecommendationsCard(data: recommendations),
                           const SizedBox(height: 24),

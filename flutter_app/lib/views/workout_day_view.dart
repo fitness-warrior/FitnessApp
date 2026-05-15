@@ -395,7 +395,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
 
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _handleBackPress();
       },
       child: Scaffold(
@@ -507,18 +507,18 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: isComplete
-                              ? Colors.green.withOpacity(0.15)
+                              ? Colors.green.withValues(alpha: 0.15)
                               : const Color(0xFF1C1C2E),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isComplete
-                                ? Colors.green.withOpacity(0.5)
+                                ? Colors.green.withValues(alpha: 0.5)
                                 : Colors.transparent,
                             width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 6,
                               offset: const Offset(0, 3),
                             ),
@@ -555,7 +555,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                                   : '$setsCompletedCount / ${sets.length} sets completed',
                               style: TextStyle(
                                 color: isComplete
-                                    ? Colors.greenAccent.withOpacity(0.8)
+                                    ? Colors.greenAccent.withValues(alpha: 0.8)
                                     : Colors.grey[500],
                                 fontSize: 13,
                               ),
@@ -679,10 +679,10 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                     height: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.redAccent.withOpacity(0.15),
+                      color: Colors.redAccent.withValues(alpha: 0.15),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.redAccent.withOpacity(0.4),
+                          color: Colors.redAccent.withValues(alpha: 0.4),
                           blurRadius: 40,
                           spreadRadius: 10,
                         ),
@@ -771,10 +771,10 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                     height: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.greenAccent.withOpacity(0.15),
+                      color: Colors.greenAccent.withValues(alpha: 0.15),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.greenAccent.withOpacity(0.4),
+                          color: Colors.greenAccent.withValues(alpha: 0.4),
                           blurRadius: 40,
                           spreadRadius: 10,
                         ),
@@ -816,7 +816,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
                       color: const Color(0xFF1C1C2E),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: Colors.greenAccent.withOpacity(0.3)),
+                          color: Colors.greenAccent.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -893,7 +893,7 @@ class _WorkoutDayViewState extends State<WorkoutDayView>
   }
 
   Widget _divider() => Container(
-      width: 1, height: 50, color: Colors.white.withOpacity(0.1));
+      width: 1, height: 50, color: Colors.white.withValues(alpha: 0.1));
 
   int _totalExercises() {
     int total = 0;

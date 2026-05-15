@@ -54,11 +54,11 @@ class MyLineChart extends StatelessWidget {
           show: true,
           drawVerticalLine: true,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             strokeWidth: 1,
           ),
           getDrawingVerticalLine: (value) => FlLine(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             strokeWidth: 1,
           ),
         ),
@@ -112,7 +112,7 @@ class MyLineChart extends StatelessWidget {
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         lineBarsData: [
           LineChartBarData(
@@ -126,8 +126,8 @@ class MyLineChart extends StatelessWidget {
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF4A9FFF).withOpacity(0.3),
-                  const Color(0xFF4A9FFF).withOpacity(0.0),
+                  const Color(0xFF4A9FFF).withValues(alpha: 0.3),
+                  const Color(0xFF4A9FFF).withValues(alpha: 0.0),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,

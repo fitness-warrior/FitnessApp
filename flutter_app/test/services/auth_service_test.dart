@@ -19,15 +19,6 @@ typedef _AuthResponder = _FakeHttpResult Function(
   String body,
 );
 
-class _FakeHttpOverrides extends HttpOverrides {
-  _FakeHttpOverrides(this.responder);
-
-  final _AuthResponder responder;
-
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return _FakeHttpClient(responder);
-  }
 }
 
 class _FakeHttpClient implements HttpClient {
@@ -202,7 +193,7 @@ void main() {
   Map<String, dynamic> loginResponse = {};
 
   setUpAll(() async {
-    secureStorageChannel.setMockMethodCallHandler((call) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, (call) async {
       switch (call.method) {
         case 'write':
           secureStorage[call.arguments['key'] as String] =
@@ -220,7 +211,7 @@ void main() {
   });
 
   tearDownAll(() async {
-    secureStorageChannel.setMockMethodCallHandler(null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(secureStorageChannel, null);
   });
 
   setUp(() {

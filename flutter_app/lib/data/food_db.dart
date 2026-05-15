@@ -276,8 +276,9 @@ class FoodDb {
     return _foods
         .where((m) {
           if (!_allowByDiet(m, dietPreference)) return false;
-          if (collection != 'All' && m['collection'] != collection)
+          if (collection != 'All' && m['collection'] != collection) {
             return false;
+          }
           if (query.isNotEmpty &&
               !(m['name'] as String)
                   .toLowerCase()

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import '../services/chart_service.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
-import '../widgets/questionnaire/questionnaire_widget.dart';
 import '../widgets/common/navbar.dart';
 
 class _ChartCard {
@@ -23,13 +22,6 @@ class _ChartCard {
   });
 }
 
-class _ChartConfig {
-  final String id;
-  final String name;
-  final String option;
-
-  _ChartConfig({required this.id, required this.name, required this.option});
-}
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -92,7 +84,7 @@ class _DashboardPage extends State<DashboardPage> {
         continue;
       }
 
-      final id = '${name}_${option}'.replaceAll(' ', '_').toLowerCase();
+      final id = '${name}_$option'.replaceAll(' ', '_').toLowerCase();
       final card = await _createChartCard(name, option, bodyId, id);
       if (card != null) updatedManual.add(card);
     }
@@ -106,10 +98,7 @@ class _DashboardPage extends State<DashboardPage> {
 
   Future<void> _loadAllExerciseCharts(Set<String> hidden) async {
     try {
-      final bodyId = await _resolveBodyId() ?? 0;
-      final currentUser = await AuthService.getCurrentUser();
-      final userEmail = currentUser?['email'] ?? 'unknown';
-      
+
       final allProgress = await ChartService.getAllExercisesProgress();
       final List<_ChartCard> cards = [];
       
@@ -125,7 +114,7 @@ class _DashboardPage extends State<DashboardPage> {
           continue;
         }
 
-        final chartId = 'auto_${exName}'.replaceAll(' ', '_').toLowerCase();
+        final chartId = 'auto_$exName'.replaceAll(' ', '_').toLowerCase();
         final values = history.map((e) => (e[1] as num).toDouble()).toList();
         final dates = history.map((e) => e[0].toString()).toList();
 
@@ -148,7 +137,7 @@ class _DashboardPage extends State<DashboardPage> {
               color: const Color(0xFF1C1C2E),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))
+                BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 5))
               ],
             ),
             clipBehavior: Clip.antiAlias,
@@ -331,7 +320,7 @@ class _DashboardPage extends State<DashboardPage> {
                     padding: const EdgeInsets.only(top: 100),
                     child: Column(
                       children: [
-                        Icon(Icons.fitness_center, size: 80, color: Colors.white.withOpacity(0.1)),
+                        Icon(Icons.fitness_center, size: 80, color: Colors.white.withValues(alpha: 0.1)),
                         const SizedBox(height: 16),
                         const Text('No charts found', style: TextStyle(color: Colors.white54, fontSize: 18)),
                         const Text('Finish an exercise to see your progress here!', style: TextStyle(color: Colors.white24)),

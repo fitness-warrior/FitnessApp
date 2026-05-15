@@ -163,7 +163,7 @@ class _GenerateWorkoutDialogState extends State<GenerateWorkoutDialog> {
       label: Text(label),
       style: ElevatedButton.styleFrom(
         // ignore: deprecated_member_use
-        backgroundColor: selected ? const Color(0xFF66BB6A).withOpacity(0.2) : const Color(0xFF1C1C2E),
+        backgroundColor: selected ? const Color(0xFF66BB6A).withValues(alpha: 0.2) : const Color(0xFF1C1C2E),
         foregroundColor: selected ? const Color(0xFF66BB6A) : Colors.grey[400],
         elevation: 0,
         shape: RoundedRectangleBorder(

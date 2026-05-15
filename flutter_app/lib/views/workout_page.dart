@@ -284,7 +284,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         });
       });
     } catch (e) {
-      print('Error loading workout session: $e');
+      // // // print('Error loading workout session: $e');
     }
   }
 
@@ -322,7 +322,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         [serializableSets],
       );
     } catch (e) {
-      print('Error saving workout session: $e');
+      // // // print('Error saving workout session: $e');
     }
   }
 
@@ -570,9 +570,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.12),
+                  color: Colors.orange.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -775,7 +775,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1C1C2E),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,7 +802,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.05),
+                                                color: Colors.white.withValues(alpha: 0.05),
                                                 borderRadius: BorderRadius.circular(4),
                                               ),
                                               child: Text(
@@ -843,7 +843,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                           ),
                         ),
                         child: const Text('Close'),
@@ -1004,7 +1004,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 5),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.15),
+                              color: Colors.orange.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -1032,7 +1032,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: Colors.black.withValues(alpha: 0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -1389,7 +1389,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.35),
+              color: Colors.black.withValues(alpha: 0.35),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1411,7 +1411,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.15),
+                color: iconColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: iconColor, size: 26),
@@ -1567,7 +1567,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF7C5CBF).withOpacity(0.25),
+                                              color: const Color(0xFF7C5CBF).withValues(alpha: 0.25),
                                               borderRadius: BorderRadius.circular(20),
                                               border: Border.all(color: const Color(0xFF7C5CBF), width: 1),
                                             ),

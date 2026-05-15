@@ -21,7 +21,7 @@ class XPBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -78,7 +78,7 @@ class XPBar extends StatelessWidget {
                 height: 8,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -96,7 +96,7 @@ class XPBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF4A9FFF).withOpacity(0.4),
+                      color: const Color(0xFF4A9FFF).withValues(alpha: 0.4),
                       blurRadius: 6,
                       spreadRadius: 1,
                     ),

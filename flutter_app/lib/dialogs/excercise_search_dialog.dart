@@ -388,7 +388,7 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
             ),
           ),
           // ignore: deprecated_member_use
-          Divider(color: Colors.white.withOpacity(0.05)),
+          Divider(color: Colors.white.withValues(alpha: 0.05)),
         ],
       );
     }
@@ -495,10 +495,10 @@ class _ExerciseSearchDialogState extends State<ExerciseSearchDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         // ignore: deprecated_member_use
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
         // ignore: deprecated_member_use
-        border: Border.all(color: color.withOpacity(0.4), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
       ),
       child: Text(
         label,

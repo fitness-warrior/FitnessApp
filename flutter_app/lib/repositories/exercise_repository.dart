@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import '../data/exercise_db.dart';
 import '../services/exercise_service.dart';
 
@@ -167,7 +166,7 @@ class ExerciseRepository {
     final equipRaw = r['exer_equip'] as String?;
     final equipment = equipRaw == null || equipRaw.isEmpty
         ? <String>[]
-        : equipRaw.split(',').map((s) => s.trim()).whereNotNull().toList();
+        : equipRaw.split(',').map((s) => s.trim()).nonNulls.toList();
 
     return {
       'id': r['exer_id'],

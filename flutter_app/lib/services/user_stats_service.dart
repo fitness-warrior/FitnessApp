@@ -24,7 +24,7 @@ class UserStatsService {
   static String get baseUrl => ApiConfig.baseUrl;
 
   static Future<int> getXP() async {
-    print('UserStatsService: getXP() called');
+    // // // print('UserStatsService: getXP() called');
     
     // Try to fetch from API first for accuracy
     try {
@@ -34,24 +34,24 @@ class UserStatsService {
         final prefs = await SharedPreferences.getInstance();
         final key = await _getNamespacedKey();
         await prefs.setInt(key, apiXP);
-        print('UserStatsService: Fetched XP from API: $apiXP');
+        // // // print('UserStatsService: Fetched XP from API: $apiXP');
         return apiXP;
       }
     } catch (e) {
-      print('UserStatsService: API fetch failed: $e');
+      // // // print('UserStatsService: API fetch failed: $e');
     }
 
     // Fallback to local
     final prefs = await SharedPreferences.getInstance();
     final key = await _getNamespacedKey();
     final localXP = prefs.getInt(key) ?? 0;
-    print('UserStatsService: Falling back to local XP: $localXP');
+    // // // print('UserStatsService: Falling back to local XP: $localXP');
     return localXP;
   }
 
   static Future<void> addXP(int amount) async {
     if (amount <= 0) return;
-    print('UserStatsService: addXP($amount) called');
+    // // // print('UserStatsService: addXP($amount) called');
     
     final prefs = await SharedPreferences.getInstance();
     final key = await _getNamespacedKey();
@@ -60,14 +60,14 @@ class UserStatsService {
     
     // Update local immediately for responsive UI
     await prefs.setInt(key, newXP);
-    print('UserStatsService: Local XP updated to $newXP');
+    // // // print('UserStatsService: Local XP updated to $newXP');
 
     // Await sync to API so subsequent getXP calls get the updated value
     try {
       await _syncXPToApi(amount);
-      print('UserStatsService: Successfully synced XP to API');
+      // // // print('UserStatsService: Successfully synced XP to API');
     } catch (e) {
-      print('UserStatsService: XP Sync failed: $e');
+      // // // print('UserStatsService: XP Sync failed: $e');
       // Even if sync fails, local is updated. Next restart might revert it though.
     }
   }
@@ -83,10 +83,10 @@ class UserStatsService {
         final data = jsonDecode(response.body);
         return data['xp'] as int?;
       } else {
-        print('UserStatsService: fetchXPFromApi returned status ${response.statusCode}');
+        // // // print('UserStatsService: fetchXPFromApi returned status ${response.statusCode}');
       }
     } catch (e) {
-      print('UserStatsService: fetchXPFromApi threw: $e');
+      // // // print('UserStatsService: fetchXPFromApi threw: $e');
     }
     return null;
   }
@@ -106,7 +106,7 @@ class UserStatsService {
         throw Exception('Server returned status ${response.statusCode}');
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 

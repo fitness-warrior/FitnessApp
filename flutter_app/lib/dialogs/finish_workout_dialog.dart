@@ -498,7 +498,7 @@ class _FinishWorkoutDialogState extends State<FinishWorkoutDialog> {
                             color: const Color(0xFF1C1C2E),
                             borderRadius: BorderRadius.circular(14),
                             // ignore: deprecated_member_use
-                            border: Border.all(color: Colors.white.withOpacity(0.05)),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

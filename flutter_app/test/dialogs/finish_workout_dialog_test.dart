@@ -142,7 +142,7 @@ void main() {
       const workoutSaved = saveAsRoutine; // false → routine not stored
 
       // Message shown in snackbar
-      const message = saveAsRoutine ? 'Workout saved!' : 'Workout completed!';
+      const message = 'Workout completed!';
 
       expect(workoutSaved, isFalse);
       expect(message, equals('Workout completed!'));
