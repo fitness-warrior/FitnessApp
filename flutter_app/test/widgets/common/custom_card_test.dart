@@ -21,7 +21,7 @@ void main() {
       expect(find.byType(Card), findsOneWidget);
     });
 
-    testWidgets('CustomCard renders child widget correctly',
+    testWidgets('WTC-012 Child widget renders inside card',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -175,7 +175,7 @@ void main() {
       expect(card.elevation, equals(2.0));
     });
 
-    testWidgets('CustomCard executes onTap callback when tapped',
+    testWidgets('WTC-013 onTap callback fires',
         (WidgetTester tester) async {
       bool wasPressed = false;
 

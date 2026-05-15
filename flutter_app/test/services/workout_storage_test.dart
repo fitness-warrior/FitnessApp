@@ -7,9 +7,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('WorkoutStorage Tests', () {
-    const key = 'saved_workouts_anonymous';
-    const sessionKey = 'current_workout_sessions_list_anonymous';
-
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       
@@ -66,6 +63,7 @@ void main() {
     });
 
     test('clearAllCurrentWorkoutSessions removes session data', () async {
+      const sessionKey = 'current_workout_sessions_list_anonymous';
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(sessionKey, 'some session data');
       

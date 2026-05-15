@@ -53,7 +53,7 @@ void main() {
     }
   ];
 
-  testWidgets('WorkoutDayView renders routines and exercises', (WidgetTester tester) async {
+  testWidgets('WTC-052 Exercise List renders with sets and reps', (WidgetTester tester) async {
     await tester.pumpWidget(MaterialApp(
       home: WorkoutDayView(dayName: 'Monday', routines: mockRoutines),
     ));
@@ -264,7 +264,8 @@ void main() {
   });
 
   testWidgets('WTC-053: Empty state renders when no workouts are provided', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(      home: WorkoutDayView(dayName: 'Empty', routines: []),
+    await tester.pumpWidget(const MaterialApp(
+      home: WorkoutDayView(dayName: 'Empty', routines: []),
     ));
 
     expect(find.text('No routines for this day.'), findsOneWidget);

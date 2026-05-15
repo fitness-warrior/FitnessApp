@@ -18,7 +18,7 @@ class ExerciseDetailWidget extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _ExerciseDetailWidgetState createState() => _ExerciseDetailWidgetState();
+  State<ExerciseDetailWidget> createState() => _ExerciseDetailWidgetState();
 }
 
 class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {

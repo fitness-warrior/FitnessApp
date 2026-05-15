@@ -38,12 +38,15 @@ class FakeHttpClient implements HttpClient {
 }
 
 class FakeHttpClientRequest implements HttpClientRequest {
+  @override
   final String method;
-  final Uri url;
+  @override
+  final Uri uri;
   final RequestHandler handler;
+  @override
   final HttpHeaders headers = FakeHttpHeaders();
   
-  FakeHttpClientRequest(this.method, this.url, this.handler);
+  FakeHttpClientRequest(this.method, this.uri, this.handler);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -84,6 +87,7 @@ class FakeHttpHeaders implements HttpHeaders {
 }
 
 class FakeHttpClientResponse implements HttpClientResponse {
+  @override
   final int statusCode;
   final String body;
   

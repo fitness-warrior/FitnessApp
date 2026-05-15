@@ -116,3 +116,93 @@ async def test_tc053_get_questionnaire_not_found(client, mock_conn):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Questionnaire not found"
+
+@pytest.mark.asyncio
+async def test_tc011_missing_auth_header(client):
+    """TC-011: Questionnaire submission fails without auth header"""
+    payload = {
+        "age": 28,
+        "height": 180.5,
+        "weight": 82.0,
+        "goal": "Build muscle",
+        "experience": "intermediate",
+        "location": "gym",
+        "days_per_week": 4,
+        "session_length": 60,
+        "injuries": [],
+        "diet_preference": "balanced",
+        "allergies": []
+    }
+    response = await client.post("/api/users/questionnaire", json=payload)
+    assert response.status_code == 401
+    assert "Missing authorization header" in response.json()["detail"]
+
+@pytest.mark.asyncio
+async def test_tc012_missing_goal(client):
+    """TC-012: Questionnaire submission fails if goal is missing"""
+    token = create_access_token(data={"sub": "1"})
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {
+        "age": 28,
+        "height": 180.5,
+        "weight": 82.0,
+        "experience": "intermediate",
+        "location": "gym",
+        "days_per_week": 4,
+        "session_length": 60,
+        "injuries": [],
+        "diet_preference": "balanced",
+        "allergies": []
+    }
+    response = await client.post("/api/users/questionnaire", json=payload, headers=headers)
+    assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_tc013_valid_goal_selection(client, mock_conn):
+    """TC-013: Questionnaire submission succeeds with valid goal"""
+    token = create_access_token(data={"sub": "1"})
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    mock_conn.fetchval.side_effect = [None, None, None]
+    main.generated_plan = {"generated": True}
+
+    payload = {
+        "age": 28,
+        "height": 180.5,
+        "weight": 82.0,
+        "goal": "Build muscle",
+        "experience": "intermediate",
+        "location": "gym",
+        "days_per_week": 4,
+        "session_length": 60,
+        "injuries": [],
+        "diet_preference": "balanced",
+        "allergies": []
+    }
+    response = await client.post("/api/users/questionnaire", json=payload, headers=headers)
+    assert response.status_code == 200
+
+@pytest.mark.asyncio
+async def test_tc014_invalid_goal_selection(client, mock_conn):
+    """TC-014: Invalid/unrecognized goal defaults gracefully without crashing"""
+    token = create_access_token(data={"sub": "1"})
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    mock_conn.fetchval.side_effect = [None, None, None]
+    main.generated_plan = {"generated": True}
+
+    payload = {
+        "age": 28,
+        "height": 180.5,
+        "weight": 82.0,
+        "goal": "I want to become spiderman",
+        "experience": "intermediate",
+        "location": "gym",
+        "days_per_week": 4,
+        "session_length": 60,
+        "injuries": [],
+        "diet_preference": "balanced",
+        "allergies": []
+    }
+    response = await client.post("/api/users/questionnaire", json=payload, headers=headers)
+    assert response.status_code == 200
