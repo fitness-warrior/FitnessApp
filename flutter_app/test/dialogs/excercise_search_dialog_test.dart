@@ -59,28 +59,33 @@ void main() {
     });
 
     testWidgets('shows initial empty placeholder', (WidgetTester tester) async {
-      await openDialog(tester);
+      await tester.runAsync(() async {
+        await openDialog(tester);
+        await tester.pumpAndSettle();
 
-      expect(find.textContaining('Start typing'), findsOneWidget);
-      expect(find.byIcon(Icons.search_off), findsOneWidget);
+        expect(find.textContaining('Start typing'), findsOneWidget);
+        expect(find.byIcon(Icons.search_off), findsOneWidget);
+      });
     });
 
     testWidgets('typing search text shows clear icon',
         (WidgetTester tester) async {
-      await openDialog(tester);
+      await tester.runAsync(() async {
+        await openDialog(tester);
 
-      final searchField = find.byType(TextField).first;
-      await tester.enterText(searchField, 'test');
-      await tester.pumpAndSettle();
+        final searchField = find.byType(TextField).first;
+        await tester.enterText(searchField, 'test');
+        await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+        expect(find.byIcon(Icons.clear), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.clear));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.clear));
+        await tester.pumpAndSettle();
 
-      expect(
-          tester.widget<TextField>(searchField).controller?.text, equals(''));
-      expect(find.byIcon(Icons.clear), findsNothing);
+        expect(
+            tester.widget<TextField>(searchField).controller?.text, equals(''));
+        expect(find.byIcon(Icons.clear), findsNothing);
+      });
     });
 
     testWidgets('body area dropdown opens options',
