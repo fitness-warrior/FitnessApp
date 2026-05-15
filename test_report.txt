@@ -1,76 +1,36 @@
 PROJECT TEST COVERAGE REPORT (COMPLETE FILE LIST)
 ==============================================
 Date: 2026-05-15
-Overall Project Coverage: 52.34%
-Total Pass Rate: 100% (All tests passing)
+Overall Project Coverage: 57.62%
+Total Pass Rate: 95% (Backend - 3 failures) | 99% (Frontend - 1 smoke test failure)
 
 ARCHITECTURE SUMMARY
 --------------------
 Component          | Covered Lines | Total Lines | Coverage %
 -----------------------------------------------------------
-Backend (FastAPI)  | 286           | 630         | 45.40%
-Frontend (Flutter) | 2,445         | 4,588       | 53.29%
+Backend (FastAPI)  | 399           | 630         | 63.33%
+Frontend (Flutter) | 3,324         | 5,831       | 57.01%
 -----------------------------------------------------------
-TOTAL              | 2,731         | 5,218       | 52.34%
+TOTAL              | 3,723         | 6,461       | 57.62%
 
 FRONTEND (FLUTTER) FILE BREAKDOWN
 ---------------------------------
-- lib/widgets/xp_bar.dart: 100.00%
-- lib/widgets/common/navbar.dart: 100.00%
-- lib/widgets/common/finish_button.dart: 100.00%
-- lib/widgets/common/custom_card.dart: 100.00%
-- lib/widgets/common/custom_button.dart: 100.00%
-- lib/services/streak_service.dart: 100.00%
-- lib/models/recommendation_profile.dart: 100.00%
-- lib/models/daily_meal_plan.dart: 100.00%
-- lib/data/exercise_db.dart: 100.00%
-- lib/config/api_config.dart: 100.00%
-- lib/services/auth_service.dart: 98.21%
-- lib/views/exercise_detail_page.dart: 98.01%
-- lib/views/workout_day_view.dart: 97.35%
-- lib/widgets/meal_plan/meal_slot_card.dart: 94.25%
-- lib/services/recommendation_service.dart: 91.30%
-- lib/services/workout_service.dart: 90.91%
-- lib/widgets/meal_plan/date_calorie_header.dart: 87.61%
-- lib/widgets/questionnaire/questionnaire_widget.dart: 86.50%
-- lib/services/user_stats_service.dart: 83.93%
-- lib/widgets/exercise_detail_widget.dart: 83.05%
-- lib/widgets/youtube_video_embed.dart: 78.95%
-- lib/dialogs/finish_workout_dialog.dart: 74.18%
-- lib/services/recommendation_storage.dart: 72.41%
-- lib/models/meal_item.dart: 72.09%
-- lib/views/auth_page.dart: 71.84%
-- lib/services/workout_storage.dart: 52.00%
-- lib/services/user_service.dart: 48.65%
-- lib/widgets/exercise_list_widget.dart: 45.67%
-- lib/dialogs/excercise_search_dialog.dart: 39.79%
-- lib/widgets/common/custom_text_field.dart: 26.04%
-- lib/views/workout_page.dart: 15.56%
-- lib/widgets/common/streak_display.dart: 14.07%
-- lib/services/weekly_plan_service.dart: 8.33%
-- lib/services/exercise_service.dart: 2.00%
-- lib/dialogs/generate_workout_dialog.dart: 0.87%
-- lib/views/exercise_library_page.dart: 0.72%
-- lib/views/workout_calendar_page.dart: 0.00%
-- lib/services/workout_history_service.dart: 0.00%
-- lib/services/chart_service.dart: 0.00%
-- lib/repositories/exercise_repository.dart: 0.00%
-- lib/models/chart_model.dart: 0.00%
+(Detailed file breakdown updated in coverage_report.md)
 
 BACKEND (FASTAPI) FILE BREAKDOWN
 --------------------------------
-- main.py: 45.40%
+- main.py: 63.33%
 
-(Backend logic is primarily contained within main.py, covering Auth, Workouts, Meals, Tasks, and Progress)
+(Significant increase due to Streaks, XP, and Plan generation tests)
 
 RECENT COVERAGE GAINS
 ---------------------
-- WorkoutDayView: 97.35% (Complex UI logic verified)
-- StreakService: 100.00% (Reliable multi-user persistence)
-- UserStatsService: 83.93% (Testability refactored)
+- Backend: Jumped from 52% to 63% with Guidance, Plans, and Streaks/XP tests.
+- Frontend: Increased to 57% with new Graph and Repository tests.
+- Integration: New suites for Auth Navigation, Workouts/Meals, and XP/Streaks.
 
 TESTING INFRASTRUCTURE
 ----------------------
-- Mocks: Full http.Client dependency injection implemented.
-- Isolation: Multi-user SharedPreferences namespaces verified.
-- Backend: Asyncio stability issues resolved.
+- Graphs: PieChart and BarGraph tests implemented.
+- Integration: Comprehensive end-to-end suites for core user journeys.
+- Infrastructure: Resolved pubspec duplicate key and mock request property errors.
