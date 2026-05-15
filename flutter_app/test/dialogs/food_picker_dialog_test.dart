@@ -84,13 +84,13 @@ void main() {
         (WidgetTester tester) async {
       await openDialog(tester);
 
-      final dropdowns = find.byType(DropdownButtonFormField);
+      final dropdowns = find.byType(DropdownButtonFormField<String>);
       expect(dropdowns, findsOneWidget);
 
       await tester.tap(dropdowns.first);
       await tester.pumpAndSettle();
 
-      expect(find.byType(DropdownMenuItem), findsWidgets);
+      expect(find.byType(DropdownMenuItem<String>), findsWidgets);
     });
 
     testWidgets('max calories filter updates results',

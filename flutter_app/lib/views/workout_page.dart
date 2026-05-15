@@ -22,8 +22,7 @@ class WorkoutPage extends StatefulWidget {
     Key? key,
     this.initialRecommendationTags,
     this.initialTab = 0,
-  })
-      : super(key: key);
+  }) : super(key: key);
 
   @override
   State<WorkoutPage> createState() => _WorkoutPageState();
@@ -36,6 +35,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   List<Map<String, dynamic>> _savedWorkouts = [];
   bool _loadingSavedWorkouts = true;
   int _streakRefreshToken = 0;
+
   /// Maps routine name -> list of day names it is assigned to.
   Map<String, List<String>> _assignedRoutineDays = {};
   int _currentXP = 0;
@@ -59,14 +59,18 @@ class _WorkoutPageState extends State<WorkoutPage> {
   Future<void> _loadAssignedRoutines() async {
     // Clear old state first to prevent leakage from previous user session
     setState(() => _assignedRoutineDays = {});
-    
+
     try {
       final plan = await WeeklyPlanService.getWeeklyPlan();
       if (plan != null && mounted) {
         const dayLabels = {
-          'monday': 'Mon', 'tuesday': 'Tue', 'wednesday': 'Wed',
-          'thursday': 'Thu', 'friday': 'Fri',
-          'saturday': 'Sat', 'sunday': 'Sun',
+          'monday': 'Mon',
+          'tuesday': 'Tue',
+          'wednesday': 'Wed',
+          'thursday': 'Thu',
+          'friday': 'Fri',
+          'saturday': 'Sat',
+          'sunday': 'Sun',
         };
         final Map<String, List<String>> result = {};
         final weekPlan = plan['week_plan'] is Map
@@ -108,38 +112,49 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
       // 3. Combine and deduplicate using robust UTC + Content matching
       final List<Map<String, dynamic>> combinedList = [];
-      
+
       // API workouts are the source of truth
       for (var apiW in apiWorkouts) {
         combinedList.add(Map<String, dynamic>.from(apiW));
       }
-      
+
       // Merge local workouts only if they don't match an API entry
       for (var localW in localWorkouts) {
         bool isDuplicate = false;
-        final localDate = DateTime.tryParse(localW['date']?.toString() ?? '')?.toUtc() ?? DateTime.now().toUtc();
-        final localName = (localW['name']?.toString() ?? '').trim().toLowerCase();
+        final localDate =
+            DateTime.tryParse(localW['date']?.toString() ?? '')?.toUtc() ??
+                DateTime.now().toUtc();
+        final localName =
+            (localW['name']?.toString() ?? '').trim().toLowerCase();
 
         for (var apiW in apiWorkouts) {
-          final apiDate = DateTime.tryParse(apiW['date']?.toString() ?? '')?.toUtc() ?? DateTime.now().toUtc();
+          final apiDate =
+              DateTime.tryParse(apiW['date']?.toString() ?? '')?.toUtc() ??
+                  DateTime.now().toUtc();
           final apiName = (apiW['name']?.toString() ?? '').trim().toLowerCase();
-          
+
           // 1. Check if names are identical and timestamps are within 60 minutes (UTC)
-          final timeMatch = localName == apiName && (localDate.difference(apiDate).abs().inMinutes < 60);
-          
+          final timeMatch = localName == apiName &&
+              (localDate.difference(apiDate).abs().inMinutes < 60);
+
           if (timeMatch) {
             isDuplicate = true;
             break;
           }
 
           // 2. Content-based fallback: same day, same name, same exercises
-          final sameDay = localDate.year == apiDate.year && localDate.month == apiDate.month && localDate.day == apiDate.day;
+          final sameDay = localDate.year == apiDate.year &&
+              localDate.month == apiDate.month &&
+              localDate.day == apiDate.day;
           if (sameDay && localName == apiName) {
             final localExs = localW['exercises'] as List? ?? [];
             final apiExs = apiW['exercises'] as List? ?? [];
             if (localExs.length == apiExs.length && localExs.isNotEmpty) {
-              final localExNames = localExs.map((e) => e['exer_name']?.toString() ?? '').join(',');
-              final apiExNames = apiExs.map((e) => e['exer_name']?.toString() ?? '').join(',');
+              final localExNames = localExs
+                  .map((e) => e['exer_name']?.toString() ?? '')
+                  .join(',');
+              final apiExNames =
+                  apiExs.map((e) => e['exer_name']?.toString() ?? '').join(',');
               if (localExNames == apiExNames) {
                 isDuplicate = true;
                 break;
@@ -147,7 +162,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
             }
           }
         }
-        
+
         if (!isDuplicate) {
           combinedList.add(Map<String, dynamic>.from(localW));
         }
@@ -156,8 +171,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
       // 4. Sort Oldest to Newest to assign sequential "Workout N" names
       final allWorkouts = combinedList;
       allWorkouts.sort((a, b) {
-        final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
-        final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        final dateA =
+            DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
         return dateA.compareTo(dateB);
       });
 
@@ -172,8 +189,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
       // 5. Sort Newest to Oldest for display
       allWorkouts.sort((a, b) {
-        final dateA = DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
-        final dateB = DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
+        final dateA =
+            DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime.now();
         return dateB.compareTo(dateA);
       });
 
@@ -229,8 +248,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
       return {
         'id': workout['workout_id'],
-        'date': workout['created_at']?.toString() ??
-            '1970-01-01T00:00:00Z',
+        'date': workout['created_at']?.toString() ?? '1970-01-01T00:00:00Z',
         'name': workout['notes']?.toString() ?? '',
         'exercises': mappedExercises,
         'source': 'api',
@@ -378,11 +396,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
     normalized['exer_id'] = normalized['exer_id'] ?? 0;
     normalized['exer_name'] =
         (normalized['exer_name']?.toString().isNotEmpty == true
-            ? normalized['exer_name']
-            : normalized['name']?.toString().isNotEmpty == true
-                ? normalized['name']
-                : null) ??
-        'Unknown Exercise';
+                ? normalized['exer_name']
+                : normalized['name']?.toString().isNotEmpty == true
+                    ? normalized['name']
+                    : null) ??
+            'Unknown Exercise';
     normalized['exer_descrip'] = normalized['exer_descrip']?.toString() ?? '';
     normalized['exer_body_area'] =
         normalized['exer_body_area']?.toString() ?? 'Unknown';
@@ -530,17 +548,23 @@ class _WorkoutPageState extends State<WorkoutPage> {
       final plan = await WeeklyPlanService.getWeeklyPlan();
       if (plan != null) {
         const dayNames = {
-          'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday',
-          'thursday': 'Thursday', 'friday': 'Friday',
-          'saturday': 'Saturday', 'sunday': 'Sunday',
+          'monday': 'Monday',
+          'tuesday': 'Tuesday',
+          'wednesday': 'Wednesday',
+          'thursday': 'Thursday',
+          'friday': 'Friday',
+          'saturday': 'Saturday',
+          'sunday': 'Sunday',
         };
         final weekPlan = plan['week_plan'] is Map
             ? Map<String, dynamic>.from(plan['week_plan'] as Map)
             : plan;
         for (final entry in weekPlan.entries) {
           final value = entry.value;
-          if (value is List && value.map((e) => e.toString()).contains(routineName)) {
-            assignedDays.add(dayNames[entry.key.toString()] ?? entry.key.toString());
+          if (value is List &&
+              value.map((e) => e.toString()).contains(routineName)) {
+            assignedDays
+                .add(dayNames[entry.key.toString()] ?? entry.key.toString());
           }
         }
       }
@@ -572,7 +596,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                  border:
+                      Border.all(color: Colors.orange.withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,8 +610,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         'This routine is assigned to: '
                         '${assignedDays.join(', ')}.\n'
                         'It will be removed from those days.',
-                        style: const TextStyle(
-                            color: Colors.orange, fontSize: 13),
+                        style:
+                            const TextStyle(color: Colors.orange, fontSize: 13),
                       ),
                     ),
                   ],
@@ -616,12 +641,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         ? Map<String, dynamic>.from(plan)
                         : <String, dynamic>{'week_plan': plan};
                     final weekPlan = structured['week_plan'] is Map
-                        ? Map<String, dynamic>.from(structured['week_plan'] as Map)
+                        ? Map<String, dynamic>.from(
+                            structured['week_plan'] as Map)
                         : <String, dynamic>{};
                     for (final day in weekPlan.keys) {
                       final names = weekPlan[day];
                       if (names is List) {
-                        names.removeWhere((name) => name.toString() == routineName);
+                        names.removeWhere(
+                            (name) => name.toString() == routineName);
                       }
                     }
                     if (structured['routines'] is List) {
@@ -684,177 +711,113 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
-
   void _openRoutineDetailsDialog(
-      Map<String, dynamic> workout, String routineName) {
-    final exercises = workout['exercises'];
-    final exerciseList = exercises is List ? exercises : [];
-    final dateText = workout['date']?.toString() ?? 'Unknown date';
-
+    Map<String, dynamic> workout,
+    String routineName,
+  ) {
+    final originalIdx = _savedWorkouts.indexOf(workout);
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF0D0D14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        insetPadding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C2E),
+        title: Text(routineName, style: const TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: double.maxFinite,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1C1C2E),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+              Text(
+                workout['date']?.toString() ?? '',
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              ...((workout['exercises'] as List? ?? []).map((e) {
+                final name = e['exer_name']?.toString() ?? 'Exercise';
+                final sets = (e['sets'] as List? ?? []);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    '$name — ${sets.length} set(s)',
+                    style: TextStyle(color: Colors.grey[300], fontSize: 13),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$routineName Details',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Date: $dateText',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'EXERCISES',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF4A9FFF),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    exerciseList.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              'No exercises recorded',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          )
-                        : Column(
-                            children: List.generate(exerciseList.length, (idx) {
-                              final exercise = exerciseList[idx];
-                              final exerName =
-                                  exercise['exer_name'] ?? 'Unknown Exercise';
-                              final sets = exercise['sets'];
-                              final setsList = sets is List ? sets : [];
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1C1C2E),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      exerName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    ...List.generate(setsList.length, (setIdx) {
-                                      final set = setsList[setIdx];
-                                      final kg = set['kg']?.toString() ?? '0';
-                                      final reps =
-                                          set['reps']?.toString() ?? '0';
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 6),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.05),
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                'Set ${setIdx + 1}',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.grey[400],
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Text(
-                                              '$reps × ${kg}kg',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1C1C2E),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-                          ),
-                        ),
-                        child: const Text('Close'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                );
+              }).toList()),
             ],
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (!mounted) return;
+              // Load workout into tracker
+              setState(() {
+                _workoutExercises = (workout['exercises'] as List? ?? [])
+                    .cast<Map<String, dynamic>>()
+                    .map((e) => _normalizeExercise(e))
+                    .toList();
+                _setControllers.clear();
+                for (var i = 0; i < _workoutExercises.length; i++) {
+                  final exer = _workoutExercises[i];
+                  final isCardio =
+                      exer['exer_type']?.toString().toLowerCase() == 'cardio';
+                  final sets = (workout['exercises'] as List? ?? [])
+                          .asMap()
+                          .containsKey(i)
+                      ? ((workout['exercises'] as List)[i]['sets'] as List? ??
+                          [])
+                      : [];
+                  _setControllers[i] = sets.isNotEmpty
+                      ? sets.map((s) {
+                          final map =
+                              s is Map ? Map<String, dynamic>.from(s) : {};
+                          return isCardio
+                              ? {
+                                  'time': _createAutoSaveController(
+                                      initialText:
+                                          map['time']?.toString() ?? ''),
+                                  'distance': _createAutoSaveController(
+                                      initialText:
+                                          map['distance']?.toString() ?? ''),
+                                }
+                              : {
+                                  'kg': _createAutoSaveController(
+                                      initialText: map['kg']?.toString() ?? ''),
+                                  'reps': _createAutoSaveController(
+                                      initialText:
+                                          map['reps']?.toString() ?? ''),
+                                };
+                        }).toList()
+                      : [
+                          isCardio
+                              ? {
+                                  'time': _createAutoSaveController(),
+                                  'distance': _createAutoSaveController(),
+                                }
+                              : {
+                                  'kg': _createAutoSaveController(),
+                                  'reps': _createAutoSaveController(),
+                                }
+                        ];
+                }
+              });
+              _saveCurrentWorkoutSession();
+            },
+            child: const Text('Load into Tracker'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (originalIdx != -1) _deleteRoutine(originalIdx);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
@@ -1454,9 +1417,17 @@ class _WorkoutPageState extends State<WorkoutPage> {
               int uniqueCount = 0;
               for (var w in _savedWorkouts) {
                 String name = (w['name']?.toString() ?? '').trim();
-                const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                const dayNames = [
+                  'monday',
+                  'tuesday',
+                  'wednesday',
+                  'thursday',
+                  'friday',
+                  'saturday',
+                  'sunday'
+                ];
                 if (dayNames.contains(name.toLowerCase())) name = '';
-                
+
                 if (name.isEmpty) {
                   uniqueCount++; // Nameless ones are always unique in our current logic
                 } else if (!uniqueNames.contains(name.toLowerCase())) {
@@ -1494,23 +1465,34 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ]
                 : (() {
                     // Get unique routines by name, keeping only the newest one (since list is already sorted newest first)
-                    final Map<String, Map<String, dynamic>> uniqueRoutinesMap = {};
+                    final Map<String, Map<String, dynamic>> uniqueRoutinesMap =
+                        {};
                     final List<Map<String, dynamic>> displayList = [];
-                    
+
                     for (var workout in _savedWorkouts) {
-                      String rawName = (workout['name']?.toString() ?? '').trim();
-                      
+                      String rawName =
+                          (workout['name']?.toString() ?? '').trim();
+
                       // Filter out day names to treat them as nameless
-                      const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                      const dayNames = [
+                        'monday',
+                        'tuesday',
+                        'wednesday',
+                        'thursday',
+                        'friday',
+                        'saturday',
+                        'sunday'
+                      ];
                       if (dayNames.contains(rawName.toLowerCase())) {
                         rawName = '';
                       }
-                      
+
                       if (rawName.isEmpty) {
                         // Nameless workouts are always shown uniquely
                         displayList.add(workout);
                       } else {
-                        if (!uniqueRoutinesMap.containsKey(rawName.toLowerCase())) {
+                        if (!uniqueRoutinesMap
+                            .containsKey(rawName.toLowerCase())) {
                           uniqueRoutinesMap[rawName.toLowerCase()] = workout;
                           displayList.add(workout);
                         }
@@ -1521,29 +1503,47 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       final exercises = workout['exercises'];
                       final exerciseList = exercises is List ? exercises : [];
                       final dateText = workout['date']?.toString() ?? '';
-                      
+
                       // Numbering based on original list position for consistency
                       final originalIdx = _savedWorkouts.indexOf(workout);
                       final workoutNumber = _savedWorkouts.length - originalIdx;
-                      
-                      String routineName = (workout['name']?.toString() ?? '').trim();
-                      const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                      if (dayNames.contains(routineName.toLowerCase()) || routineName.isEmpty) {
+
+                      String routineName =
+                          (workout['name']?.toString() ?? '').trim();
+                      const dayNames = [
+                        'monday',
+                        'tuesday',
+                        'wednesday',
+                        'thursday',
+                        'friday',
+                        'saturday',
+                        'sunday'
+                      ];
+                      if (dayNames.contains(routineName.toLowerCase()) ||
+                          routineName.isEmpty) {
                         routineName = 'Workout $workoutNumber';
                       }
 
-                      final assignedDays = _assignedRoutineDays[routineName] ?? [];
+                      final assignedDays =
+                          _assignedRoutineDays[routineName] ?? [];
                       final isAssigned = assignedDays.isNotEmpty;
 
                       return GestureDetector(
-                        onTap: () => _openRoutineDetailsDialog(workout, routineName),
+                        onTap: () =>
+                            _openRoutineDetailsDialog(workout, routineName),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
-                            color: isAssigned ? const Color(0xFF1E1A3A) : const Color(0xFF252538),
+                            color: isAssigned
+                                ? const Color(0xFF1E1A3A)
+                                : const Color(0xFF252538),
                             borderRadius: BorderRadius.circular(12),
-                            border: isAssigned ? Border.all(color: const Color(0xFF7C5CBF), width: 1.2) : null,
+                            border: isAssigned
+                                ? Border.all(
+                                    color: const Color(0xFF7C5CBF), width: 1.2)
+                                : null,
                           ),
                           child: Row(
                             children: [
@@ -1565,20 +1565,34 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                         ),
                                         if (isAssigned)
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 3),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF7C5CBF).withValues(alpha: 0.25),
-                                              borderRadius: BorderRadius.circular(20),
-                                              border: Border.all(color: const Color(0xFF7C5CBF), width: 1),
+                                              color: const Color(0xFF7C5CBF)
+                                                  .withOpacity(0.25),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                  color:
+                                                      const Color(0xFF7C5CBF),
+                                                  width: 1),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                const Icon(Icons.calendar_today_rounded, size: 11, color: Color(0xFFB39DDB)),
+                                                const Icon(
+                                                    Icons
+                                                        .calendar_today_rounded,
+                                                    size: 11,
+                                                    color: Color(0xFFB39DDB)),
                                                 const SizedBox(width: 4),
                                                 Text(
                                                   assignedDays.join(', '),
-                                                  style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 11, fontWeight: FontWeight.w600),
+                                                  style: const TextStyle(
+                                                      color: Color(0xFFB39DDB),
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w600),
                                                 ),
                                               ],
                                             ),
@@ -1588,13 +1602,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                     const SizedBox(height: 3),
                                     Text(
                                       '${exerciseList.length} exercises  •  $dateText',
-                                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                                      style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 12),
                                     ),
                                   ],
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.redAccent, size: 20),
                                 onPressed: () => _deleteRoutine(originalIdx),
                                 constraints: const BoxConstraints(),
                                 padding: EdgeInsets.zero,

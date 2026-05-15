@@ -270,10 +270,6 @@ class _DashboardPage extends State<DashboardPage> {
         title: const Text('Exercise Progress', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           const StreakDisplay(compact: true),
-          IconButton(
-            icon: const Icon(Icons.add_box),
-            onPressed: _triggerAddChart,
-          ),
         ],
       ),
       body: RefreshIndicator(
