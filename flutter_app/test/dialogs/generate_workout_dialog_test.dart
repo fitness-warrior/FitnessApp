@@ -114,12 +114,6 @@ void main() {
         await tester.tap(find.text(equip));
         await tester.pumpAndSettle();
 
-        final equipmentIcons = {
-          'At Home': Icons.home,
-          'Gym': Icons.fitness_center,
-          'Cardio': Icons.favorite,
-          'Dumbbells': Icons.sports_gymnastics,
-        };
         final selectedButton = find.ancestor(
             of: find.text(equip), 
             matching: find.byWidgetPredicate((w) => w.runtimeType.toString().contains('Button')));
