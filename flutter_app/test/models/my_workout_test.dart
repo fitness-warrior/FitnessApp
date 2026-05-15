@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fitness_app_flutter/views/workout_page.dart';
-import 'package:fitness_app_flutter/widgets/common/navbar.dart';
 import 'package:fitness_app_flutter/widgets/common/streak_display.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

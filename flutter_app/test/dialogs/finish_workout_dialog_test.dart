@@ -136,10 +136,10 @@ void main() {
       const saveAsRoutine = false;
 
       // Service would skip WorkoutStorage.saveWorkout
-      final workoutSaved = saveAsRoutine; // false → routine not stored
+      const workoutSaved = saveAsRoutine; // false → routine not stored
 
       // Message shown in snackbar
-      final message = saveAsRoutine ? 'Workout saved!' : 'Workout completed!';
+      const message = saveAsRoutine ? 'Workout saved!' : 'Workout completed!';
 
       expect(workoutSaved, isFalse);
       expect(message, equals('Workout completed!'));
@@ -163,10 +163,10 @@ void main() {
       // Simulate XP award (20 XP per exercise, 1 exercise)
       const xpPerExercise = 20;
       const exerciseCount = 1;
-      final xpEarned = xpPerExercise * exerciseCount;
+      const xpEarned = xpPerExercise * exerciseCount;
 
       // Message would be 'Workout saved!' with XP earned
-      final message = 'Workout saved!';
+      const message = 'Workout saved!';
       expect(workoutName, equals('Back day'));
       expect(xpEarned, equals(20));
       expect(message, equals('Workout saved!'));
@@ -244,7 +244,7 @@ void main() {
                     context: context,
                     builder: (_) => FinishWorkoutDialog(
                       exercises: exercises,
-                      setControllers: {},
+                      setControllers: const {},
                       onSuccess: (_) {},
                     ),
                   );
