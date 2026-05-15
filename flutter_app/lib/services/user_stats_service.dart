@@ -14,6 +14,11 @@ class UserStatsService {
         'anonymous';
     return '${_xpKey}_$userId';
   }
+  
+  static http.Client? _client;
+  @visibleForTesting
+  static set client(http.Client value) => _client = value;
+  static http.Client get client => _client ?? http.Client();
 
   static String get baseUrl => ApiConfig.baseUrl;
 
@@ -69,7 +74,7 @@ class UserStatsService {
   static Future<int?> fetchXPFromApi() async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      final response = await http
+      final response = await client
           .get(Uri.parse('$baseUrl/user/stats'), headers: headers)
           .timeout(const Duration(seconds: 5));
 
@@ -88,7 +93,7 @@ class UserStatsService {
   static Future<void> _syncXPToApi(int amount) async {
     try {
       final headers = await AuthService.getAuthHeaders();
-      final response = await http
+      final response = await client
           .post(
             Uri.parse('$baseUrl/user/stats/xp'),
             headers: headers,
