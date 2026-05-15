@@ -94,6 +94,37 @@ void main() {
       expect(result[1]['exer_name'], 'Pull-up');
     });
 
+    test('listExercises with all params and equipment', () async {
+      db.client = MockClient((request) async {
+        expect(request.url.queryParameters['name'], 'Bench');
+        expect(request.url.queryParameters['type'], 'strength');
+        expect(request.url.queryParameters['equipment'], 'dumbbells,bench');
+        return http.Response(jsonEncode([]), 200);
+      });
+
+      await db.listExercises(
+        name: 'Bench',
+        type: 'strength',
+        equipment: ['dumbbells', 'bench']
+      );
+    });
+
+    test('listExercises returns empty list on non-200 status', () async {
+      db.client = MockClient((request) async {
+        return http.Response('Error', 500);
+      });
+      final result = await db.listExercises();
+      expect(result, []);
+    });
+
+    test('searchExercises returns empty list on non-200 status', () async {
+      db.client = MockClient((request) async {
+        return http.Response('Error', 500);
+      });
+      final result = await db.searchExercises('q');
+      expect(result, []);
+    });
+
     test('Handles exceptions and returns empty list/null', () async {
       db.client = MockClient((request) async {
         throw Exception('Network Error');
