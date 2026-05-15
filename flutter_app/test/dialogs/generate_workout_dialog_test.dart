@@ -114,9 +114,10 @@ void main() {
         await tester.tap(find.text(equip));
         await tester.pumpAndSettle();
 
-        final selectedButton = tester.widget<ElevatedButton>(
-            find.ancestor(of: find.text(equip), matching: find.byType(ElevatedButton)).first);
-        expect(selectedButton, isNotNull);
+        final selectedButton = find.ancestor(
+            of: find.text(equip), 
+            matching: find.byType(ButtonStyleButton)).first;
+        expect(selectedButton, findsOneWidget);
 
         // Deselect for next iteration
         await tester.tap(find.text(equip));
@@ -188,17 +189,19 @@ void main() {
       await tester.tap(find.text('Gym'));
       await tester.pumpAndSettle();
 
-      var selectedButton = tester.widget<ElevatedButton>(
-          find.ancestor(of: find.text('Gym'), matching: find.byType(ElevatedButton)).first);
-      expect(selectedButton, isNotNull);
+      final gymButton = find.ancestor(
+          of: find.text('Gym'), 
+          matching: find.byType(ButtonStyleButton)).first;
+      expect(gymButton, findsOneWidget);
 
       // Switch to different equipment
       await tester.tap(find.text('Cardio'));
       await tester.pumpAndSettle();
 
-      selectedButton = tester.widget<ElevatedButton>(
-          find.ancestor(of: find.text('Cardio'), matching: find.byType(ElevatedButton)).first);
-      expect(selectedButton, isNotNull);
+      final cardioButton = find.ancestor(
+          of: find.text('Cardio'), 
+          matching: find.byType(ButtonStyleButton)).first;
+      expect(cardioButton, findsOneWidget);
     });
 
     testWidgets('dialog background has correct color',
@@ -220,7 +223,7 @@ void main() {
 
       // Buttons should be enabled before generation
       final generateButton =
-          tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'Generate'));
+          tester.widget<ButtonStyleButton>(find.widgetWithText(ButtonStyleButton, 'Generate'));
       expect(generateButton.onPressed, isNotNull);
     });
 

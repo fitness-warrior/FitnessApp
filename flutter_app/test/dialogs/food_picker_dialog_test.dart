@@ -90,7 +90,7 @@ void main() {
       await tester.tap(dropdowns.first);
       await tester.pumpAndSettle();
 
-      expect(find.byType(DropdownMenuItem), findsWidgets);
+      expect(find.byType(DropdownMenuItem<String>), findsWidgets);
     });
 
     testWidgets('max calories filter updates results',
