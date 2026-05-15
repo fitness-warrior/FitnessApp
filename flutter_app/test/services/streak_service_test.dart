@@ -211,5 +211,42 @@ void main() {
 
       expect(data.weeklyProgressPercent, equals(50));
     });
+
+    test('StreakData.workoutsRemaining calculates correctly', () {
+      final data = StreakData(
+        currentStreak: 1,
+        longestStreak: 3,
+        workoutsThisWeek: 1,
+        weeklyGoal: 3,
+      );
+      expect(data.workoutsRemaining, equals(2));
+      
+      final met = StreakData(
+        currentStreak: 1,
+        longestStreak: 3,
+        workoutsThisWeek: 5,
+        weeklyGoal: 3,
+      );
+      expect(met.workoutsRemaining, equals(0));
+    });
+
+    test('getStreak returns local when API fails', () async {
+      // Mocked channel already returns null for read which leads to 400/fail usually
+      await _setInt('local_current_streak', 5);
+      final result = await StreakService.getStreak();
+      expect(result['current_streak'], equals(5));
+    });
+
+    test('parseStreakData uses defaults for missing fields', () {
+      final data = StreakService.parseStreakData({});
+      expect(data.currentStreak, 0);
+      expect(data.weeklyGoal, 3);
+    });
+
+    test('notifyStreakChanged increments version', () {
+      final initial = StreakService.streakVersion.value;
+      StreakService.notifyStreakChanged();
+      expect(StreakService.streakVersion.value, equals(initial + 1));
+    });
   });
 }
