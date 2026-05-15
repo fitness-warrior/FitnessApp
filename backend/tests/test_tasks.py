@@ -69,3 +69,34 @@ async def test_tc040_edit_task_goal(client, mock_conn):
     
     assert response.status_code == 200
     assert response.json()["status"] == "success"
+
+@pytest.mark.asyncio
+async def test_tc041_complete_task_success(client, mock_conn):
+    """FR15: Mark task as complete"""
+    token = create_access_token(data={"sub": "1"})
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    mock_conn.fetchrow.side_effect = [
+        {"name": "Morning Run"}, 
+        None # Streak check
+    ]
+    mock_conn.fetchval.return_value = None # Not completed today
+    
+    response = await client.post("/api/user/tasks/101/complete", headers=headers)
+    
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+
+@pytest.mark.asyncio
+async def test_tc042_complete_task_duplicate(client, mock_conn):
+    """FR15: Complete same task twice in one day"""
+    token = create_access_token(data={"sub": "1"})
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    mock_conn.fetchrow.return_value = {"name": "Morning Run"}
+    mock_conn.fetchval.return_value = 505 # Already completed
+    
+    response = await client.post("/api/user/tasks/101/complete", headers=headers)
+    
+    assert response.status_code == 200
+    assert response.json()["status"] == "already_completed"
