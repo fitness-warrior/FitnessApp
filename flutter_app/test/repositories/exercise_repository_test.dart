@@ -9,7 +9,7 @@ class _FakeHttpResult {
   _FakeHttpResult({required this.statusCode, required this.body});
 
   final int statusCode;
-  final dynamic body; 
+  final dynamic body;
 }
 
 typedef _ApiResponder = _FakeHttpResult Function(String method, Uri url);
@@ -82,10 +82,12 @@ class _FakeHttpHeaders implements HttpHeaders {
   void set(String name, Object value, {bool preserveHeaderCase = false}) {
     _values[name] = [value.toString()];
   }
+
   @override
   void forEach(void Function(String name, List<String> values) action) {
     _values.forEach(action);
   }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -164,7 +166,12 @@ void main() {
   }
 
   group('ExerciseRepository Tests', () {
-    test('UTC-064 Returns nothing when exercise cannot be found anywhere', () async {
+    setUp(() {
+      ExerciseRepository.clearCache();
+    });
+
+    test('UTC-064 Returns nothing when exercise cannot be found anywhere',
+        () async {
       final exercise = await runWithFakeHttp(
         () => ExerciseRepository.getExerciseById(999),
         (method, url) {
@@ -174,6 +181,177 @@ void main() {
       );
 
       expect(exercise, isNull);
+    });
+
+    test('getExerciseById returns normalized local exercise when found in DB', () async {
+      final fakeLocalRow = {
+        'exer_id': 1,
+        'exer_name': 'Squat',
+        'exer_type': 'strength',
+        'exer_body_area': 'legs',
+        'exer_descrip': 'A basic squat',
+        'exer_vid': 'http://vid',
+        'exer_equip': 'Barbell, Dumbbell',
+      };
+
+      final exercise = await runWithFakeHttp(
+        () => ExerciseRepository.getExerciseById(1),
+        (method, url) {
+          if (url.path.endsWith('/exercises/1')) {
+            return _FakeHttpResult(statusCode: 200, body: fakeLocalRow);
+          }
+          return _FakeHttpResult(statusCode: 404, body: {});
+        },
+      );
+
+      expect(exercise, isNotNull);
+      expect(exercise!['id'], 1);
+      expect(exercise['name'], 'Squat');
+      expect(exercise['equipment'], ['Barbell', 'Dumbbell']);
+      expect(exercise['meta']['source'], 'local');
+    });
+
+    test('getExerciseById falls back to remote when local returns null/404', () async {
+      final fakeRemoteRow = {
+        'id': 2,
+        'name': 'Deadlift',
+        'type': 'strength',
+        'area': 'back',
+        'description': 'A basic deadlift',
+        'video': 'http://vid2',
+        'equipment': ['Barbell'],
+      };
+
+      bool firstCall = true;
+      final exercise = await runWithFakeHttp(
+        () => ExerciseRepository.getExerciseById(2),
+        (method, url) {
+          if (url.path.endsWith('/exercises/2')) {
+            if (firstCall) {
+              firstCall = false;
+              return _FakeHttpResult(statusCode: 404, body: {}); // Local fails
+            }
+            return _FakeHttpResult(statusCode: 200, body: fakeRemoteRow); // Remote succeeds
+          }
+          return _FakeHttpResult(statusCode: 404, body: {});
+        },
+      );
+
+      expect(exercise, isNotNull);
+      expect(exercise!['id'], 2);
+      expect(exercise['name'], 'Deadlift');
+      expect(exercise['meta']['source'], 'remote');
+    });
+
+    test('listExercises caches results and clearCache / invalidateCache work', () async {
+      int apiCallCount = 0;
+      final fakeList = [
+        {
+          'exer_id': 10,
+          'exer_name': 'Pushup',
+          'exer_type': 'strength',
+          'exer_body_area': 'chest',
+          'exer_equip': 'None',
+        }
+      ];
+
+      _FakeHttpResult responder(String method, Uri url) {
+        apiCallCount++;
+        return _FakeHttpResult(statusCode: 200, body: fakeList);
+      }
+
+      // First call should hit API
+      final res1 = await runWithFakeHttp(
+        () => ExerciseRepository.listExercises(name: 'Pushup'),
+        responder,
+      );
+      expect(res1.length, 1);
+      expect(apiCallCount, 1);
+
+      // Second call with same params should hit cache
+      final res2 = await runWithFakeHttp(
+        () => ExerciseRepository.listExercises(name: 'Pushup'),
+        responder,
+      );
+      expect(res2.length, 1);
+      expect(apiCallCount, 1);
+
+      // Call with forceRefresh should hit API
+      final res3 = await runWithFakeHttp(
+        () => ExerciseRepository.listExercises(name: 'Pushup', forceRefresh: true),
+        responder,
+      );
+      expect(res3.length, 1);
+      expect(apiCallCount, 3); // local then remote
+
+      // invalidateCache should remove specific key
+      ExerciseRepository.invalidateCache(name: 'Pushup');
+      final res4 = await runWithFakeHttp(
+        () => ExerciseRepository.listExercises(name: 'Pushup'),
+        responder,
+      );
+      expect(apiCallCount, 4);
+
+      // clearCache should clear everything
+      await runWithFakeHttp(() => ExerciseRepository.listExercises(name: 'Pushup'), responder);
+      ExerciseRepository.clearCache();
+      await runWithFakeHttp(() => ExerciseRepository.listExercises(name: 'Pushup'), responder);
+      expect(apiCallCount, 5);
+    });
+
+    test('listExercises with ids fetches local exercises by ID', () async {
+      final row10 = {'exer_id': 10, 'exer_name': 'Pushup', 'exer_equip': ''};
+      final row20 = {'exer_id': 20, 'exer_name': 'Pullup', 'exer_equip': 'Bar'};
+
+      final results = await runWithFakeHttp(
+        () => ExerciseRepository.listExercises(ids: [10, 20, 99]),
+        (method, url) {
+          if (url.path.endsWith('/exercises/10')) {
+            return _FakeHttpResult(statusCode: 200, body: row10);
+          }
+          if (url.path.endsWith('/exercises/20')) {
+            return _FakeHttpResult(statusCode: 200, body: row20);
+          }
+          return _FakeHttpResult(statusCode: 404, body: {});
+        },
+      );
+
+      expect(results.length, 2);
+      expect(results[0]['name'], 'Pushup');
+      expect(results[1]['name'], 'Pullup');
+      expect(results[1]['equipment'], ['Bar']);
+    });
+
+    test('listExercises sorts by recommendationTags score', () async {
+      final fakeList = [
+        {
+          'exer_id': 1,
+          'exer_name': 'Running Fast',
+          'exer_type': 'cardio',
+          'exer_body_area': 'legs',
+          'exer_equip': 'Shoes',
+        },
+        {
+          'exer_id': 2,
+          'exer_name': 'Bench Press',
+          'exer_type': 'strength',
+          'exer_body_area': 'chest',
+          'exer_equip': 'Barbell',
+        },
+      ];
+
+      final results = await runWithFakeHttp(
+        () => ExerciseRepository.listExercises(
+          recommendationTags: ['chest', 'barbell', 'bench'],
+        ),
+        (method, url) => _FakeHttpResult(statusCode: 200, body: fakeList),
+      );
+
+      expect(results.length, 2);
+      expect(results[0]['name'], 'Bench Press');
+      expect(results[0]['meta']['recommendationScore'], 3.0);
+      expect(results[1]['name'], 'Running Fast');
+      expect(results[1]['meta']['recommendationScore'], 0.0);
     });
   });
 }
