@@ -3,26 +3,26 @@ description: Flutter questionnaire module for FitnessApp
 publish_to: none
 
 environment:
-  sdk: '>=2.17.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   sqflite: ^2.2.8
   path: ^1.8.4
-  http: ^1.1.0
+  http: ^1.2.0
   url_launcher: ^6.2.0
   shared_preferences: ^2.2.2
+  fl_chart: ^1.2.0
+  collection: ^1.19.1
+  flutter_secure_storage: any
+  youtube_player_iframe: ^5.2.2
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
-    - images/game_costume/           # costume reward images (earth, fire, etc.)
-    - images/game_costume/game_chars/ # boss sprites (will add later)
-    - images/game_costume/backgrounds/          # City1-4 background PNGs
-    - images/game_costume/game_chars/player_stances/ # idle + attack frames
 
 dev_dependencies:
   flutter_test:
@@ -30,3 +30,6 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  mockito: ^5.4.0
+  build_runner: ^2.4.0
+  webview_flutter_platform_interface: ^2.15.1

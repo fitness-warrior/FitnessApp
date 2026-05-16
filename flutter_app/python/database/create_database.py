@@ -1,12 +1,45 @@
 from login import CONN
+from passlib.context import CryptContext
+
+pwd = CryptContext(schemes=["argon2"], deprecated="auto")
+
 
 class DatabaseSQL():
     def __init__(self,CONN):
         self.conn = CONN
         self.cur = self.conn.cursor()
+    
+
         
     def create_type(self):
         self.cur.execute("""
+   ---------------- Types ----------------                  
+    CREATE TYPE type AS ENUM ('a','b','c');
+
+CREATE TYPE gender AS ENUM ('male','female');
+
+CREATE TYPE goal AS ENUM (
+'Fat Loss',
+'Muscle Gain',
+'Endurance Improvement',
+'General Fitness',
+'Athletic Performance',
+'Injury Rehabilitation'
+);
+
+CREATE TYPE focus AS ENUM ('strength','cardio','isolation','bodyweight');
+
+CREATE TYPE equip AS ENUM (
+'Bodyweight Only',
+'Dumbbells',
+'Barbells',
+'Resistance Bands',
+'Gym Machines',
+'Cardio Machines'
+);
+
+CREATE TYPE reward_type AS ENUM ('item','currency','experience');
+
     CREATE TABLE game_char (
     game_char_id SERIAL PRIMARY KEY,
     game_char_level INT NOT NULL,
@@ -24,7 +57,9 @@ CREATE TABLE users (
     game_char_id INT NOT NULL REFERENCES game_char(game_char_id),
     user_name VARCHAR(40) NOT NULL,
     user_surname VARCHAR(40) NOT NULL,
-    user_email VARCHAR(40) UNIQUE NOT NULL
+    user_email VARCHAR(40) UNIQUE NOT NULL,
+    user_password TEXT DEFAULT NULL
+
 );
 
 ---------------- EQUIPMENT ----------------
@@ -50,7 +85,14 @@ CREATE TABLE body_metrics (
     body_height FLOAT NOT NULL,
     body_age INT NOT NULL,
     body_gender gender NOT NULL,
-    body_goal goal NOT NULL
+    body_goal goal NOT NULL,
+    body_experience VARCHAR(20),
+    body_location VARCHAR(20),
+    body_days_per_week INT,
+    body_session_length INT,
+    body_injuries TEXT,
+    body_diet_preference VARCHAR(50),
+    body_allergies TEXT
 );
 
 ---------------- EXERCISE ----------------
@@ -62,7 +104,31 @@ CREATE TABLE exercise (
     exer_type focus NOT NULL,
     exer_descrip TEXT,
     exer_vid TEXT,
-    exer_equip equip NOT NULL
+    exer_equip equip NOT NULL,
+    exer_light Float NOT NULL,
+    exer_mid Float NOT NULL,
+    exer_high Float NOT NULL
+);
+
+CREATE TABLE training (
+    train_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    train_data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    train_mins INT,
+    train_reps INT,
+    train_effort FLOAT NOT NULL
+);
+
+CREATE TABLE training_exercise (
+    training_exercise_id SERIAL PRIMARY KEY,
+    train_id INT REFERENCES training(train_id),
+    exer_id INT REFERENCES exercise(exer_id)
+);
+                         
+                         CREATE TABLE training_body (
+    training_body_id SERIAL PRIMARY KEY,
+    train_id INT REFERENCES training(train_id),
+    body_id INT REFERENCES body_metrics(body_id)
 );
 
 ---------------- WORK PLAN ----------------
@@ -103,13 +169,24 @@ CREATE TABLE food (
     food_calories FLOAT NOT NULL,
     food_fat FLOAT NOT NULL,
     food_fibre Float NOT NULL,
-    food_protein Float NOT NULL,
+    food_protein Float NOT NULL
 );
 
 CREATE TABLE food_plan (
     food_plan_id SERIAL PRIMARY KEY,
     food_id INT REFERENCES food(food_id),
     meal_id INT REFERENCES meal_plan(meal_id)
+);
+
+CREATE TABLE recipe (
+    recipe_id SERIAL PRIMARY KEY,
+    recipe_meal_name VARCHAR(50) NOT NULL,
+    recipe_ingredients TEXT NOT NULL,
+    recipe_allergy_info TEXT,
+    recipe_calories FLOAT NOT NULL,
+    recipe_diet_type VARCHAR(50) NOT NULL,
+    recipe_instructions TEXT NOT NULL,
+    recipe_image_url TEXT
 );
 
 ---------------- GAME ITEMS ----------------
@@ -167,9 +244,10 @@ CREATE TABLE collection_foods (
 
         """)
         self.conn.commit()
-    
+
     def add_data(self):
         self.cur.execute("""
+                         
 INSERT INTO game_char
 (game_char_level, game_char_colour, game_char_type,
  game_char_hp, game_char_attack, game_char_speed)
@@ -194,6 +272,8 @@ VALUES
 (6, 'Lisa', 'Garcia', 'lisa.garcia@email.com'),
 (7, 'James', 'Miller', 'james.miller@email.com'),
 (8, 'Anna', 'Davis', 'anna.davis@email.com');
+                         
+
 
 INSERT INTO equipment (equip_id, equipment) VALUES
 (1,'Dumbbells'),
@@ -263,16 +343,128 @@ INSERT INTO body_metrics (user_id, body_weight, body_past_weight, body_height, b
 (8, 55.0, 57.0, 162.0, 26, 'female', 'General Fitness');
 
 INSERT INTO exercise
-(exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip)
+(exer_name, exer_body_area, exer_type, exer_descrip, exer_vid, exer_equip, exer_light, exer_mid, exer_high)
 VALUES
-('Push-ups','chest','strength','Classic upper body exercise','https://youtube.com/pushups','Bodyweight Only'),
-('Squats','legs','strength','Lower body compound movement','https://youtube.com/squats','Bodyweight Only'),
-('Running','full body','cardio','Outdoor cardio exercise','https://youtube.com/running','Dumbbells'),
-('Bench Press','chest','strength','Chest and tricep builder','https://youtube.com/bench','Barbells'),
-('Deadlift','back','strength','Full posterior chain exercise','https://youtube.com/deadlift','Gym Machines'),
-('Cycling','legs','cardio','Low impact cardio','https://youtube.com/cycling','Cardio Machines'),
-('Pull-ups','back','strength','Back and bicep exercise','https://youtube.com/pullups','Bodyweight Only'),
-('Jump Rope','full body','cardio','High intensity cardio','https://youtube.com/jumprope','Resistance Bands');
+('Push-ups','chest','strength','Classic upper body exercise','https://youtube.com/watch?v=IODxDxX7oi4','Bodyweight Only',10,20,30),
+('Squats','legs','strength','Lower body compound movement','https://youtube.com/watch?v=Dy28eq2PjlU','Bodyweight Only',20,40,60),
+('Running','cardio','cardio','Outdoor cardio exercise','https://youtube.com/watch?v=JNhYkYNXfWc','Bodyweight Only',5,6,9),
+('Bench Press','chest','strength','Chest and tricep builder','https://youtube.com/watch?v=4T9UQ4FBVXA','Barbells',50,65,80),
+('Deadlift','back','strength','Full posterior chain exercise','https://youtube.com/watch?v=op9kVnSso6Q','Barbells',60,90,120),
+('Cycling','cardio','cardio','Low impact cardio','https://youtube.com/watch?v=gIa7fh2eAHc','Cardio Machines',15,20,25),
+('Pull-ups','back','strength','Back and bicep exercise','https://youtube.com/watch?v=eGo4IYlbE5g','Bodyweight Only',5,8,12),
+('Jump Rope','cardio','cardio','High intensity cardio','https://youtube.com/watch?v=Ot1qPy5lqXY','Resistance Bands',60,90,120),
+('Barbell Row','back','strength','Compound back movement','https://youtube.com/watch?v=p2OPXmnOy2w','Barbells',40,60,80),
+('Dumbbell Curl','arms','isolation','Dumbbell bicep curl','https://youtube.com/watch?v=5up_DknRHa4','Dumbbells',8,12,16),
+('Tricep Dips','arms','strength','Bodyweight tricep exercise','https://youtube.com/watch?v=SYFZ3NZXfCE','Bodyweight Only',8,12,18),
+('Leg Press','legs','strength','Machine leg pressing','https://youtube.com/watch?v=IZxyjW7MIAI','Gym Machines',80,120,160),
+('Lat Pulldown','back','isolation','Isolate latissimus dorsi','https://youtube.com/watch?v=ceaG6STpF1A','Gym Machines',40,55,70),
+('Shoulder Press','shoulders','strength','Overhead pressing movement','https://youtube.com/watch?v=hQcJMpB45yA','Barbells',30,45,60),
+('Lateral Raise','shoulders','isolation','Isolate lateral deltoids','https://youtube.com/watch?v=3VcIy7ZcqXE','Dumbbells',5,7.5,10),
+('Dumbbell Bench Press','chest','strength','Dumbbell version of bench press','https://youtube.com/watch?v=QN39LvQKWGw','Dumbbells',20,30,40),
+('Incline Bench Press','chest','strength','Targets upper chest','https://youtube.com/watch?v=Avs0JT0x7z8','Barbells',40,55,70),
+('Decline Bench Press','chest','strength','Targets lower chest','https://youtube.com/watch?v=rT7DgCr-3pg','Barbells',45,60,80),
+('Cable Flye','chest','isolation','Isolate chest with cables','https://youtube.com/watch?v=vHbmMO9RIDY','Gym Machines',20,30,40),
+('Dumbbell Flye','chest','isolation','Stretch and contract chest','https://youtube.com/watch?v=Lnk_J2q0Hlw','Dumbbells',8,12,16),
+('Incline Push-ups','chest','bodyweight','Easier variation of push-ups','https://youtube.com/watch?v=4dWVIX6EgsM','Bodyweight Only',8,12,18),
+('Machine Chest Press','chest','isolation','Controlled chest movement','https://youtube.com/watch?v=4xLm-Nt5bJs','Gym Machines',40,55,70),
+('T-Bar Row','back','strength','Machine assisted row','https://youtube.com/watch?v=c5QfRFMCUlQ','Gym Machines',50,70,90),
+('Dumbbell Row','back','strength','Single arm dumbbell row','https://youtube.com/watch?v=qlqJoP-8yGM','Dumbbells',15,20,25),
+('Chin-ups','back','strength','Underhand pull-up variation','https://youtube.com/watch?v=O5XLJlXCfJg','Bodyweight Only',5,8,12),
+('Cable Row','back','isolation','Seated cable rowing','https://youtube.com/watch?v=SHuZo74x5gE','Gym Machines',35,50,65),
+('Dumbbell Shoulder Press','shoulders','strength','Dumbbell overhead press','https://youtube.com/watch?v=qEwKWAw_gYc','Dumbbells',15,20,25),
+('Front Raise','shoulders','isolation','Isolate front deltoids','https://youtube.com/watch?v=lehuFOVR9S0','Dumbbells',5,7.5,10),
+('Reverse Pec Deck','shoulders','isolation','Target rear deltoids','https://youtube.com/watch?v=L9kFi6yrpP4','Gym Machines',20,30,40),
+('Machine Shoulder Press','shoulders','isolation','Controlled shoulder press','https://youtube.com/watch?v=M89tKxw9nRs','Gym Machines',35,50,65),
+('Pike Push-ups','shoulders','bodyweight','Bodyweight shoulder exercise','https://youtube.com/watch?v=rJWXM0rLdmE','Bodyweight Only',8,12,18),
+('Upright Row','shoulders','strength','Compound shoulder movement','https://youtube.com/watch?v=4ZWc9MmfOD8','Barbells',25,35,45),
+('Barbell Curl','arms','strength','Classic bicep exercise','https://youtube.com/watch?v=kwG2ipFQV0s','Barbells',20,30,40),
+('Overhead Tricep Extension','arms','isolation','Tricep isolation exercise','https://youtube.com/watch?v=0c3kzsSMCAM','Dumbbells',8,12,16),
+('Tricep Rope Pushdown','arms','isolation','Cable tricep exercise','https://youtube.com/watch?v=Ddt4Z5Koyrc','Gym Machines',20,30,40),
+('Hammer Curl','arms','isolation','Neutral grip curl','https://youtube.com/watch?v=zC3nLlEvin0','Dumbbells',8,12,16),
+('Preacher Curl','arms','isolation','Isolated bicep curl','https://youtube.com/watch?v=7JqH7VRLkMA','Barbells',15,22.5,30),
+('Cable Curl','arms','isolation','Cable machine curl','https://youtube.com/watch?v=rvXPAc8YEZE','Gym Machines',20,30,40),
+('Close Grip Bench Press','arms','strength','Tricep focused pressing','https://youtube.com/watch?v=2KPlPKrklW0','Barbells',40,55,70),
+('Walking Lunge','legs','strength','Step forward lunge','https://youtube.com/watch?v=Z2n58m1gJ8Y','Dumbbells',10,15,20),
+('Bulgarian Split Squat','legs','strength','Single leg squat variation','https://youtube.com/watch?v=EQFhGJXNuJE','Dumbbells',12,18,24),
+('Leg Curl','legs','isolation','Hamstring isolation','https://youtube.com/watch?v=PJwmD1iB6t0','Gym Machines',20,30,40),
+('Leg Extension','legs','isolation','Quad isolation','https://youtube.com/watch?v=TAeFnpBUh90','Gym Machines',25,35,45),
+('Romanian Deadlift','legs','strength','Hamstring focused deadlift','https://youtube.com/watch?v=2SHsk9AzdjA','Barbells',50,70,90),
+('Hack Squat','legs','strength','Machine assisted squat','https://youtube.com/watch?v=Ykd-khRrNHs','Gym Machines',60,90,120),
+('Smith Machine Squat','legs','strength','Guided squat movement','https://youtube.com/watch?v=7cPxwBvD5e8','Gym Machines',60,90,120),
+('Goblet Squat','legs','strength','Dumbbell squat hold','https://youtube.com/watch?v=2qQjLLhbRIY','Dumbbells',20,30,40),
+('Calf Raise','legs','isolation','Isolate calf muscles','https://youtube.com/watch?v=RccvEVhIV9c','Barbells',20,30,40),
+('Seated Leg Curl','legs','isolation','Seated hamstring curl','https://youtube.com/watch?v=JUy1fgQW4wQ','Gym Machines',20,30,40),
+('Plank','core','bodyweight','Core stability exercise','https://youtube.com/watch?v=29G9hSE2RHw','Bodyweight Only',30,45,60),
+('Ab Wheel Rollout','core','isolation','Advanced core exercise','https://youtube.com/watch?v=2w6oYvQgIPU','Dumbbells',5,10,15),
+('Cable Wood Chop','core','isolation','Rotational core exercise','https://youtube.com/watch?v=9e8sLfpvs_c','Gym Machines',20,30,40),
+('Decline Situp','core','bodyweight','Weighted ab exercise','https://youtube.com/watch?v=jDSbDAIVCl8','Bodyweight Only',12,18,24),
+('Cable Crunch','core','isolation','Weighted ab crunch','https://youtube.com/watch?v=hcjgKqBXQqc','Gym Machines',20,30,40),
+('Dead Bug','core','bodyweight','Core stability exercise','https://youtube.com/watch?v=MwBEyYhyZEo','Bodyweight Only',10,15,20),
+('Bird Dog','core','bodyweight','Balance and core exercise','https://youtube.com/watch?v=0L8v5xVrOAM','Bodyweight Only',10,15,20),
+('Hanging Leg Raise','core','strength','Advanced ab exercise','https://youtube.com/watch?v=Fv8Cb1bZvMw','Bodyweight Only',5,8,12),
+('Pallof Press','core','isolation','Anti-rotation exercise','https://youtube.com/watch?v=bvcKXeKKUAg','Gym Machines',20,30,40),
+('Rowing Machine','cardio','cardio','Full body cardio','https://youtube.com/watch?v=RvZVJ8kA9R8','Cardio Machines',4,6,8),
+('Elliptical','cardio','cardio','Low impact cardio','https://youtube.com/watch?v=fQ7TcXSEAf4','Cardio Machines',5,8,11),
+('Stair Climber','cardio','cardio','Lower body cardio','https://youtube.com/watch?v=tLxnM-YlmXE','Cardio Machines',8,12,16),
+('Burpees','cardio','bodyweight','High intensity bodyweight','https://youtube.com/watch?v=WZ8EJ2aj-Nk','Bodyweight Only',10,15,20),
+('Mountain Climbers','cardio','cardio','Core and cardio combo','https://youtube.com/watch?v=nmwgirgXLV4','Bodyweight Only',20,30,40),
+('Sprint','cardio','cardio','High speed running','https://youtube.com/watch?v=yjNvJphVo9I','Bodyweight Only',15,20,25),
+('Jump Squats','cardio','cardio','Explosive leg movement','https://youtube.com/watch?v=vovEj7RCj0I','Bodyweight Only',15,20,25),
+('Rope Climb','cardio','strength','Climbing exercise','https://youtube.com/watch?v=pVvXxFY-G80','Resistance Bands',1,2,3),
+('Treadmill','cardio','cardio','Indoor running','https://youtube.com/watch?v=dIUm_pwrjKE','Cardio Machines',6,8,10),
+('Kettlebell Swing','back','strength','Hip-hinge explosive swing','https://youtube.com/watch?v=t7zY7Ey-XrI','Dumbbells',8,12,16),
+('Farmer''s Carry','core','strength','Grip and core strength','https://youtube.com/watch?v=a0wKJvjqO7A','Dumbbells',20,30,40),
+('Medicine Ball Slam','cardio','bodyweight','Explosive power movement','https://youtube.com/watch?v=oU1JJpKx7Vk','Resistance Bands',5,7,9),
+('Cable Chop','core','isolation','Core rotation exercise','https://youtube.com/watch?v=e-VLvVt0RIM','Gym Machines',20,30,40),
+('Sled Push','legs','strength','Heavy leg and cardio','https://youtube.com/watch?v=JwweNM-0gfY','Gym Machines',60,90,120),
+('Battle Ropes','cardio','bodyweight','Full body cardio','https://youtube.com/watch?v=aMHWKqrfPqY','Resistance Bands',20,30,40),
+('Box Jump','cardio','bodyweight','Plyometric leg power','https://youtube.com/watch?v=qnYwMoY-lY4','Bodyweight Only',10,15,20),
+('Dumbbell Snatch','back','strength','Explosive full body','https://youtube.com/watch?v=P_J23Oj6pAo','Dumbbells',10,15,20),
+('Power Clean','back','strength','Olympic lifting movement','https://youtube.com/watch?v=pN7MtEuDRfA','Barbells',40,60,80),
+('Thruster','shoulders','strength','Squat to shoulder press','https://youtube.com/watch?v=b3-u2l_RKm0','Dumbbells',15,20,25);
+
+INSERT INTO training (user_id, train_data, train_mins, train_reps, train_effort) VALUES
+(1, '2026-02-01 10:15:00', 45, 120, 7.5),
+(2, '2026-02-02 09:30:00', 50, 140, 8.0),
+(3, '2026-02-03 07:20:00', 35, 90, 6.5),
+(4, '2026-02-04 08:25:00', 55, 160, 8.5),
+(5, '2026-02-05 10:40:00', 40, 110, 7.0),
+(6, '2026-02-06 06:25:00', 30, 100, 9.0),
+(7, '2026-02-07 11:20:00', 60, 180, 9.5),
+(8, '2026-02-08 07:45:00', 25, 70, 5.5);
+
+INSERT INTO training_exercise (train_id, exer_id) VALUES
+(1, 1),
+(1, 11),
+(2, 2),
+(2, 12),
+(3, 3),
+(3, 61),
+(4, 4),
+(4, 5),
+(5, 9),
+(5, 13),
+(6, 63),
+(6, 64),
+(7, 76),
+(7, 58),
+(8, 62),
+(8, 65),
+(1, 3),
+(2, 6),
+(4, 8),
+(5, 3),
+(7, 6);
+
+INSERT INTO training_body (train_id, body_id) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 4),
+(5, 5),
+(6, 6),
+(7, 7),
+(8, 8);
 
 INSERT INTO work_plan (body_id, work_name, work_descrip, work_created_at, work_updated_at, work_day) VALUES
 (1, 'Chest Day', 'Focus on chest and triceps', '2026-02-01 10:00:00', '2026-02-01 10:00:00', '2026-02-18'),
@@ -327,6 +519,39 @@ INSERT INTO food_plan (food_id, meal_id) VALUES
 (6, 3),
 (7, 4),
 (8, 4);
+
+INSERT INTO recipe (
+    recipe_meal_name,
+    recipe_ingredients,
+    recipe_allergy_info,
+    recipe_calories,
+    recipe_diet_type,
+    recipe_instructions,
+    recipe_image_url
+)
+VALUES
+('Vegan Garden Bowl', 'quinoa, cucumber, tomato, spinach, olive oil, lemon', 'none', 410.0, 'Vegan', 'Cook quinoa. Chop vegetables. Toss with olive oil and lemon.','https://www.cottercrunch.com/wp-content/uploads/2016/07/garden-veggie-vegan-buddha-bowls-4-of-1-copy.jpg'),
+('Lentil Tomato Soup', 'lentils, tomatoes, onion, garlic, vegetable broth', 'none', 360.0, 'Vegan', 'Saute onion and garlic. Add lentils, tomatoes, broth. Simmer 30 minutes.', 'https://static01.nyt.com/images/2025/08/06/multimedia/sd-slow-cooker-tomato-lentil-soup-lkvw/sd-slow-cooker-tomato-lentil-soup-lkvw-mediumSquareAt3X.jpg'),
+('Roasted Veggie Plate', 'zucchini, bell peppers, carrots, olive oil, herbs', 'none', 320.0, 'Vegan', 'Roast vegetables at 200C for 20 minutes. Season with herbs.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSQmOPf0XPCpucg0sfysHzAmkWIR1FxiMSnlA&s'),
+('Black Bean Bowl', 'brown rice, black beans, corn, salsa, avocado', 'none', 520.0, 'Vegan', 'Cook rice. Warm beans and corn. Assemble with salsa and avocado.', 'https://littlespoonfarm.com/wp-content/uploads/2021/08/Black-Bean-Burrito-Bowl-Recipe.jpg'),
+('Fruit Chia Cup', 'chia seeds, almond milk, berries, maple syrup', 'none', 300.0, 'Vegan', 'Mix chia with almond milk. Chill overnight. Top with berries and maple syrup.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGVtFmHw0LIk1OsSbu8LY5v0Ktl53rqrACsg&s'),
+('Tofu Stir Fry', 'tofu, broccoli, bell peppers, soy sauce, garlic', 'contains soy', 460.0, 'Vegan', 'Stir fry tofu and vegetables. Add garlic and soy sauce.', 'https://www.midwestliving.com/thmb/rrI2Z1Wlfa_axLHEicoF8w39TZA=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Capture-One-Session1353-1_green-bean-tofu-stir-fry-ae58438831f34cfeacdae75568c68172.jpg'),
+('Tahini Chickpea Salad', 'chickpeas, spinach, cucumber, tahini, lemon', 'contains sesame', 430.0, 'Vegan', 'Mix chickpeas with vegetables. Stir in tahini and lemon.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSR8q6tpCEutB-0pGURDpQEDvRk1fIB_NNonw&s'),
+('Peanut Noodle Bowl', 'rice noodles, peanut butter, soy sauce, carrots, scallions', 'contains peanuts, soy', 540.0, 'Vegan', 'Cook noodles. Mix sauce with peanut butter and soy. Toss and serve.', 'https://www.makingthymeforhealth.com/wp-content/uploads/2017/05/Peanut-Soba-Noodle-Bowls-10.jpg'),
+('Sesame Veggie Wrap', 'tortilla, lettuce, carrots, cucumber, sesame dressing', 'contains gluten, sesame', 380.0, 'Vegan', 'Fill tortilla with vegetables and sesame dressing. Wrap and serve.', 'https://images.immediate.co.uk/production/volatile/sites/30/2020/08/sesame-stir-fry-wrap-00cce25.jpg'),
+('Mushroom Soy Rice', 'rice, mushrooms, soy sauce, green onion', 'contains soy', 420.0, 'Vegan', 'Cook rice. Saute mushrooms. Add soy sauce and combine.', 'https://plantbasedrdblog.com/wp-content/uploads/2022/06/mushroom-fried-rice_feat.jpg'),
+('Grilled Chicken Salad', 'chicken breast, lettuce, cucumber, tomato, olive oil, lemon juice', 'none', 320.5, 'High Protein', 'Season chicken. Grill 6 minutes per side. Chop vegetables. Slice chicken and serve with olive oil and lemon.', 'https://assets.epicurious.com/photos/64a845e67799ee8651e4fb8f/1:1/w_4198,h_4198,c_limit/AshaGrilledChickenSalad_RECIPE_070523_56498.jpg'),
+('Turkey Rice Plate', 'turkey breast, rice, steamed broccoli, olive oil', 'none', 520.0, 'High Protein', 'Cook rice. Grill turkey. Steam broccoli. Plate and season.', 'https://apaigeofpositivity.com/wp-content/uploads/2025/03/Teriyaki-Ground-Turkey-Bowls-8.jpg'),
+('Baked Salmon Bowl', 'salmon, rice, lemon, herbs, olive oil', 'none', 540.0, 'Pescatarian', 'Bake salmon at 200C for 12 minutes. Serve over rice with lemon.', 'https://thewoodenskillet.com/wp-content/uploads/2024/01/baked-salmon-sushi-bowl-recipe-5.jpg'),
+('Beef Veggie Skillet', 'lean beef, zucchini, peppers, olive oil, garlic', 'none', 560.0, 'Regular', 'Saute beef with vegetables and garlic until cooked.', 'https://gardeninthekitchen.com/wp-content/uploads/2022/07/beef-zucchini-skillet_0318.jpg'),
+('Greek Yogurt Fruit', 'greek yogurt, banana, berries, honey', 'none', 300.0, 'Vegetarian', 'Top yogurt with fruit and honey.', 'https://mycasualpantry.com/wp-content/uploads/2022/07/Greek-Yogurt-with-Granola-and-Fruit-bowl-1200-%C3%97-1200-px.jpg'),
+('Shrimp Pasta', 'shrimp, pasta, garlic, cream, parmesan', 'contains shellfish, milk, gluten', 710.0, 'Regular', 'Boil pasta. Saute shrimp with garlic. Add cream and parmesan. Combine.', 'https://www.eatloveeats.com/wp-content/uploads/2021/07/Lemon-Garlic-Shrimp-Pasta-22.jpg'),
+('Tuna Salad', 'tuna, lettuce, cucumber, olive oil, lemon juice', 'contains fish', 330.0, 'Pescatarian', 'Mix tuna with chopped lettuce and cucumber. Add olive oil and lemon.', 'https://www.lifeisbutadish.com/wp-content/uploads/2017/08/Simple-Tuna-Salad-6-1.jpg'),
+('Chicken Alfredo', 'chicken, pasta, cream, parmesan, garlic', 'contains milk, gluten', 760.0, 'Regular', 'Cook pasta. Grill chicken. Make cream sauce with garlic and parmesan. Combine.', 'https://www.allrecipes.com/thmb/ziUOvj4f_me5yvZhYCUy0n4IKbQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/276725-creamy-chicken-alfredo-VAT-001-Beauty-4x3-c4b026db5cb349f4b8fd627c56f91a42.jpg'),
+('Gluten Free Pancakes', 'gluten free flour, eggs, milk, maple syrup', 'contains eggs, milk', 390.0, 'Gluten Free', 'Mix flour, eggs, and milk. Cook pancakes until golden. Serve with syrup.', 'https://glutenfreebaking.com/wp-content/uploads/2024/06/Stack-of-gluten-free-pancakes.jpg'),
+('Keto Omelette', 'eggs, cheese, spinach, butter', 'contains eggs, milk', 280.0, 'Keto', 'Whisk eggs. Saute spinach in butter. Pour eggs, add cheese, fold and serve.', 'https://images.immediate.co.uk/production/volatile/sites/2/2016/05/22955.jpg?quality=90&resize=600,400');
+
+
 
 INSERT INTO custom_items (item_name, item_effect, item_level, item_type) VALUES
 ('Health Potion', 50, 1, 'consumable'),
@@ -478,17 +703,64 @@ INSERT INTO food (food_name, food_type, food_calories, food_fat, food_fibre, foo
         """)
         self.conn.commit()
 
-    def delete_all(self):
+def add_seed_passwords(self):
+        emails = [
+            "john.smith@email.com",
+            "sarah.j@email.com",
+            "mike.w@email.com",
+            "emma.brown@email.com",
+            "david.jones@email.com",
+            "lisa.garcia@email.com",
+            "james.miller@email.com",
+            "anna.davis@email.com",
+        ]
+
+        for email in emails:
+            hashed_password = pwd.hash("password")
+            self.cur.execute(
+                """
+                UPDATE users
+                SET user_password = %s
+                WHERE user_email = %s
+                """,
+                (hashed_password, email),
+            )
+
+        self.conn.commit()
+
+def check_password(self, email, plain_password):
+        self.cur.execute(
+            """
+            SELECT user_password
+            FROM users
+            WHERE user_email = %s
+            """,
+            (email,),
+        )
+
+        row = self.cur.fetchone()
+
+        if row is None:
+            return False
+
+        stored_hash = row[0]
+
+        if stored_hash is None:
+            return False
+
+        return pwd.verify(plain_password, stored_hash)
+
+def delete_all(self):
         self.cur.execute("""
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
-                         """)
+        """)
         self.conn.commit()
-        
-    def run(self):
+
+def run(self):
         try:
             self.delete_all()
-            self.create()
+            self.create_type()
             self.add_data()
             print("complete database")
         except Exception as e:
@@ -499,3 +771,8 @@ CREATE SCHEMA public;
 if __name__ == "__main__":
     test = DatabaseSQL(CONN)
     test.run()
+
+    if test.check_password("john.smith@email.com", "password"):
+        print("Login successful")
+    else:
+        print("Wrong password")

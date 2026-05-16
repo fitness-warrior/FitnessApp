@@ -2,13 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/exercise_service.dart';
 
+typedef ExerciseLoader = Future<Map<String, dynamic>> Function(int exerId);
+typedef VideoUrlLauncher = Future<bool> Function(String url);
+
 class ExerciseDetailWidget extends StatefulWidget {
   final int exerId;
-  const ExerciseDetailWidget({Key? key, required this.exerId})
-      : super(key: key);
+  final ExerciseLoader? exerciseLoader;
+  final VideoUrlLauncher? videoUrlLauncher;
+
+  const ExerciseDetailWidget({
+    Key? key,
+    required this.exerId,
+    this.exerciseLoader,
+    this.videoUrlLauncher,
+  }) : super(key: key);
 
   @override
-  _ExerciseDetailWidgetState createState() => _ExerciseDetailWidgetState();
+  State<ExerciseDetailWidget> createState() => _ExerciseDetailWidgetState();
 }
 
 class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
@@ -24,7 +34,9 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
 
   Future<void> _load() async {
     try {
-      final data = await ExerciseService.getExercise(widget.exerId);
+      final data = await (widget.exerciseLoader ?? ExerciseService.getExercise)(
+        widget.exerId,
+      );
       setState(() {
         _exercise = data;
         _loading = false;
@@ -38,12 +50,21 @@ class _ExerciseDetailWidgetState extends State<ExerciseDetailWidget> {
   }
 
   Future<void> _openVideo(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    bool opened;
+    if (widget.videoUrlLauncher != null) {
+      opened = await widget.videoUrlLauncher!(url);
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not open video URL')));
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        opened = false;
+      }
+    }
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open video URL')));
     }
   }
 

@@ -48,3 +48,14 @@ Desktop.ini
 *.swo
 *.suo
 *.user
+
+# ──────────────────────────────────────────────
+# Flutter
+# ──────────────────────────────────────────────
+flutter_app/.dart_tool/
+flutter_app/android/local.properties
+flutter_app/ios/Flutter/Generated.xcconfig
+flutter_app/ios/Flutter/flutter_export_environment.sh
+flutter_app/build/
+.pub-cache/
+.pub/

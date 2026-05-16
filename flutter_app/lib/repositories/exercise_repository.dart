@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import '../data/exercise_db.dart';
 import '../services/exercise_service.dart';
 
@@ -167,7 +166,7 @@ class ExerciseRepository {
     final equipRaw = r['exer_equip'] as String?;
     final equipment = equipRaw == null || equipRaw.isEmpty
         ? <String>[]
-        : equipRaw.split(',').map((s) => s.trim()).whereNotNull().toList();
+        : equipRaw.split(',').map((s) => s.trim()).nonNulls.toList();
 
     return {
       'id': r['exer_id'],
@@ -179,7 +178,7 @@ class ExerciseRepository {
       'equipment': equipment,
       'difficulty': r['difficulty'] ?? '',
       'tags': <String>[],
-      'meta': {'source': 'local'},
+      'meta': <String, dynamic>{'source': 'local'},
     };
   }
 
@@ -205,7 +204,7 @@ class ExerciseRepository {
       'tags': (r['tags'] is List)
           ? (r['tags'] as List).map((e) => e.toString()).toList()
           : <String>[],
-      'meta': {'source': 'remote'},
+      'meta': <String, dynamic>{'source': 'remote'},
     };
   }
 }

@@ -1,27 +1,63 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+import 'auth_service.dart';
 
 class WorkoutService {
-  static const String baseUrl = 'http://localhost:5001/api';
+  static String get baseUrl => ApiConfig.baseUrl;
 
+  /// Submit a completed workout (saves to user account)
   static Future<Map<String, dynamic>> submitWorkout(
-    List<Map<String, dynamic>> exercises,
-  ) async {
+    List<Map<String, dynamic>> exercises, {
+    int? durationMinutes,
+    String? notes,
+    http.Client? client,
+    Map<String, String>? customHeaders,
+  }) async {
+    final httpClient = client ?? http.Client();
     try {
+      final headers = customHeaders ?? await AuthService.getAuthHeaders();
+
       final payload = {
         'exercises': exercises.map((exercise) {
+          final rawSets = exercise['sets'];
+          final exerType = exercise['exer_type']?.toString().toLowerCase() ?? 'strength';
+
+          List<Map<String, dynamic>> setsArray = [];
+
+          if (rawSets is List && rawSets.isNotEmpty) {
+            for (var set in rawSets) {
+              if (set is Map) {
+                if (exerType == 'cardio') {
+                  setsArray.add({
+                    'time': int.tryParse(set['time']?.toString() ?? '0') ?? 0,
+                    'distance':
+                        double.tryParse(set['distance']?.toString() ?? '0') ?? 0,
+                  });
+                } else {
+                  setsArray.add({
+                    'reps': int.tryParse(set['reps']?.toString() ?? '0') ?? 0,
+                    'kg': double.tryParse(set['kg']?.toString() ?? '0') ?? 0,
+                  });
+                }
+              }
+            }
+          }
+
           return {
             'exer_id': exercise['exer_id'],
             'exer_name': exercise['exer_name'],
-            'sets': exercise['sets'],
+            'sets': setsArray,  // Send full array, not just count
+            'notes': exercise['notes'] ?? '',
           };
         }).toList(),
-        'total_exercises': exercises.length,
+        'duration_minutes': durationMinutes ?? 0,
+        'notes': notes ?? '',
       };
 
-      final response = await http.post(
+      final response = await httpClient.post(
         Uri.parse('$baseUrl/workouts'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode(payload),
       );
 

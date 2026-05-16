@@ -1,0 +1,93 @@
+PROJECT TEST COVERAGE REPORT (PER-FILE BREAKDOWN)
+==============================================
+Date: 2026-05-16
+Overall Project Coverage: 72.73%
+Total Pass Rate: ~95% (Backend - 3 failures) | ~98% (Frontend - 4 failures, 1 timeout)
+
+ARCHITECTURE SUMMARY
+--------------------
+Component          | Covered Lines | Total Lines | Coverage %
+-----------------------------------------------------------
+Backend (FastAPI)  | 399           | 630         | 63.33%
+Frontend (Flutter) | 4,310         | 5,845       | 73.74%
+-----------------------------------------------------------
+TOTAL              | 4,709         | 6,475       | 72.73%
+
+FRONTEND (FLUTTER) PER-FILE BREAKDOWN
+-------------------------------------
+- lib/widgets/xp_bar.dart: 100.00%
+- lib/widgets/common/navbar.dart: 100.00%
+- lib/widgets/common/header.dart: 100.00%
+- lib/widgets/common/finish_button.dart: 100.00%
+- lib/widgets/common/custom_card.dart: 100.00%
+- lib/widgets/common/custom_button.dart: 100.00%
+- lib/services/workout_storage.dart: 100.00%
+- lib/services/streak_service.dart: 100.00%
+- lib/services/recommendation_storage.dart: 100.00%
+- lib/models/recommendation_profile.dart: 100.00%
+- lib/models/recipe.dart: 100.00%
+- lib/models/daily_meal_plan.dart: 100.00%
+- lib/models/chart_model.dart: 100.00%
+- lib/graphs/single_data_point.dart: 100.00%
+- lib/graphs/pie_chart.dart: 100.00%
+- lib/graphs/line_chart.dart: 100.00%
+- lib/graphs/graph_data.dart: 100.00%
+- lib/graphs/core.dart: 100.00%
+- lib/graphs/bar_graph.dart: 100.00%
+- lib/data/recipe_db.dart: 100.00%
+- lib/data/exercise_db.dart: 100.00%
+- lib/config/api_config.dart: 100.00%
+- lib/views/exercise_detail_page.dart: 98.34%
+- lib/services/auth_service.dart: 98.21%
+- lib/views/workout_day_view.dart: 97.35%
+- lib/views/exercise_library_page.dart: 97.12%
+- lib/services/chart_service.dart: 97.04%
+- lib/services/workout_history_service.dart: 96.00%
+- lib/services/recommendation_service.dart: 95.65%
+- lib/views/food_browser_page.dart: 95.54%
+- lib/views/recipe_list_page.dart: 95.45%
+- lib/views/auth_page.dart: 95.15%
+- lib/widgets/meal_plan/meal_slot_card.dart: 94.25%
+- lib/repositories/exercise_repository.dart: 93.98%
+- lib/dialogs/food_picker_dialog.dart: 93.98%
+- lib/services/user_stats_service.dart: 93.48%
+- lib/data/food_db.dart: 92.86%
+- lib/widgets/common/custom_text_field.dart: 92.71%
+- lib/services/weekly_plan_service.dart: 91.67%
+- lib/services/workout_service.dart: 90.91%
+- lib/services/user_service.dart: 89.19%
+- lib/models/meal_item.dart: 88.37%
+- lib/services/exercise_service.dart: 88.00%
+- lib/widgets/questionnaire/questionnaire_widget.dart: 87.73%
+- lib/views/workout_calendar_page.dart: 87.69%
+- lib/widgets/meal_plan/date_calorie_header.dart: 87.61%
+- lib/main.dart: 86.67%
+- lib/views/recipe_detail_page.dart: 85.71%
+- lib/services/meal_storage.dart: 84.91%
+- lib/widgets/exercise_detail_widget.dart: 83.05%
+- lib/widgets/youtube_video_embed.dart: 78.95%
+- lib/dialogs/finish_workout_dialog.dart: 77.93%
+- lib/dialogs/excercise_search_dialog.dart: 61.26%
+- lib/dialogs/generate_workout_dialog.dart: 60.87%
+- lib/views/profile_page.dart: 56.80%
+- lib/widgets/exercise_list_widget.dart: 45.67%
+- lib/views/meal_plan_page.dart: 41.03%
+- lib/views/dashboard_page.dart: 38.97%
+- lib/widgets/common/streak_display.dart: 25.19%
+- lib/views/workout_page.dart: 22.13%
+- lib/views/add_chart_page.dart: 0.00%
+
+BACKEND (FASTAPI) PER-FILE BREAKDOWN
+-----------------------------------
+- main.py: 63.33%
+
+RECENT COVERAGE GAINS
+---------------------
+- WorkoutStorage: Reached 100% coverage after new service tests.
+- CustomTextField: Jumped to 92% with comprehensive widget state tests.
+- MealStorage: Increased to 84% with error handling and persistence tests.
+
+TESTING INFRASTRUCTURE
+----------------------
+- Status: 22 Frontend files at 100% coverage.
+- New Tests: Added 247 lines of unit/widget tests for storage and core components.

@@ -1,0 +1,32 @@
+site_name: FitnessWarrior Documentation
+site_description: Documentation for the FitnessWarrior app
+
+theme:
+  name: material
+  palette:
+    primary: green
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+
+nav:
+  - Home: index.md
+  - Introduction: introduction.md
+  - Setup Guide: setup.md
+  - Usage Guide: usageguide.md
+  - Features: features.md
+  - Requirements: requirements.md
+  - Testing: testing.md
+  - Architecture: architecture.md
+  - Project Structure: projectstructure.md
+  - Future Improvements: futureimprovements.md
+  - Authors: authors.md

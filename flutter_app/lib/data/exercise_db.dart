@@ -1,12 +1,38 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class ExerciseDb {
   static final ExerciseDb instance = ExerciseDb._();
   ExerciseDb._();
 
-  // Update this URL to match your backend API
-  static const String baseUrl = 'http://localhost:5001/api';
+  static String get baseUrl => ApiConfig.baseUrl;
+  
+  http.Client? _client;
+  @visibleForTesting
+  set client(http.Client value) => _client = value;
+  http.Client get client => _client ?? http.Client();
+
+  Map<String, dynamic> _normalizeRow(Map<String, dynamic> row) {
+    final Map<String, dynamic> m = Map<String, dynamic>.from(row);
+    m['exer_id'] = m['exer_id'] ?? m['id'];
+    m['exer_name'] = m['exer_name'] ?? m['name'] ?? m['title'];
+    m['exer_body_area'] = m['exer_body_area'] ?? m['body_area'] ?? m['area'];
+    m['exer_type'] = m['exer_type'] ?? m['type'];
+    m['exer_descrip'] = m['exer_descrip'] ?? m['description'] ?? m['desc'];
+    m['exer_vid'] = m['exer_vid'] ?? m['video'] ?? m['video_url'] ?? m['vid'];
+    if (m['exer_equip'] == null) {
+      if (m['equipment'] is List) {
+        m['exer_equip'] = (m['equipment'] as List).join(', ');
+      } else if (m['equipment'] != null) {
+        m['exer_equip'] = m['equipment'].toString();
+      } else {
+        m['exer_equip'] = '';
+      }
+    }
+    return m;
+  }
 
   Future<List<Map<String, dynamic>>> listExercises({
     String? name,
@@ -28,59 +54,63 @@ class ExerciseDb {
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
 
-      final response = await http.get(
+      final response = await client.get(
         uri,
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+        return data
+            .map((e) => _normalizeRow(Map<String, dynamic>.from(e)))
+            .toList();
       } else {
-        print('Failed to load exercises: ${response.statusCode}');
+        debugPrint('Failed to load exercises: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('Error fetching exercises: $e');
+      debugPrint('Error fetching exercises: $e');
       return [];
     }
   }
 
   Future<Map<String, dynamic>?> getExercise(int id) async {
     try {
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/exercises/$id'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return Map<String, dynamic>.from(data);
+        return _normalizeRow(Map<String, dynamic>.from(data));
       } else {
-        print('Failed to load exercise $id: ${response.statusCode}');
+        debugPrint('Failed to load exercise $id: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('Error fetching exercise $id: $e');
+      debugPrint('Error fetching exercise $id: $e');
       return null;
     }
   }
 
   Future<List<Map<String, dynamic>>> searchExercises(String query) async {
     try {
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/exercises/search?q=$query'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+        return data
+            .map((e) => _normalizeRow(Map<String, dynamic>.from(e)))
+            .toList();
       } else {
         return [];
       }
     } catch (e) {
-      print('Error searching exercises: $e');
+      debugPrint('Error searching exercises: $e');
       return [];
     }
   }
