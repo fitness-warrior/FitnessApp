@@ -1,8 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fitness_app_flutter/services/weekly_plan_service.dart';
+import '../helpers/http_mock.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Weekly Plan Service Tests', () {
 
     test('Test 1: Weekly workout plan loads successfully from server', () {
@@ -133,5 +139,94 @@ void main() {
       expect((sentPlan['friday'] as List).isEmpty, isTrue);
     });
 
+  });
+
+  group('WeeklyPlanService Actual Methods Tests', () {
+    const fakeSecureStorageData = {'auth_token': 'fake_token'};
+
+    tearDown(() {
+      HttpOverrides.global = null;
+    });
+
+    test('getWeeklyPlan returns null if no token', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      expect(plan, isNull);
+    });
+
+    test('getWeeklyPlan returns plan when successful', () async {
+      FlutterSecureStorage.setMockInitialValues(fakeSecureStorageData);
+
+      final fakeData = {
+        'plan': {
+          'monday': ['Push Day'],
+          'tuesday': ['Leg Day'],
+        }
+      };
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        if (request.uri.path.endsWith('/weekly-plan') && request.method == 'GET') {
+          return FakeHttpClientResponse(200, jsonEncode(fakeData));
+        }
+        return FakeHttpClientResponse(404, 'Not Found');
+      });
+
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      expect(plan, isNotNull);
+      expect((plan!['monday'] as List).contains('Push Day'), isTrue);
+    });
+
+    test('getWeeklyPlan returns null on 500 error', () async {
+      FlutterSecureStorage.setMockInitialValues(fakeSecureStorageData);
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        return FakeHttpClientResponse(500, 'Internal Server Error');
+      });
+
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      expect(plan, isNull);
+    });
+
+    test('getWeeklyPlan returns null on exception', () async {
+      FlutterSecureStorage.setMockInitialValues(fakeSecureStorageData);
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        throw Exception('Network Exception');
+      });
+
+      final plan = await WeeklyPlanService.getWeeklyPlan();
+      expect(plan, isNull);
+    });
+
+    test('saveWeeklyPlan returns false if no token', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+      final saved = await WeeklyPlanService.saveWeeklyPlan({'monday': []});
+      expect(saved, isFalse);
+    });
+
+    test('saveWeeklyPlan returns true on success', () async {
+      FlutterSecureStorage.setMockInitialValues(fakeSecureStorageData);
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        if (request.uri.path.endsWith('/weekly-plan') && request.method == 'POST') {
+          return FakeHttpClientResponse(200, '{"status":"ok"}');
+        }
+        return FakeHttpClientResponse(404, 'Not Found');
+      });
+
+      final saved = await WeeklyPlanService.saveWeeklyPlan({'monday': ['Push Day']});
+      expect(saved, isTrue);
+    });
+
+    test('saveWeeklyPlan returns false on error', () async {
+      FlutterSecureStorage.setMockInitialValues(fakeSecureStorageData);
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        return FakeHttpClientResponse(500, 'Server Error');
+      });
+
+      final saved = await WeeklyPlanService.saveWeeklyPlan({'monday': ['Push Day']});
+      expect(saved, isFalse);
+    });
   });
 }
