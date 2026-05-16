@@ -33,3 +33,5 @@ dev_dependencies:
   mockito: ^5.4.0
   build_runner: ^2.4.0
   webview_flutter_platform_interface: ^2.15.1
+  integration_test:
+    sdk: flutter
