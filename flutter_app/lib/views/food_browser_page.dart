@@ -30,101 +30,13 @@ class FoodBrowserPage extends StatelessWidget {
 
   Future<MealItem?> _promptForQuantity(
       BuildContext context, MealItem food) async {
-    final controller = TextEditingController(text: '100');
-    final supportsMl = _supportsMillilitres(food);
-    var selectedUnit = supportsMl ? QuantityUnit.ml : QuantityUnit.g;
-    String? errorText;
-
-    final picked = await showDialog<MealItem>(
+    return showDialog<MealItem>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              title: const Text('Set quantity'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    food.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${food.caloriesPer100Unit.toInt()} kcal per 100 ${selectedUnit.symbol}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                  const SizedBox(height: 12),
-                  if (supportsMl) ...[
-                    DropdownButtonFormField<QuantityUnit>(
-                      initialValue: selectedUnit,
-                      decoration: const InputDecoration(
-                        labelText: 'Unit',
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: QuantityUnit.g,
-                          child: Text('grams (g)'),
-                        ),
-                        DropdownMenuItem(
-                          value: QuantityUnit.ml,
-                          child: Text('millilitres (ml)'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setDialogState(() {
-                          selectedUnit = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  TextField(
-                    controller: controller,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Quantity (${selectedUnit.symbol})',
-                      hintText: 'e.g. 100',
-                      errorText: errorText,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final quantity = double.tryParse(controller.text.trim());
-                    if (quantity == null || quantity <= 0 || quantity > 2000) {
-                      setDialogState(() {
-                        errorText = 'Enter a value between 1 and 2000.';
-                      });
-                      return;
-                    }
-                    Navigator.pop(
-                      dialogContext,
-                      food.copyWithQuantity(
-                        nextQuantity: quantity,
-                        nextUnit: selectedUnit,
-                      ),
-                    );
-                  },
-                  child: const Text('Add'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (dialogContext) => _QuantityDialogWidget(
+        food: food,
+        supportsMl: _supportsMillilitres(food),
+      ),
     );
-
-    controller.dispose();
-    return picked;
   }
 
   @override
@@ -226,5 +138,116 @@ class FoodBrowserPage extends StatelessWidget {
       default:
         return Colors.grey;
     }
+  }
+}
+
+class _QuantityDialogWidget extends StatefulWidget {
+  final MealItem food;
+  final bool supportsMl;
+
+  const _QuantityDialogWidget({required this.food, required this.supportsMl});
+
+  @override
+  State<_QuantityDialogWidget> createState() => _QuantityDialogWidgetState();
+}
+
+class _QuantityDialogWidgetState extends State<_QuantityDialogWidget> {
+  late final TextEditingController _controller;
+  late QuantityUnit _selectedUnit;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: '100');
+    _selectedUnit = widget.supportsMl ? QuantityUnit.ml : QuantityUnit.g;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Set quantity'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.food.name,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${widget.food.caloriesPer100Unit.toInt()} kcal per 100 ${_selectedUnit.symbol}',
+            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          if (widget.supportsMl) ...[
+            DropdownButtonFormField<QuantityUnit>(
+              value: _selectedUnit,
+              decoration: const InputDecoration(
+                labelText: 'Unit',
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: QuantityUnit.g,
+                  child: Text('grams (g)'),
+                ),
+                DropdownMenuItem(
+                  value: QuantityUnit.ml,
+                  child: Text('millilitres (ml)'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _selectedUnit = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Quantity (${_selectedUnit.symbol})',
+              hintText: 'e.g. 100',
+              errorText: _errorText,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final quantity = double.tryParse(_controller.text.trim());
+            if (quantity == null || quantity <= 0 || quantity > 2000) {
+              setState(() {
+                _errorText = 'Enter a value between 1 and 2000.';
+              });
+              return;
+            }
+            Navigator.pop(
+              context,
+              widget.food.copyWithQuantity(
+                nextQuantity: quantity,
+                nextUnit: _selectedUnit,
+              ),
+            );
+          },
+          child: const Text('Add'),
+        ),
+      ],
+    );
   }
 }
