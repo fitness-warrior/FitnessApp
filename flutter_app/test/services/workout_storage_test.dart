@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,6 +71,76 @@ void main() {
       await WorkoutStorage.clearAllCurrentWorkoutSessions();
       
       expect(prefs.getString(sessionKey), isNull);
+    });
+
+    test('saveCurrentWorkoutSessions and loadCurrentWorkoutSessions roundtrip', () async {
+      final exercisesList = [
+        [
+          {'exer_name': 'Pushups', 'exer_id': 1}
+        ]
+      ];
+
+      final setsList = [
+        {
+          0: [
+            {'kg': 0, 'reps': 10},
+            {'kg': '5', 'reps': '8'},
+          ]
+        }
+      ];
+
+      await WorkoutStorage.saveCurrentWorkoutSessions(exercisesList, setsList);
+
+      final loaded = await WorkoutStorage.loadCurrentWorkoutSessions();
+      expect(loaded.length, 1);
+      expect(loaded[0]['exercises'][0]['exer_name'], 'Pushups');
+      expect(loaded[0]['setControllers'], isA<Map>());
+      final setControllers = Map<String, dynamic>.from(loaded[0]['setControllers']);
+      expect(setControllers.containsKey('0'), isTrue);
+      final savedSets = List<dynamic>.from(setControllers['0']);
+      expect(savedSets[0]['kg'].toString(), '0');
+      expect(savedSets[0]['reps'].toString(), '10');
+      expect(savedSets[1]['kg'].toString(), '5');
+    });
+
+    test('loadCurrentWorkoutSessions migrates legacy single session key', () async {
+      const legacyKey = 'current_workout_session';
+      final prefs = await SharedPreferences.getInstance();
+      final legacySession = {
+        'exercises': [
+          {'exer_name': 'Legacy', 'exer_id': 9}
+        ],
+        'setControllers': {}
+      };
+      await prefs.setString(legacyKey, jsonEncode(legacySession));
+
+      final loaded = await WorkoutStorage.loadCurrentWorkoutSessions();
+      expect(loaded.length, 1);
+      expect(loaded[0]['exercises'][0]['exer_name'], 'Legacy');
+      expect(prefs.getString(legacyKey), isNull);
+    });
+
+    test('saveWorkout trims workoutName', () async {
+      await WorkoutStorage.saveWorkout([], workoutName: '  My Workout  ');
+      final workouts = await WorkoutStorage.getWorkouts();
+      expect(workouts[0]['name'], 'My Workout');
+    });
+
+    test('deleteWorkout with invalid index does nothing', () async {
+      await WorkoutStorage.saveWorkout([], workoutName: 'Workout A');
+      await WorkoutStorage.saveWorkout([], workoutName: 'Workout B');
+      await WorkoutStorage.deleteWorkout(999);
+      final workouts = await WorkoutStorage.getWorkouts();
+      expect(workouts.length, 2);
+    });
+
+    test('loadCurrentWorkoutSessions returns empty list on corrupted JSON', () async {
+      const sessionKey = 'current_workout_sessions_list_anonymous';
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(sessionKey, 'not-a-json');
+
+      final loaded = await WorkoutStorage.loadCurrentWorkoutSessions();
+      expect(loaded, []);
     });
   });
 }

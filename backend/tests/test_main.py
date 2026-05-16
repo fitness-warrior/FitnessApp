@@ -1,7 +1,7 @@
 import pytest
 from fastapi import HTTPException
-from flutter_app.python.auth import create_access_token
-import flutter_app.python.main as main
+from auth import create_access_token
+import main
 
 
 @pytest.mark.asyncio

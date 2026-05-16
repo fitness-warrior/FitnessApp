@@ -1,8 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fitness_app_flutter/services/workout_history_service.dart';
+import '../helpers/http_mock.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('FR24 - Store Fitness Data Tests', () {
 
     test('Test 1: Completed workout saved to server successfully', () {
@@ -157,5 +163,167 @@ void main() {
       expect(deleted, isFalse);
     });
 
+  });
+
+  group('WorkoutHistoryService Actual Methods Tests', () {
+    setUp(() {
+      FlutterSecureStorage.setMockInitialValues({});
+    });
+
+    tearDown(() {
+      HttpOverrides.global = null;
+    });
+
+    test('saveWorkout saves a workout to the server successfully', () async {
+      final exercises = [
+        {'exer_id': 1, 'exer_name': 'Push-up', 'sets': 3, 'reps': 10, 'weight': 0},
+      ];
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        if (request.uri.path.endsWith('/workouts') && request.method == 'POST') {
+          return FakeHttpClientResponse(
+            201,
+            jsonEncode({'workout_id': 99, 'message': 'Workout saved'}),
+          );
+        }
+        return FakeHttpClientResponse(404, 'Not Found');
+      });
+
+      final result = await WorkoutHistoryService.saveWorkout(exercises);
+
+      expect(result['workout_id'], 99);
+      expect(result['message'], 'Workout saved');
+    });
+
+    test('saveWorkout throws an exception when server has an error', () async {
+      final exercises = [
+        {'exer_id': 1, 'exer_name': 'Push-up', 'sets': 3, 'reps': 10, 'weight': 0},
+      ];
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        return FakeHttpClientResponse(
+          500,
+          jsonEncode({'detail': 'Internal Server Error'}),
+        );
+      });
+
+      expect(
+        () => WorkoutHistoryService.saveWorkout(exercises),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('getWorkoutHistory loads correctly from the server', () async {
+      final fakeHistory = [
+        {'workout_id': 1, 'notes': 'Morning run', 'created_at': '2024-01-01'},
+        {'workout_id': 2, 'notes': 'Leg day', 'created_at': '2024-01-02'},
+      ];
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        if (request.uri.path.endsWith('/workouts') && request.method == 'GET') {
+          return FakeHttpClientResponse(200, jsonEncode(fakeHistory));
+        }
+        return FakeHttpClientResponse(404, 'Not Found');
+      });
+
+      final workouts = await WorkoutHistoryService.getWorkoutHistory();
+
+      expect(workouts.length, 2);
+      expect(workouts[0]['workout_id'], 1);
+      expect(workouts[1]['notes'], 'Leg day');
+    });
+
+    test('getWorkoutHistory handles limit parameter correctly', () async {
+      final fakeHistory = [
+        {'workout_id': 1, 'notes': 'Morning run', 'created_at': '2024-01-01'},
+      ];
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        expect(request.uri.queryParameters['limit'], '1');
+        return FakeHttpClientResponse(200, jsonEncode(fakeHistory));
+      });
+
+      final workouts = await WorkoutHistoryService.getWorkoutHistory(limit: 1);
+
+      expect(workouts.length, 1);
+    });
+
+    test('getWorkoutHistory throws an exception on error', () async {
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        return FakeHttpClientResponse(500, 'Server Error');
+      });
+
+      expect(
+        () => WorkoutHistoryService.getWorkoutHistory(),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('getWorkout loads specific workout details', () async {
+      final fakeWorkout = {
+        'workout_id': 42,
+        'notes': 'Leg Day',
+        'exercises': [
+          {'exer_name': 'Squat', 'sets': 3, 'reps': 10, 'weight': 80},
+        ],
+      };
+
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        if (request.uri.path.endsWith('/workouts/42') && request.method == 'GET') {
+          return FakeHttpClientResponse(200, jsonEncode(fakeWorkout));
+        }
+        return FakeHttpClientResponse(404, 'Not Found');
+      });
+
+      final workout = await WorkoutHistoryService.getWorkout(42);
+
+      expect(workout, isNotNull);
+      expect(workout!['workout_id'], 42);
+      expect(workout['notes'], 'Leg Day');
+    });
+
+    test('getWorkout returns null if entry is not found (404)', () async {
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        return FakeHttpClientResponse(404, 'Not Found');
+      });
+
+      final workout = await WorkoutHistoryService.getWorkout(99);
+
+      expect(workout, isNull);
+    });
+
+    test('getWorkout throws an exception on server error', () async {
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        return FakeHttpClientResponse(500, 'Server Error');
+      });
+
+      expect(
+        () => WorkoutHistoryService.getWorkout(99),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('deleteWorkout removes workout successfully', () async {
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        if (request.uri.path.endsWith('/workouts/42') && request.method == 'DELETE') {
+          return FakeHttpClientResponse(204, '');
+        }
+        return FakeHttpClientResponse(404, 'Not Found');
+      });
+
+      final deleted = await WorkoutHistoryService.deleteWorkout(42);
+
+      expect(deleted, isTrue);
+    });
+
+    test('deleteWorkout fails on server error', () async {
+      HttpOverrides.global = FakeHttpOverrides((request) async {
+        return FakeHttpClientResponse(500, 'Server Error');
+      });
+
+      final deleted = await WorkoutHistoryService.deleteWorkout(99);
+
+      expect(deleted, isFalse);
+    });
   });
 }

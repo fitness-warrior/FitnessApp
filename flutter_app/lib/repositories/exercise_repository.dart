@@ -178,7 +178,7 @@ class ExerciseRepository {
       'equipment': equipment,
       'difficulty': r['difficulty'] ?? '',
       'tags': <String>[],
-      'meta': {'source': 'local'},
+      'meta': <String, dynamic>{'source': 'local'},
     };
   }
 
@@ -204,7 +204,7 @@ class ExerciseRepository {
       'tags': (r['tags'] is List)
           ? (r['tags'] as List).map((e) => e.toString()).toList()
           : <String>[],
-      'meta': {'source': 'remote'},
+      'meta': <String, dynamic>{'source': 'remote'},
     };
   }
 }
