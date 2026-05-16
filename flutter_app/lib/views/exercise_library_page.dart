@@ -155,6 +155,7 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
+                    key: ValueKey('filter_chip_$area'),
                     onTap: () => _selectArea(area),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
